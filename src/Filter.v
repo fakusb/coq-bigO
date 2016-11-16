@@ -30,7 +30,7 @@ Definition filter A := pred (pred A).
    is weaker than a universal quantifier: [forall x, P x] implies
    [ultimately x, P x]. *)
 
-Definition nonempty A (ultimately : filter A) :=
+Definition universe A (ultimately : filter A) :=
   ultimately (fun _ => True).
 
 (* A filter does not have the empty set as a member. In other words, every
@@ -56,7 +56,7 @@ Definition closed_inclusion_intersection A (ultimately : filter A) :=
 
 Record mixin_of (A : Type) := Mixin {
   ultimately : filter A;
-  _ : nonempty ultimately;
+  _ : universe ultimately;
   _ : members_nonempty ultimately;
   _ : closed_inclusion_intersection ultimately
 }.
@@ -202,7 +202,7 @@ Definition product : Filter.filter (A1 * A2) :=
     ultimately A1 P1 /\ ultimately A2 P2 /\
     forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2).
 
-Lemma product_nonempty : Filter.nonempty product.
+Lemma product_nonempty : Filter.universe product.
 Proof.
   do 2 (exists (fun _ => True)).
   repeat split; apply filter_universe.
