@@ -23,8 +23,8 @@ export SERIOUS
 .PHONY: all clean
 
 all:
-	$(MAKE) -f Makefile.coq $@
 	$(MAKE) -f Makefile.coq _CoqProject
+	$(MAKE) -f Makefile.coq $@
 
 clean:
 	$(MAKE) -f Makefile.coq $@
