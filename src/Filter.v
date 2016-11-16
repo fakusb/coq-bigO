@@ -1,4 +1,5 @@
 Require Import Coq.Logic.Classical_Pred_Type.
+Require Import Relations.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -81,7 +82,7 @@ Arguments ultimately : clear implicits.
 
 (* ---------------------------------------------------------------------------- *)
 
-Section Laws.
+Section FilterLaws.
 
 Variable A : filterType.
 
@@ -176,7 +177,7 @@ Proof.
   intros. eapply filter_closed_under_inclusion; eauto.
 Qed.
 
-End Laws.
+End FilterLaws.
 
 (* TEMPORARY define rewriting-rule versions of these laws? *)
 
@@ -243,3 +244,55 @@ Definition product_filterType := FilterType (A1 * A2) product_filterMixin.
 End FilterProduct.
 
 Arguments product : clear implicits.
+
+(* ---------------------------------------------------------------------------- *)
+
+Module OrderedFilter.
+
+Record mixin_of (A : filterType) : Type := Mixin {
+  le : relation A;
+  _ : forall x : A, ultimately A (fun y => le x y)
+}.
+
+Section ClassDef.
+
+Record class_of (A : Type) : Type := Class {
+  base : Filter.class_of A;
+  mixin : mixin_of (Filter.Pack base)
+}.
+
+Structure type := Pack { sort : Type; class : class_of sort }.
+
+Definition filterType (cT : type) := @Filter.Pack (sort cT) (base (class cT)).
+(* TEMPORARY (?) this definition looks natural, but does not match (at least
+   obviously) the way similar ones are written in ssreflect *)
+
+End ClassDef.
+
+Module Exports.
+Coercion base : class_of >-> Filter.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion filterType : type >-> Filter.type.
+Notation orderedFilterType := type.
+Notation OrderedFilterType T m := (@Pack T m).
+Notation OrderedFilterMixin := Mixin.
+End Exports.
+
+End OrderedFilter.
+Import OrderedFilter.Exports.
+
+Definition orderedFilter_le T := OrderedFilter.le (OrderedFilter.class T).
+Arguments orderedFilter_le : clear implicits.
+
+Section OrderedFilterLaws.
+
+Variable A : orderedFilterType.
+
+Lemma orderedFilterP :
+  forall x, ultimately A (fun y => orderedFilter_le A x y).
+Proof.
+  destruct A as [? [? M]]. destruct M. eauto.
+Qed.
+
+End OrderedFilterLaws.
