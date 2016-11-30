@@ -1,8 +1,11 @@
 Require Import Coq.Logic.Classical_Pred_Type.
 Require Import Relations.
+Require Import TLC.LibTactics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+
+Require Import List. (* for matching on boxers lists *)
 
 (* We could in principle perform this construction using [bool] instead of [Prop]
    as the codomain of predicates. However, [bool] does not support quantification
@@ -19,27 +22,31 @@ Module Filter.
 
 Definition filter A := pred (pred A).
 
+Record mixin_of (A : Type) := Mixin {
+
 (* Let us write [ultimately] for a filter.  A filter is a modality: if [P] is a
    predicate, then [ultimately P] is a proposition. In other words, a filter is
    a quantifier: if [P] is a predicate, then [ultimately (fun x => P x)] is a
    proposition. Intuitively, this proposition means that ``ultimately'' [P]
    holds. In other words, for every sufficiently ''large'' [x], [P] holds. *)
 
+  ultimately : filter A;
+
 (* A filter is nonempty. In fact, it contains the universe. In other words,
    [ultimately x => True] is just [True]. Thus, the quantifier [ultimately]
    is weaker than a universal quantifier: [forall x, P x] implies
    [ultimately x, P x]. *)
 
-Definition universe A (ultimately : filter A) :=
-  ultimately (fun _ => True).
+  _ :
+    ultimately (fun _ => True);
 
 (* A filter does not have the empty set as a member. In other words, every
    member of the filter is nonempty. Thus, the quantifier [ultimately] is
    stronger than an existential quantifier: [ultimately x, P x] implies
    [exists x, P x]. *)
 
-Definition members_nonempty A (ultimately : filter A) :=
-  forall P, ultimately P -> exists a, P a.
+  _ :
+    forall P, ultimately P -> exists a, P a;
 
 (* A filter is closed by inclusion and by (finite) intersection. In other
    words, the quantifier [ultimately] is covariant and commutes with (finite)
@@ -47,18 +54,12 @@ Definition members_nonempty A (ultimately : filter A) :=
    nature, as opposed to existential. In particular, the universal quantifier
    can be viewed as a filter, but the existential quantifier cannot. *)
 
-Definition closed_inclusion_intersection A (ultimately : filter A) :=
-  forall P1 P2 P : pred A,
-  ultimately P1 ->
-  ultimately P2 ->
-  (forall a, P1 a -> P2 a -> P a) ->
-  ultimately P.
-
-Record mixin_of (A : Type) := Mixin {
-  ultimately : filter A;
-  _ : universe ultimately;
-  _ : members_nonempty ultimately;
-  _ : closed_inclusion_intersection ultimately
+  _ :
+    forall P1 P2 P : pred A,
+    ultimately P1 ->
+    ultimately P2 ->
+    (forall a, P1 a -> P2 a -> P a) ->
+    ultimately P
 }.
 
 Notation class_of := mixin_of (only parsing).
@@ -182,6 +183,172 @@ End FilterLaws.
 (* TEMPORARY define rewriting-rule versions of these laws? *)
 
 (* ---------------------------------------------------------------------------- *)
+(* A set of tactics useful to intersect an arbitrary number of filters.
+
+   In context:
+     U1: ultimately P1
+     U2: ultimately P2
+     ...
+     Un: ultimately Pn
+     ====================
+      ultimately P
+
+   [filter_intersect_many U: (>> U1 U2 .. Un)] adds the
+   hypothesis [U: ultimately (fun x => P1 x /\ .. /\ Pn x)]
+   to the context.
+
+   [filter_closed_under_intersection_many (>> U1 U2 .. Un)] changes the
+   goal to [forall x, P1 x /\ ... /\ Pn x -> P x].
+ *)
+
+Lemma filter_conj_alt :
+  forall A P1 P2,
+    ultimately A P1 ->
+    ultimately A P2 ->
+    ultimately A (fun x => P1 x /\ P2 x).
+Proof. intros. apply filter_conj. tauto. Qed.
+
+Ltac filter_intersect_two_base I U1 U2 :=
+  lets I: filter_conj_alt U1 U2.
+
+Tactic Notation "filter_intersect_two" simple_intropattern(I) ":" constr(U1) constr(U2) :=
+  filter_intersect_two_base I U1 U2.
+
+Tactic Notation "filter_intersect_two" ":" constr(U1) constr(U2) :=
+  let H := fresh in filter_intersect_two H: U1 U2.
+
+Ltac filter_intersect_aux acc acc_T args final :=
+  match args with
+  | (@boxer ?T ?t)::?vs =>
+    let acc_pack := constr:(acc:acc_T) in
+    let t_pack := constr:(t:T) in
+    let t' := fresh in
+    filter_intersect_two_base t' t_pack acc;
+    clear acc;
+    match type of t' with
+      ?T' => filter_intersect_aux t' T' vs final
+    end
+  | nil =>
+    rename acc into final
+  end.
+
+Ltac filter_intersect_aux_setup args final :=
+  match args with
+  | (@boxer ?T ?t)::?vs =>
+    let acc := fresh in
+    pose proof t as acc;
+    filter_intersect_aux acc T vs final
+  end.
+
+Ltac list_rev acc l :=
+  match l with
+  | ?x::?xs => list_rev (x::acc) xs
+  | nil => acc
+  end.
+
+Ltac filter_intersect_many_base I Ei :=
+  let args := list_boxer_of Ei in
+  let args_rev := list_rev (@nil Boxer) args in
+  filter_intersect_aux_setup args_rev I.
+
+Tactic Notation "filter_intersect_many" ident(I) ":" constr(E) :=
+  filter_intersect_many_base I E.
+
+Tactic Notation "filter_intersect_many" ":" constr(E) :=
+  let H := fresh in filter_intersect_many H: E.
+
+Ltac filter_closed_under_intersection_many E :=
+  let H := fresh in
+  filter_intersect_many H: E;
+  applys filter_closed_under_inclusion H;
+  clear H.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* Inclusion of filters. *)
+
+Definition finer A (ult1 ult2 : Filter.filter A) :=
+  forall P, ult2 P -> ult1 P.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* Applying a function [f] to a filter [ult] produces another filter, known as
+   the image of [ult] under [f]. *)
+
+Section Image.
+
+  Variable A : filterType.
+  Variable B : Type.
+
+  Variable f : A -> B.
+
+  Definition image : Filter.filter B :=
+    fun P => ultimately A (fun x => P (f x)).
+
+  Definition image_filterMixin : Filter.mixin_of B.
+  Proof.
+    eapply Filter.Mixin with image.
+    { apply filter_universe. }
+    { intros ? I. pose proof (filter_member_nonempty I) as [? ?].
+      eauto. }
+    { intros P1 P2 P I1 I2 H.
+      unfold image in *.
+      apply (filter_closed_under_intersection I1 I2).
+      eauto. }
+  Defined.
+
+  Definition image_filterType :=
+    FilterType B image_filterMixin.
+
+End Image.
+Arguments image A [B] f P.
+Arguments image_filterType A [B] f.
+
+Lemma imageP :
+  forall (A : filterType) B (f : A -> B),
+  forall (P: B -> Prop),
+  ultimately (image_filterType A f) P =
+  ultimately A (fun x => P (f x)).
+Proof. reflexivity. Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* A notion of limit, or convergence, or divergence -- it all depends on which
+   filters one uses. The assertion [limit f] states that any property [P] that
+   is ultimately true of [y] is ultimately true of [f x]. If [f] is a function
+   from [nat] to [nat], equipped with its standard filter, this means that [f x]
+   tends to infinity as [x] tends to infinity. *)
+
+(* [limit] could take two arguments of type [filter A] and [filter B]. Instead,
+   we take two arguments of type [filterType]. *)
+
+Section Limit.
+
+Variables A B : filterType.
+
+Variable f : A -> B.
+
+Definition limit :=
+  finer (ultimately (image_filterType A f)) (ultimately B).
+
+Lemma limitP:
+  forall P,
+  ultimately (image_filterType A f) P =
+  ultimately A (fun x => P (f x)).
+Proof. reflexivity. Qed.
+
+End Limit.
+Arguments limit : clear implicits.
+
+Lemma limit_id:
+  forall A : filterType,
+  limit A A (fun a : A => a).
+Proof.
+  intros. unfold limit. unfold finer.
+  intros. rewrite limitP. eauto.
+Qed.
+
+(* ---------------------------------------------------------------------------- *)
 
 (* The product of two filters. *)
 
@@ -202,97 +369,28 @@ Definition product : Filter.filter (A1 * A2) :=
     ultimately A1 P1 /\ ultimately A2 P2 /\
     forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2).
 
-Lemma product_nonempty : Filter.universe product.
+Definition product_filterMixin : Filter.mixin_of (A1 * A2).
 Proof.
-  do 2 (exists (fun _ => True)).
-  repeat split; apply filter_universe.
+  eapply Filter.Mixin with product.
+  { do 2 (eexists (fun _ => True)).
+    repeat split; apply filter_universe. }
+  { intros P (P1 & P2 & H1 & H2 & ?).
+    forwards [ a1 H1' ] : filter_member_nonempty H1.
+    forwards [ a2 H2' ] : filter_member_nonempty H2.
+    exists (a1, a2). eauto. }
+  { intros P Q R.
+    intros (P1 & P2 & uP1 & uP2 & ?).
+    intros (Q1 & Q2 & uQ1 & uQ2 & ?).
+    intros HH.
+    exists (fun a1 => P1 a1 /\ Q1 a1).
+    exists (fun a2 => P2 a2 /\ Q2 a2).
+    repeat split; try (apply filter_conj; eauto).
+    intuition eauto. }
 Qed.
 
-Lemma product_members_nonempty : Filter.members_nonempty product.
-Proof.
-  intros P (P1 & P2 & H1 & H2 & ?).
-  pose proof (filter_member_nonempty H1) as [ a1 H1' ].
-  pose proof (filter_member_nonempty H2) as [ a2 H2' ].
-  exists (a1, a2). eauto.
-Qed.
-
-Lemma product_closed_inclusion_intersection :
-  Filter.closed_inclusion_intersection product.
-Proof.
-  intros P Q R.
-  intros (P1 & P2 & uP1 & uP2 & ?).
-  intros (Q1 & Q2 & uQ1 & uQ2 & ?).
-  intros HH.
-  exists (fun a1 => P1 a1 /\ Q1 a1).
-  exists (fun a2 => P2 a2 /\ Q2 a2).
-  repeat split.
-  { eapply filter_closed_under_intersection.
-    exact uP1. exact uQ1. eauto. }
-  { eapply filter_closed_under_intersection.
-    exact uP2. exact uQ2. eauto. }
-  intuition eauto.
-Qed.
-
-Definition product_filterMixin :=
-  FilterMixin
-    product_nonempty
-    product_members_nonempty
-    product_closed_inclusion_intersection.
-
-Definition product_filterType := FilterType (A1 * A2) product_filterMixin.
+Definition product_filterType :=
+  FilterType (A1 * A2) product_filterMixin.
 
 End FilterProduct.
 
 Arguments product : clear implicits.
-
-(* ---------------------------------------------------------------------------- *)
-
-Module OrderedFilter.
-
-Record mixin_of (A : filterType) : Type := Mixin {
-  le : relation A;
-  _ : forall x : A, ultimately A (fun y => le x y)
-}.
-
-Section ClassDef.
-
-Record class_of (A : Type) : Type := Class {
-  base : Filter.class_of A;
-  mixin : mixin_of (Filter.Pack base)
-}.
-
-Structure type := Pack { sort : Type; class : class_of sort }.
-
-Definition filterType (cT : type) := @Filter.Pack (sort cT) (base (class cT)).
-(* TEMPORARY (?) this definition looks natural, but does not match (at least
-   obviously) the way similar ones are written in ssreflect *)
-
-End ClassDef.
-
-Module Exports.
-Coercion base : class_of >-> Filter.class_of.
-Coercion mixin : class_of >-> mixin_of.
-Coercion sort : type >-> Sortclass.
-Coercion filterType : type >-> Filter.type.
-Notation orderedFilterType := type.
-Notation OrderedFilterType T m := (@Pack T m).
-Notation OrderedFilterMixin := Mixin.
-End Exports.
-
-End OrderedFilter.
-Import OrderedFilter.Exports.
-
-Definition orderedFilter_le T := OrderedFilter.le (OrderedFilter.class T).
-Arguments orderedFilter_le : clear implicits.
-
-Section OrderedFilterLaws.
-
-Variable A : orderedFilterType.
-
-Lemma orderedFilterP :
-  forall x, ultimately A (fun y => orderedFilter_le A x y).
-Proof.
-  destruct A as [? [? M]]. destruct M. eauto.
-Qed.
-
-End OrderedFilterLaws.

@@ -51,7 +51,8 @@ Lemma meetSemiLattice_preorder :
   preorder A (le A).
 Proof. destruct A as [? M]. destruct M. eauto. Qed.
 
-Lemma meetSemiLatticeP : MeetSemiLattice.axiom (le A) (meet A).
+Lemma meetSemiLatticeP :
+  forall x y, le A x (meet A x y) /\ le A y (meet A x y).
 Proof. destruct A as [? M]. destruct M. eauto. Qed.
 
 End Laws.
@@ -68,7 +69,10 @@ Definition product_meet (p1 : A * B) (p2 : A * B) :=
   let (a2, b2) := p2 in
   (meet A a1 a2, meet B b1 b2).
 
-Lemma product_meetP : MeetSemiLattice.axiom (product (le A) (le B)) product_meet.
+Lemma product_meetP :
+  forall x y,
+    product (le A) (le B) x (product_meet x y) /\
+    product (le A) (le B) y (product_meet x y).
 Proof.
   intros [x1 y1] [x2 y2]. unfold product. simpl.
   repeat split; apply meetSemiLatticeP.
