@@ -5,6 +5,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import Psatz.
 Require Import List. (* for matching on boxers lists *)
 
 (* We could in principle perform this construction using [bool] instead of [Prop]
@@ -358,6 +359,30 @@ Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
+(* The standard filter on [nat]. *)
+
+Definition nat_filterMixin : Filter.mixin_of nat.
+Proof.
+  eapply Filter.Mixin with
+    (fun (P: nat -> Prop) => exists n0, forall n, le n0 n -> P n).
+  - exists 0%nat. eauto with arith.
+  - intros ? [n0 ?]. exists n0. eauto with arith.
+  - { introv [n0 H0] [n1 H1] H. exists (max n0 n1).
+      intros n ?. apply H.
+      - apply H0. lia.
+      - apply H1. lia. }
+Defined.
+
+Definition nat_filterType := FilterType nat nat_filterMixin.
+
+Lemma natP :
+  forall (P : nat -> Prop),
+  ultimately nat_filterType P =
+  exists n0, forall n, le n0 n -> P n.
+Proof. reflexivity. Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
 (* The product of two filters. *)
 
 (* The members of the product filter are all subsets [P] which contain a product
@@ -402,3 +427,12 @@ Definition product_filterType :=
 End FilterProduct.
 
 Arguments product : clear implicits.
+
+Lemma productP :
+  forall (A1 A2 : filterType) P,
+  ultimately (product_filterType A1 A2) P =
+  (exists P1 P2,
+   ultimately A1 P1 /\
+   ultimately A2 P2 /\
+   (forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2))).
+Proof. reflexivity. Qed.
