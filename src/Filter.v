@@ -1,12 +1,10 @@
 Require Import Coq.Logic.Classical_Pred_Type.
-Require Import Relations.
 Require Import TLC.LibTactics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Require Import Psatz.
-Require Import List. (* for matching on boxers lists *)
 
 (* We could in principle perform this construction using [bool] instead of [Prop]
    as the codomain of predicates. However, [bool] does not support quantification
