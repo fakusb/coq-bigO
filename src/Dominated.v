@@ -153,6 +153,56 @@ Proof.
   intros. nia.
 Qed.
 
+(* This lemma offers a general mechanism for transforming the parameters
+   of the asymptotic analysis. *)
+
+(* Let [f] and [g] be functions of a parameter [j]. Assume [f] is dominated
+   by [g]. Now, let [p] be a function of [I] into [J], which defines [j] in
+   terms of [i]. Assume that [p i] becomes arbitrarily large as [i] grows.
+   Then, [f . p] is dominated by [g . p]. These are functions of [i]. *)
+
+(* The converse implication is false, as the image of the function [p] could
+   lie in a subset of well-chosen values of [j] outside of which [f] is not
+   dominated by [g]. *)
+
+(* This lemma is analogous to [domin_comp] in Coquelicot. *)
+
+Lemma dominated_comp :
+  forall (I J: filterType) (f g: J -> Z),
+  dominated J f g ->
+  forall p : I -> J,
+  limit I J p ->
+  dominated I (fun i => f (p i)) (fun i => g (p i)).
+Proof.
+  (* The statement is really quite obvious, since [dominated] is defined
+     in terms of [ultimately], and [limit _ _ p] means precisely that [p]
+     maps [ultimately] to [ultimately]. *)
+  introv ( c & cpos & u ) hp.
+  (* The multiplicative factor is unaffected by the transformation. *)
+  exists c. split; eauto.
+  (* The hypothesis [u] states that for large enough [j], [f j] is
+     bounded by [c] times [g j]. The hypothesis [hp] states that
+     [p i] becomes arbitrarily large as [i] becomes large enough.
+     The result follows directly from the combination of these
+     hypotheses. *)
+  eapply filter_closed_under_inclusion.
+    eapply hp. eexact u.
+    simpl. eauto.
+Qed.
+
+(* Note: the conclusion of the above lemma could be rephrased as follows. *)
+
+Goal
+  forall (I J: filterType),
+  forall f g : J -> Z,
+  forall p : I -> J,
+  dominated I (fun i => f (p i)) (fun i => g (p i)) <->
+  dominated (image_filterType I p) f g.
+Proof.
+  intros. unfold dominated, image. tauto.
+Qed.
+
+
 (* Property 2
 
   pour f, g: NxB → R⁺, si ultimately x, g(x) > 0 et f ∈ O (g), alors
