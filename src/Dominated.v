@@ -8,6 +8,8 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Require Import Psatz. (* nia *)
 Require Import Filter.
+Require Import Big.
+Require Import LibFunOrd.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -149,6 +151,204 @@ Proof.
   split; [ nia |].
   revert g1P g2P u1 u2; filter_closed_under_intersection.
   intros. nia.
+Qed.
+
+(* Property 2
+
+  pour f, g: NxB → R⁺, si ultimately x, g(x) > 0 et f ∈ O (g), alors
+  λ(x, y). Σᵢ₌₀ˣ f(i, y) ∈ O(λ(x, y). Σᵢ₌₀ˣ g(i, y))
+*)
+
+Obligation Tactic := try solve [ intros; ring_simplify; omega ].
+Program Instance unit_plus : Unit Z.add := { unit := 0 }.
+Program Instance commutative_plus : Commutative Z.add.
+Program Instance associative_plus : Associative Z.add.
+Program Instance unit_mult : Unit Z.mul := { unit := 1 }.
+Program Instance commutative_mult : Commutative Z.mul.
+Program Instance associative_mult : Associative Z.mul.
+
+Definition cumul (A: Type) (lo: nat) (f: A * nat -> Z) : A * nat -> Z :=
+  fun an => let (a, n) := an in
+  \big[Z.add]_(i <- interval lo n) f (a, i).
+
+Lemma cumulP :
+  forall A lo (f: A * nat -> Z) a n,
+  cumul lo f (a, n) = \big[Z.add]_(i <- interval lo n) f (a, i).
+Proof. reflexivity. Qed.
+
+Lemma cumul_split (k: nat) :
+  forall (A: Type) lo (f : A * nat -> Z) a n,
+  le lo k ->
+  le k n ->
+  cumul lo f (a, n) = cumul lo f (a, k)%nat + cumul k f (a, n).
+Proof. admit. (* TODO *) Admitted.
+
+Arguments cumul_split k [A] [lo] f a [n] _ _.
+
+Lemma cumul_ge_single_term (k: nat) :
+  forall (A: Type) lo (f : A * nat -> Z) a n,
+  le lo k ->
+  le k n ->
+  f (a, k) <= cumul lo f (a, n).
+Proof. admit. (* TODO *) Admitted.
+
+Arguments cumul_ge_single_term k [A] [lo] f a [n] _ _ _.
+
+Lemma big_const_Z :
+  forall lo hi c,
+  \big[Z.add]_(_ <- interval lo hi) c = (Z.of_nat hi - Z.of_nat lo) * c.
+Proof. admit. (* TODO *) Admitted.
+
+
+Require Export Coq.Setoids.Setoid. (* required for [rewrite] *)
+Require Export Coq.Classes.Morphisms.
+
+Program Instance proper_Zplus: Proper (Z.le ++> Z.le ++> Z.le) Z.add.
+Next Obligation.
+  intros x1 y1 h1 x2 y2 h2. omega.
+Qed.
+
+Goal (forall a b c d, a <= b -> c + b <= c + d -> c + a <= c + d).
+Proof.
+  introv a_le_b cb_le_cd.
+  rewrite a_le_b.
+  assumption.
+Qed.
+
+Program Instance proper_Zmult_left:
+  forall x, 0 <= x ->
+  Proper (Z.le ++> Z.le) (Z.mul x).
+Next Obligation.
+  intros x1 y1 h1. nia.
+Qed.
+
+(* Program Instance proper_Zmult_right: *)
+(*   forall y, 0 <= y -> *)
+(*   forall y, Proper (Z.le ++> Z.le) (fun x => Z.mul x y). *)
+(* Next Obligation. *)
+(*   intros x2 y2 h2. nia. *)
+(* Qed. *)
+
+Hint Extern 100 (0 <= _) => assumption : typeclass_instances.
+
+Goal forall a b c d, a <= b -> 0 <= c -> c * b <= c * d -> c * a <= c * d.
+Proof.
+  introv a_le_b O_le_c cb_le_cd.
+  rewrite a_le_b.
+  assumption.
+Qed.
+
+(* Goal forall a b c d, a <= b -> 0 <= c -> b * c <= d * c -> a * c <= d * c. *)
+(* introv a_le_b O_le_c bc_le_dc. *)
+(* rewrite a_le_b. *)
+
+Obligation Tactic := intros; simpl; ring_simplify; omega.
+Program Instance distributive_mul_add : Distributive Z.mul Z.add.
+
+Lemma big_nonneg_Z :
+  forall lo hi (f: nat -> Z),
+  (forall x, 0 <= f x) ->
+  0 <= \big[Z.add]_(i <- interval lo hi) f i.
+Proof.
+  intros.
+  rewrite <-big_covariant with
+    (R := Z.le)
+    (f := fun (_:nat) => 0);
+  try typeclass.
+  rewrite big_const_Z. nia.
+Qed.
+
+Lemma dominated_big_sum :
+  forall (A: filterType) (f g : A * nat_filterType -> Z),
+    (forall x, 0 <= f x) ->
+    (forall x, 0 <= g x) ->
+    dominated (product_filterType A nat_filterType) f g ->
+    (forall a, monotonic le Z.le (fun i => f (a, i))) ->
+    dominated (product_filterType A nat_filterType) (cumul 0 f) (cumul 0 g).
+Proof.
+  introv f_nonneg g_nonneg dom_f_g f_mon. simpl in *.
+  destruct dom_f_g as (c & c_pos & U_f_le_g).
+
+  rewrite productP in U_f_le_g.
+  destruct U_f_le_g as (P1 & P2 & UP1 & UP2 & H).
+  rewrite natP in UP2. destruct UP2 as [N HN].
+
+  pose (N_ := Z.of_nat N).
+  exists (c * (N_ + 1)). splits; [ subst N_; nia |].
+  rewrite productP.
+
+  exists P1 (fun n => le N n). splits~.
+  { rewrite natP. exists N. eauto. }
+
+  intros a n P1_a N_le_n.
+  rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
+  rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
+
+  rewrite (cumul_split N) with (f := f); try omega.
+  assert (Hfg: forall i, le N i -> f (a, i) <= c * g (a, i)). {
+    introv N_le_i.
+    forwards HN_i: HN N_le_i.
+    forwards H': H P1_a HN_i.
+    do 2 (rewrite Z.abs_eq in H'); eauto.
+  }
+
+  rewrite cumulP with (f := f) (lo := N).
+  rewrite big_covariant with
+    (xs := interval N n)
+    (g := (fun i => c * g (a, i)))
+    (R := Z.le);
+  try typeclass.
+  Focus 2. eauto using in_interval_lo.
+
+  rewrite <-big_map_distributive; try typeclass.
+  rewrite cumulP with (f := f) (lo := 0%nat).
+  rewrite big_covariant with
+    (xs := interval 0 N)
+    (g := (fun _ => f (a, N))); try typeclass.
+  Focus 2.
+  { introv inI.
+    forwards x_lt_N: in_interval_hi inI.
+    forwards x_le_N: Nat.lt_le_incl x_lt_N.
+    applys f_mon x_le_N. } Unfocus.
+
+  rewrite big_const_Z. fold N_. rewrite Z.sub_0_r.
+  assert (O_le_N: 0 <= N_) by (subst N_; lia).
+  rewrite Hfg; try omega. clear O_le_N. (* meh *)
+  rewrite <-cumulP.
+
+  assert (split_cumul_g:
+            c * (N_ + 1) * cumul 0 g (a, n) =
+            c * (N_ + 1) * cumul 0 g (a, N) +
+            c * N_ * cumul N g (a, n) +
+            c * cumul N g (a, n)).
+  { match goal with |- _ = ?r => remember r as rhs end.
+    rewrite (cumul_split N); try omega.
+    rewrite Z.mul_add_distr_l.
+
+    subst rhs. rewrite Zplus_assoc_reverse.
+    apply Zplus_eq_compat; eauto.
+
+    match goal with |- _ = ?r => remember r as rhs end.
+    rewrite Z.mul_add_distr_l.
+    rewrite Z.mul_add_distr_r.
+    ring_simplify.
+    subst rhs. reflexivity. }
+
+  rewrite split_cumul_g.
+  apply Zplus_le_compat_r.
+
+  assert (g_le_cumul: c * N_ * g (a, N) <= c * N_ * cumul N g (a, n)).
+  { apply Zmult_le_compat_l.
+    - apply cumul_ge_single_term; omega.
+    - subst N_. nia. }
+
+  rewrite <-g_le_cumul.
+  assert (cancel_lemma: forall a b c, a = c -> 0 <= b -> a <= b + c)
+    by (intros; nia).
+  apply cancel_lemma. nia.
+  apply Z.mul_nonneg_nonneg.
+  { subst N_. nia. }
+  { apply big_nonneg_Z. eauto. }
 Qed.
 
 End DominatedLaws.
