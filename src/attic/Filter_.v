@@ -762,3 +762,102 @@ Proof.
   { rewrite canonicalP. eauto. }
   eauto. eauto.
 Qed.
+
+
+(* ---------------------------------------------------------------------------- *)
+
+Module OrderedFilter.
+
+Record mixin_of (A : filterType) : Type := Mixin {
+  le : binary A;
+  _ : forall x : A, ultimately A (fun y => le x y)
+}.
+
+Section ClassDef.
+
+Record class_of (A : Type) : Type := Class {
+  base : Filter.class_of A;
+  mixin : mixin_of (Filter.Pack base)
+}.
+
+Structure type := Pack { sort : Type; class : class_of sort }.
+
+Definition filterType (cT : type) := @Filter.Pack (sort cT) (base (class cT)).
+(* TEMPORARY (?) this definition looks natural, but does not match (at least *)
+(*    obviously) the way similar ones are written in ssreflect *)
+
+End ClassDef.
+
+Module Exports.
+Coercion base : class_of >-> Filter.class_of.
+Coercion mixin : class_of >-> mixin_of.
+Coercion sort : type >-> Sortclass.
+Coercion filterType : type >-> Filter.type.
+Notation orderedFilterType := type.
+Notation OrderedFilterType T m := (@Pack T m).
+Notation OrderedFilterMixin := Mixin.
+End Exports.
+
+End OrderedFilter.
+Export OrderedFilter.Exports.
+
+Definition filter_le T := OrderedFilter.le (OrderedFilter.class T).
+Arguments filter_le : clear implicits.
+
+Section OrderedFilterLaws.
+
+Variable A : orderedFilterType.
+
+Lemma orderedFilterP :
+  forall x, ultimately A (fun y => filter_le A x y).
+Proof.
+  destruct A as [? [? M]]. destruct M. eauto.
+Qed.
+
+End OrderedFilterLaws.
+
+Arguments orderedFilterP : clear implicits.
+
+Section OrderedFilterProduct.
+
+Variable A1 A2 : orderedFilterType.
+
+Definition product_orderedFilterMixin :
+  OrderedFilter.mixin_of (product_filterType A1 A2).
+Proof.
+  eapply OrderedFilter.Mixin with
+    (prod2 (filter_le A1) (filter_le A2)).
+  intros [ x1 x2 ].
+  forwards H1: orderedFilterP A1 x1.
+  forwards H2: orderedFilterP A2 x2.
+  rewrite productP. do 2 eexists. splits; [apply H1 | apply H2 | ..].
+  unfold prod2. eauto.
+Defined.
+
+Definition product_orderedFilterClass :
+  OrderedFilter.class_of (product_filterType A1 A2).
+Proof.
+  eapply OrderedFilter.Class with
+    (Filter.class (product_filterType A1 A2)).
+  apply product_orderedFilterMixin.
+Defined.
+
+Definition product_orderedFilterType :=
+  OrderedFilterType (A1 * A2) product_orderedFilterClass.
+
+End OrderedFilterProduct.
+
+Lemma productOrdP :
+  forall (A1 A2 : orderedFilterType) P,
+  ultimately (product_orderedFilterType A1 A2) P =
+  (exists P1 P2,
+   ultimately A1 P1 /\
+   ultimately A2 P2 /\
+   (forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2))).
+Proof. reflexivity. Qed.
+
+Lemma productOrdLeP :
+  forall A1 A2 p1 p2,
+  filter_le (product_orderedFilterType A1 A2) p1 p2 =
+  (filter_le A1 (fst p1) (fst p2) /\ filter_le A2 (snd p1) (snd p2)).
+Proof. intros ? ? [? ?] [? ?]. reflexivity. Qed.
