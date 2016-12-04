@@ -185,20 +185,23 @@ End FilterLaws.
 (* ---------------------------------------------------------------------------- *)
 (* A set of tactics useful to intersect an arbitrary number of filters.
 
-   In context:
-     U1: ultimately P1
-     U2: ultimately P2
-     ...
-     Un: ultimately Pn
-     ====================
-      ultimately P
+   [filter_intersect] turns a goal of the form:
 
-   [filter_intersect_many U: (>> U1 U2 .. Un)] adds the
-   hypothesis [U: ultimately (fun x => P1 x /\ .. /\ Pn x)]
-   to the context.
+     ultimately A P1 -> ... ultimately A Pn -> Q
 
-   [filter_closed_under_intersection_many (>> U1 U2 .. Un)] changes the
-   goal to [forall x, P1 x /\ ... /\ Pn x -> P x].
+   into:
+
+     ultimately A (P1 /\ ... /\ Pn) -> Q
+
+
+
+   [filter_closed_under_intersection] turns a goal of the form:
+
+     ultimately A P1 -> ... ultimately A Pn -> ultimately A P
+
+   into:
+
+     forall x, P1 x /\ ... /\ Pn x -> P
  *)
 
 Lemma filter_conj_alt :
@@ -211,57 +214,62 @@ Proof. intros. apply filter_conj. tauto. Qed.
 Ltac filter_intersect_two_base I U1 U2 :=
   lets I: filter_conj_alt U1 U2.
 
-Tactic Notation "filter_intersect_two" simple_intropattern(I) ":" constr(U1) constr(U2) :=
-  filter_intersect_two_base I U1 U2.
+Ltac filter_intersect_two :=
+  let U1 := fresh in
+  let U2 := fresh in
+  let U := fresh in
+  intros U1 U2;
+  filter_intersect_two_base U U1 U2;
+  revert U; clear U1; clear U2.
 
-Tactic Notation "filter_intersect_two" ":" constr(U1) constr(U2) :=
-  let H := fresh in filter_intersect_two H: U1 U2.
-
-Ltac filter_intersect_aux acc acc_T args final :=
-  match args with
-  | (@boxer ?T ?t)::?vs =>
-    let acc_pack := constr:(acc:acc_T) in
-    let t_pack := constr:(t:T) in
-    let t' := fresh in
-    filter_intersect_two_base t' t_pack acc;
-    clear acc;
-    match type of t' with
-      ?T' => filter_intersect_aux t' T' vs final
-    end
-  | nil =>
-    rename acc into final
+Ltac filter_intersect :=
+  match goal with
+  | |- (ultimately ?A _) -> (ultimately ?A _) -> _ =>
+    let U := fresh in
+    intro U;
+    filter_intersect;
+    revert U;
+    filter_intersect_two
+  | |- (ultimately ?A _) -> (ultimately ?B _) -> _ =>
+    idtac
+  | |- (ultimately _ _) -> _ =>
+    idtac
   end.
 
-Ltac filter_intersect_aux_setup args final :=
-  match args with
-  | (@boxer ?T ?t)::?vs =>
-    let acc := fresh in
-    pose proof t as acc;
-    filter_intersect_aux acc T vs final
-  end.
+Ltac filter_closed_under_intersection :=
+  filter_intersect;
+  let U := fresh in
+  intro U;
+  applys filter_closed_under_inclusion U;
+  clear U.
 
-Ltac list_rev acc l :=
-  match l with
-  | ?x::?xs => list_rev (x::acc) xs
-  | nil => acc
-  end.
+Goal
+  forall A P1 P2 P3 B P4 P5,
+  (ultimately A (fun x => P1 x /\ P2 x /\ P3 x) -> ultimately B P4 -> ultimately B P5 -> False) ->
+  ultimately A P1 ->
+  ultimately A P2 ->
+  ultimately A P3 ->
+  ultimately B P4 ->
+  ultimately B P5 ->
+  False.
+Proof.
+  do 8 intro.
+  filter_intersect.
+  assumption.
+Qed.
 
-Ltac filter_intersect_many_base I Ei :=
-  let args := list_boxer_of Ei in
-  let args_rev := list_rev (@nil Boxer) args in
-  filter_intersect_aux_setup args_rev I.
-
-Tactic Notation "filter_intersect_many" ident(I) ":" constr(E) :=
-  filter_intersect_many_base I E.
-
-Tactic Notation "filter_intersect_many" ":" constr(E) :=
-  let H := fresh in filter_intersect_many H: E.
-
-Ltac filter_closed_under_intersection_many E :=
-  let H := fresh in
-  filter_intersect_many H: E;
-  applys filter_closed_under_inclusion H;
-  clear H.
+Goal
+  forall (A: filterType) (P1 P2 P3 P4 : A -> Prop),
+  (forall x, (P1 x /\ P2 x /\ P3 x) -> P4 x) ->
+  ultimately A P1 ->
+  ultimately A P2 ->
+  ultimately A P3 ->
+  ultimately A P4.
+Proof.
+  do 6 intro.
+  filter_closed_under_intersection.
+  assumption.
+Abort.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -386,7 +394,7 @@ Proof.
     exists (fun a2 => P2 a2 /\ Q2 a2).
     repeat split; try (apply filter_conj; eauto).
     intuition eauto. }
-Qed.
+Defined.
 
 Definition product_filterType :=
   FilterType (A1 * A2) product_filterMixin.

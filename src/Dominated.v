@@ -118,7 +118,7 @@ Lemma dominated_max_sum f g :
   dominated A (fun x => Z.max (f x) (g x)) (fun x => f x + g x).
 Proof.
   intros fpos gpos. exists 1. split; [ eauto with zarith |].
-  filter_closed_under_intersection_many (>> fpos gpos).
+  revert fpos gpos; filter_closed_under_intersection.
   intros. nia.
 Qed.
 
@@ -131,7 +131,7 @@ Lemma dominated_sum_max f g :
   dominated A (fun x => f x + g x) (fun x => Z.max (f x) (g x)).
 Proof.
   intros fpos gpos. exists 2. split; eauto with zarith.
-  filter_closed_under_intersection_many (>> fpos gpos).
+  revert fpos gpos; filter_closed_under_intersection.
   intros. nia.
 Qed.
 
@@ -147,7 +147,7 @@ Proof.
   intros g1P g2P (c1 & c1P & u1) (c2 & c2P & u2).
   exists (Z.max c1 c2).
   split; [ nia |].
-  filter_closed_under_intersection_many (>> g1P g2P u1 u2).
+  revert g1P g2P u1 u2; filter_closed_under_intersection.
   intros. nia.
 Qed.
 
