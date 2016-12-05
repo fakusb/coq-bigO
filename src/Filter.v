@@ -387,18 +387,22 @@ Proof.
   rewrite natP. exists n0. eauto.
 Qed.
 
-Lemma natP_after (lo: nat) :
+Lemma natP_ultimately (cond : nat -> Prop) :
   forall (P : nat -> Prop),
+  ultimately nat_filterType cond ->
   ultimately nat_filterType P =
-  exists n0, lo <= n0 /\ forall n, le n0 n -> P n.
+  exists x0, cond x0 /\ forall x, le x0 x -> P x.
 Proof.
-  intros P. rewrite natP.
+  intros P Ucond. rewrite natP. rewrite natP in Ucond.
+  destruct Ucond as (ncond & Hcond).
   apply prop_ext. split.
-  { intros [n0 H]. exists (max lo n0). splits.
-    - lia.
+  { intros [n0 H]. exists (max ncond n0). splits.
+    - apply Hcond. lia.
     - intros. apply H. lia. }
   { intros (n0 & lo_le_n0 & H). eauto. }
 Qed.
+
+Arguments natP_ultimately [cond] [P] _.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -430,18 +434,22 @@ Proof.
   rewrite ZP. exists x0. eauto.
 Qed.
 
-Lemma ZP_after (lo: Z) :
+Lemma ZP_ultimately (cond : Z -> Prop) :
   forall (P : Z -> Prop),
+  ultimately Z_filterType cond ->
   ultimately Z_filterType P =
-  exists x0, (lo <= x0)%Z /\ forall x, Z.le x0 x -> P x.
+  exists x0, cond x0 /\ forall x, Z.le x0 x -> P x.
 Proof.
-  intros P. rewrite ZP.
+  intros P Ucond. rewrite ZP. rewrite ZP in Ucond.
+  destruct Ucond as (ncond & Hcond).
   apply prop_ext. split.
-  { intros [n0 H]. exists (Z.max lo n0). splits.
-    - lia.
+  { intros [n0 H]. exists (Z.max ncond n0). splits.
+    - apply Hcond. lia.
     - intros. apply H. lia. }
   { intros (n0 & lo_le_n0 & H). eauto. }
 Qed.
+
+Arguments ZP_ultimately [cond] [P] _.
 
 (* ---------------------------------------------------------------------------- *)
 
