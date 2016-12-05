@@ -88,13 +88,23 @@ Variable A : filterType.
 
 (* Howell's Property 3. *)
 
-Lemma dominated_le_transitive f g1 g2 :
+Lemma dominated_le_compat_r f g1 g2 :
   ultimately A (fun x => Z.abs (g1 x) <= Z.abs (g2 x)) ->
   dominated A f g1 ->
   dominated A f g2.
 Proof.
   intros U D.
   apply dominated_transitive with g1; eauto.
+  apply subrelation_ultimately_le_dominated. eauto.
+Qed.
+
+Lemma dominated_le_compat_l f1 f2 g :
+  ultimately A (fun x => Z.abs (f2 x) <= Z.abs (f1 x)) ->
+  dominated A f1 g ->
+  dominated A f2 g.
+Proof.
+  intros U D.
+  apply dominated_transitive with f1; eauto.
   apply subrelation_ultimately_le_dominated. eauto.
 Qed.
 
