@@ -243,32 +243,32 @@ Program Instance unit_mult : Unit Z.mul := { unit := 1 }.
 Program Instance commutative_mult : Commutative Z.mul.
 Program Instance associative_mult : Associative Z.mul.
 
-Definition cumul (A: Type) (lo: nat) (f: A * nat -> Z) : A * nat -> Z :=
+Definition cumul (A: Type) (f: A * nat -> Z) (lo: nat) : A * nat -> Z :=
   fun an => let (a, n) := an in
   \big[Z.add]_(i <- interval lo n) f (a, i).
 
 Lemma cumulP :
-  forall A lo (f: A * nat -> Z) a n,
-  cumul lo f (a, n) = \big[Z.add]_(i <- interval lo n) f (a, i).
+  forall A (f: A * nat -> Z) lo a n,
+  cumul f lo (a, n) = \big[Z.add]_(i <- interval lo n) f (a, i).
 Proof. reflexivity. Qed.
 
 Lemma cumul_split (k: nat) :
-  forall (A: Type) lo (f : A * nat -> Z) a n,
+  forall (A: Type) (f : A * nat -> Z) lo a n,
   le lo k ->
   le k n ->
-  cumul lo f (a, n) = cumul lo f (a, k)%nat + cumul k f (a, n).
+  cumul f lo (a, n) = cumul f lo (a, k)%nat + cumul f k (a, n).
 Proof. admit. (* TODO *) Admitted.
 
-Arguments cumul_split k [A] [lo] f a [n] _ _.
+Arguments cumul_split k [A] f [lo] a [n] _ _.
 
 Lemma cumul_ge_single_term (k: nat) :
-  forall (A: Type) lo (f : A * nat -> Z) a n,
+  forall (A: Type) (f : A * nat -> Z) lo a n,
   le lo k ->
   le k n ->
-  f (a, k) <= cumul lo f (a, n).
+  f (a, k) <= cumul f lo (a, n).
 Proof. admit. (* TODO *) Admitted.
 
-Arguments cumul_ge_single_term k [A] [lo] f a [n] _ _ _.
+Arguments cumul_ge_single_term k [A] f [lo] a [n] _ _ _.
 
 Lemma big_const_Z :
   forall lo hi c,
@@ -300,7 +300,7 @@ Qed.
 
 (* Program Instance proper_Zmult_right: *)
 (*   forall y, 0 <= y -> *)
-(*   forall y, Proper (Z.le ++> Z.le) (fun x => Z.mul x y). *)
+(*   Proper (Z.le ++> Z.le) (fun x => Z.mul x y). *)
 (* Next Obligation. *)
 (*   intros x2 y2 h2. nia. *)
 (* Qed. *)
@@ -335,12 +335,12 @@ Proof.
 Qed.
 
 Lemma dominated_big_sum :
-  forall (A: filterType) (f g : A * nat_filterType -> Z),
+  forall (f g : A * nat_filterType -> Z),
     (forall x, 0 <= f x) ->
     (forall x, 0 <= g x) ->
     dominated (product_filterType A nat_filterType) f g ->
     (forall a, monotonic le Z.le (fun i => f (a, i))) ->
-    dominated (product_filterType A nat_filterType) (cumul 0 f) (cumul 0 g).
+    dominated (product_filterType A nat_filterType) (cumul f 0) (cumul g 0).
 Proof.
   introv f_nonneg g_nonneg dom_f_g f_mon. simpl in *.
   destruct dom_f_g as (c & c_pos & U_f_le_g).
@@ -393,10 +393,10 @@ Proof.
   rewrite <-cumulP.
 
   assert (split_cumul_g:
-            c * (N_ + 1) * cumul 0 g (a, n) =
-            c * (N_ + 1) * cumul 0 g (a, N) +
-            c * N_ * cumul N g (a, n) +
-            c * cumul N g (a, n)).
+            c * (N_ + 1) * cumul g 0 (a, n) =
+            c * (N_ + 1) * cumul g 0 (a, N) +
+            c * N_ * cumul g N (a, n) +
+            c * cumul g N (a, n)).
   { match goal with |- _ = ?r => remember r as rhs end.
     rewrite (cumul_split N); try omega.
     rewrite Z.mul_add_distr_l.
@@ -413,7 +413,7 @@ Proof.
   rewrite split_cumul_g.
   apply Zplus_le_compat_r.
 
-  assert (g_le_cumul: c * N_ * g (a, N) <= c * N_ * cumul N g (a, n)).
+  assert (g_le_cumul: c * N_ * g (a, N) <= c * N_ * cumul g N (a, n)).
   { apply Zmult_le_compat_l.
     - apply cumul_ge_single_term; omega.
     - subst N_. nia. }
