@@ -10,6 +10,7 @@ Require Import Psatz. (* nia *)
 Require Import Filter.
 Require Import Big.
 Require Import LibFunOrd.
+Require Import TLC.LibAxioms.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -188,6 +189,21 @@ Proof.
   eapply filter_closed_under_inclusion.
     eapply hp. eexact u.
     simpl. eauto.
+Qed.
+
+Lemma dominated_comp_eq :
+  forall (I J: filterType) (f g: J -> Z),
+  dominated J f g ->
+  forall (p : I -> J) (fp gp: I -> Z),
+  limit I J p ->
+  (forall i, fp i = f (p i)) ->
+  (forall i, gp i = g (p i)) ->
+  dominated I fp gp.
+Proof.
+  introv domfg limitp fp_eq gp_eq.
+  forwards: func_ext_dep fp_eq.
+  forwards: func_ext_dep gp_eq.
+  subst. apply dominated_comp; eauto.
 Qed.
 
 (* Note: the conclusion of the above lemma could be rephrased as follows. *)
