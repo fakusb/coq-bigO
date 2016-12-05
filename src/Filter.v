@@ -1,9 +1,11 @@
 Require Import Coq.Logic.Classical_Pred_Type.
 Require Import TLC.LibTactics.
+Require Import TLC.LibAxioms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import ZArith.
 Require Import Psatz.
 
 (* We could in principle perform this construction using [bool] instead of [Prop]
@@ -378,6 +380,68 @@ Lemma natP :
   ultimately nat_filterType P =
   exists n0, forall n, le n0 n -> P n.
 Proof. reflexivity. Qed.
+
+Lemma ultimately_ge_nat (n0: nat) :
+  ultimately nat_filterType (fun n => le n0 n).
+Proof.
+  rewrite natP. exists n0. eauto.
+Qed.
+
+Lemma natP_after (lo: nat) :
+  forall (P : nat -> Prop),
+  ultimately nat_filterType P =
+  exists n0, lo <= n0 /\ forall n, le n0 n -> P n.
+Proof.
+  intros P. rewrite natP.
+  apply prop_ext. split.
+  { intros [n0 H]. exists (max lo n0). splits.
+    - lia.
+    - intros. apply H. lia. }
+  { intros (n0 & lo_le_n0 & H). eauto. }
+Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* The standard filter on [Z]. *)
+
+Definition Z_filterMixin : Filter.mixin_of Z.
+Proof.
+  eapply Filter.Mixin with
+    (fun (P: Z -> Prop) => exists n0, forall n, Z.le n0 n -> P n).
+  - exists 0%Z. eauto with arith.
+  - intros ? [n0 ?]. exists n0. eauto with zarith.
+  - { introv [n0 H0] [n1 H1] H. exists (Z.max n0 n1).
+      intros n ?. apply H.
+      - apply H0. lia.
+      - apply H1. lia. }
+Defined.
+
+Definition Z_filterType := FilterType Z Z_filterMixin.
+
+Lemma ZP :
+  forall (P : Z -> Prop),
+  ultimately Z_filterType P =
+  exists n0, forall n, Z.le n0 n -> P n.
+Proof. reflexivity. Qed.
+
+Lemma ultimately_ge_Z (x0: Z) :
+  ultimately Z_filterType (fun x => Z.le x0 x).
+Proof.
+  rewrite ZP. exists x0. eauto.
+Qed.
+
+Lemma ZP_after (lo: Z) :
+  forall (P : Z -> Prop),
+  ultimately Z_filterType P =
+  exists x0, (lo <= x0)%Z /\ forall x, Z.le x0 x -> P x.
+Proof.
+  intros P. rewrite ZP.
+  apply prop_ext. split.
+  { intros [n0 H]. exists (Z.max lo n0). splits.
+    - lia.
+    - intros. apply H. lia. }
+  { intros (n0 & lo_le_n0 & H). eauto. }
+Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
