@@ -339,8 +339,8 @@ Definition limit :=
   finer (ultimately (image_filterType A f)) (ultimately B).
 
 Lemma limitP:
-  forall P,
-  ultimately (image_filterType A f) P =
+  forall (A: filterType) (B: Type) (f: A -> B) P,
+  ultimately (@image_filterType A B f) P =
   ultimately A (fun x => P (f x)).
 Proof. reflexivity. Qed.
 
