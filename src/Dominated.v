@@ -30,11 +30,27 @@ Section Domination.
 Variable A : filterType.
 
 Definition dominated (f g : A -> Z) :=
-  exists c, (0 <= c) /\ ultimately A (fun x => Z.abs (f x) <= c * Z.abs (g x)).
+  exists c, ultimately A (fun x => Z.abs (f x) <= c * Z.abs (g x)).
 
 (* This notion is analogous to [is_domin] in Coquelicot. *)
 
 (* ---------------------------------------------------------------------------- *)
+
+(* The multiplicative constant of [dominated] can always be assumed to be
+   non-negative.
+*)
+
+Lemma dominated_nonneg_const (f g : A -> Z) :
+  dominated f g ->
+  exists c, (0 <= c) /\ ultimately A (fun x => Z.abs (f x) <= c * Z.abs (g x)).
+Proof.
+  intros (c & U).
+  destruct (Z.neg_nonneg_cases c) as [c_neg | c_nonneg].
+  - exists 0. splits; [ omega |].
+    revert U; filter_closed_under_intersection.
+    intros. nia.
+  - eauto.
+Qed.
 
 (* Pointwise inequality implies domination. *)
 
@@ -42,8 +58,7 @@ Lemma subrelation_le_dominated f g :
   (forall x, Z.abs (f x) <= Z.abs (g x)) ->
   dominated f g.
 Proof.
-  exists 1. split; [ eauto with zarith |].
-  apply filter_universe_alt. eauto with zarith.
+  exists 1. apply filter_universe_alt. eauto with zarith.
 Qed.
 
 (* Ultimately pointwise inequality implies domination. *)
@@ -52,7 +67,7 @@ Lemma subrelation_ultimately_le_dominated f g :
   ultimately A (fun x => Z.abs (f x) <= Z.abs (g x)) ->
   dominated f g.
 Proof.
-  intros U. exists 1. split; [ eauto with zarith |].
+  intros U. exists 1.
   apply (filter_closed_under_inclusion U).
   eauto with zarith.
 Qed.
@@ -72,9 +87,10 @@ Qed.
 Lemma dominated_transitive f g h :
   dominated f g -> dominated g h -> dominated f h.
 Proof.
-  intros (c1 & c1P & U1) (c2 & c2P & U2).
+  intros D1 D2.
+  forwards (c1 & c1P & U1): dominated_nonneg_const D1.
+  forwards (c2 & c2P & U2): dominated_nonneg_const D2.
   exists (c1 * c2).
-  split; [ eauto with zarith |].
   apply (filter_closed_under_intersection U1 U2).
   intros. nia.
 Qed.
@@ -117,8 +133,10 @@ Lemma dominated_mul f1 f2 g1 g2 :
   dominated A f2 g2 ->
   dominated A (fun x => (f1 x) * (f2 x)) (fun x => (g1 x) * (g2 x)).
 Proof.
-  intros (c1 & c1_pos & U_f1_g1) (c2 & c2_pos & U_f2_g2).
-  exists (c1 * c2). split; [ eauto with zarith |].
+  intros D1 D2.
+  forwards (c1 & c1_pos & U_f1_g1): dominated_nonneg_const D1.
+  forwards (c2 & c2_pos & U_f2_g2): dominated_nonneg_const D2.
+  exists (c1 * c2).
   apply (filter_closed_under_intersection U_f1_g1 U_f2_g2).
   intros. nia.
 Qed.
@@ -130,7 +148,7 @@ Lemma dominated_max_sum f g :
   ultimately A (fun x => 0 <= g x) ->
   dominated A (fun x => Z.max (f x) (g x)) (fun x => f x + g x).
 Proof.
-  intros fpos gpos. exists 1. split; [ eauto with zarith |].
+  intros fpos gpos. exists 1.
   revert fpos gpos; filter_closed_under_intersection.
   intros. nia.
 Qed.
@@ -143,7 +161,7 @@ Lemma dominated_sum_max f g :
   ultimately A (fun x => 0 <= g x) ->
   dominated A (fun x => f x + g x) (fun x => Z.max (f x) (g x)).
 Proof.
-  intros fpos gpos. exists 2. split; eauto with zarith.
+  intros fpos gpos. exists 2.
   revert fpos gpos; filter_closed_under_intersection.
   intros. nia.
 Qed.
@@ -157,9 +175,8 @@ Lemma dominated_sum f1 f2 g1 g2 :
   dominated A f2 g2 ->
   dominated A (fun x => f1 x + f2 x) (fun x => g1 x + g2 x).
 Proof.
-  intros g1P g2P (c1 & c1P & u1) (c2 & c2P & u2).
+  intros g1P g2P (c1 & u1) (c2 & u2).
   exists (Z.max c1 c2).
-  split; [ nia |].
   revert g1P g2P u1 u2; filter_closed_under_intersection.
   intros. nia.
 Qed.
@@ -188,9 +205,9 @@ Proof.
   (* The statement is really quite obvious, since [dominated] is defined
      in terms of [ultimately], and [limit _ _ p] means precisely that [p]
      maps [ultimately] to [ultimately]. *)
-  introv ( c & cpos & u ) hp.
+  introv ( c & u ) hp.
   (* The multiplicative factor is unaffected by the transformation. *)
-  exists c. split; eauto.
+  exists c.
   (* The hypothesis [u] states that for large enough [j], [f j] is
      bounded by [c] times [g j]. The hypothesis [hp] states that
      [p i] becomes arbitrarily large as [i] becomes large enough.
@@ -343,14 +360,15 @@ Lemma dominated_big_sum :
     dominated (product_filterType A nat_filterType) (cumul f 0) (cumul g 0).
 Proof.
   introv f_nonneg g_nonneg dom_f_g f_mon. simpl in *.
-  destruct dom_f_g as (c & c_pos & U_f_le_g).
+  forwards (c & c_pos & U_f_le_g): dominated_nonneg_const dom_f_g.
+  clear dom_f_g.
 
   rewrite productP in U_f_le_g.
   destruct U_f_le_g as (P1 & P2 & UP1 & UP2 & H).
   rewrite natP in UP2. destruct UP2 as [N HN].
 
   pose (N_ := Z.of_nat N).
-  exists (c * (N_ + 1)). splits; [ subst N_; nia |].
+  exists (c * (N_ + 1)).
   rewrite productP.
 
   exists P1 (fun n => le N n). splits~.
