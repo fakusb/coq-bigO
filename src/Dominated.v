@@ -445,4 +445,24 @@ Proof.
   { apply big_nonneg_Z. eauto. }
 Qed.
 
+Lemma dominated_big_sum_eq :
+  forall (f g sum_f sum_g : A * nat_filterType -> Z),
+    (forall x, 0 <= f x) ->
+    (forall x, 0 <= g x) ->
+    dominated (product_filterType A nat_filterType) f g ->
+    (forall a, monotonic le Z.le (fun i => f (a, i))) ->
+    (forall a i, sum_f (a, i) = cumul f 0 (a, i)) ->
+    (forall a i, sum_g (a, i) = cumul g 0 (a, i)) ->
+    dominated (product_filterType A nat_filterType) sum_f sum_g.
+Proof.
+  introv ? ? ? ? sum_f_eq sum_g_eq.
+  assert (sum_f_eq': forall x, sum_f x = cumul f 0 x).
+  { intros [? ?]. eauto. }
+  assert (sum_g_eq': forall x, sum_g x = cumul g 0 x).
+  { intros [? ?]. eauto. }
+  forwards: func_ext_dep sum_f_eq'.
+  forwards: func_ext_dep sum_g_eq'.
+  subst. applys dominated_big_sum; eauto.
+Qed.
+
 End DominatedLaws.
