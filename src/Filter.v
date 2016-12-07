@@ -149,6 +149,13 @@ Proof.
     tauto. }
 Qed.
 
+Lemma filter_conj_alt :
+  forall P1 P2,
+    ultimately A P1 ->
+    ultimately A P2 ->
+    ultimately A (fun x => P1 x /\ P2 x).
+Proof. intros. apply filter_conj. tauto. Qed.
+
 (* An existential quantifier can be pushed into [ultimately]. That is,
    [exists/ultimately] implies [ultimately/exists]. The converse is false; to
    see this, replace [ultimately] with [forall], which is one possible
@@ -205,13 +212,6 @@ End FilterLaws.
      forall x, P1 x /\ ... /\ Pn x -> P
  *)
 
-Lemma filter_conj_alt :
-  forall A P1 P2,
-    ultimately A P1 ->
-    ultimately A P2 ->
-    ultimately A (fun x => P1 x /\ P2 x).
-Proof. intros. apply filter_conj. tauto. Qed.
-
 Ltac filter_intersect_two_base I U1 U2 :=
   lets I: filter_conj_alt U1 U2.
 
@@ -243,6 +243,8 @@ Ltac filter_closed_under_intersection :=
   intro U;
   applys filter_closed_under_inclusion U;
   clear U.
+
+(* Test goals *)
 
 Goal
   forall A P1 P2 P3 B P4 P5,
@@ -517,13 +519,14 @@ Proof. reflexivity. Qed.
 Lemma product_swap :
   forall (A1 A2 : filterType) P,
   ultimately (product_filterType A1 A2) P ->
-  ultimately (product_filterType A2 A1)
-    (fun p => let (y, x) := p in P (x, y)).
+  ultimately (product_filterType A2 A1) (fun p => let (y, x) := p in P (x, y)).
 Proof.
   introv UP.
   rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
   rewrite productP. exists P2 P1. splits~.
 Qed.
+
+(* Symmetric product implies both dissymetric products. *)
 
 Lemma product_dissym_l :
   forall (A1 A2 : filterType) P,
@@ -547,6 +550,35 @@ Proof.
   apply (product_dissym_l UP').
 Qed.
 
+(* Disprove some facts about [product] that may seem true. *)
+
+(* Symmetric product is strictly stronger than dissymetric products. *)
+Goal
+  (forall (A1 A2 : filterType) P,
+   ultimately A1 (fun x => ultimately A2 (fun y => P (x, y))) ->
+   ultimately A2 (fun y => ultimately A1 (fun x => P (x, y))) ->
+   ultimately (product_filterType A1 A2) P) ->
+  False.
+Proof.
+  intro H.
+  specializes H nat_filterType nat_filterType
+    (fun (p: nat * nat) => let (x, y) := p in x < y \/ y < x).
+  simpl in H.
+  specializes H ___.
+  { rewrite natP. exists 0. intros.
+    rewrite natP. exists (n+1). intros. lia. }
+  { rewrite natP. exists 0. intros.
+    rewrite natP. exists (n+1). intros. lia. }
+  rewrite productP in H. destruct H as (P1 & P2 & UP1 & UP2 & HP).
+  rewrite natP in UP1, UP2. destruct UP1 as (x0 & HP1). destruct UP2 as (y0 & HP2).
+
+  destruct (Nat.le_gt_cases x0 y0).
+  { specializes HP y0 y0 ___. lia. }
+  { specializes HP x0 x0 ___. apply HP2. lia. lia. }
+Qed.
+
+(* Similarly, one cannot prove a property on a product filter by proving it
+   component-by-component. *)
 Goal
   (forall (A1 A2 : filterType) P Q,
    ultimately A1 (fun x =>
