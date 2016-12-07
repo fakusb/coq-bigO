@@ -460,7 +460,14 @@ Arguments ZP_ultimately [cond] [P] _.
    filters, respectively. *)
 
 (* This is a symmetric notion of product. It is *not* the same as writing
-   [ultimately a1, [ultimately a2, P (a1, a2)]], which is dissymmetric. *)
+   [ultimately A1 (fun a1 => ultimately A2 (fun a2 => P (a1, a2)))], which is
+   dissymmetric.
+
+   The symmetric product implies the dissymetric ones, but the converse is
+   false. For example, if P (x, y) = (x <= y), then
+   [ultimately (fun x => ultimately (fun y => P (x, y)))] is true, but not
+   [ultimately P].
+*)
 
 Section FilterProduct.
 
@@ -506,3 +513,66 @@ Lemma productP :
    ultimately A2 P2 /\
    (forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2))).
 Proof. reflexivity. Qed.
+
+Lemma product_swap :
+  forall (A1 A2 : filterType) P,
+  ultimately (product_filterType A1 A2) P ->
+  ultimately (product_filterType A2 A1)
+    (fun p => let (y, x) := p in P (x, y)).
+Proof.
+  introv UP.
+  rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
+  rewrite productP. exists P2 P1. splits~.
+Qed.
+
+Lemma product_dissym_l :
+  forall (A1 A2 : filterType) P,
+  ultimately (product_filterType A1 A2) P ->
+  ultimately A1 (fun x => ultimately A2 (fun y => P (x, y))).
+Proof.
+  introv UP. rewrite productP in UP.
+  destruct UP as (P1 & P2 & UP1 & UP2 & HP).
+  revert UP1; filter_closed_under_intersection. introv P1a.
+  revert UP2; filter_closed_under_intersection. introv P2a.
+  apply HP; eauto.
+Qed.
+
+Lemma product_dissym_r :
+  forall (A1 A2 : filterType) P,
+  ultimately (product_filterType A1 A2) P ->
+  ultimately A2 (fun y => ultimately A1 (fun x => P (x, y))).
+Proof.
+  introv UP.
+  forwards UP': product_swap UP.
+  apply (product_dissym_l UP').
+Qed.
+
+Goal
+  (forall (A1 A2 : filterType) P Q,
+   ultimately A1 (fun x =>
+     ultimately A2 (fun y => P (x, y)) ->
+     ultimately A2 (fun y => Q (x, y))) ->
+   ultimately (product_filterType A1 A2) P ->
+   ultimately (product_filterType A1 A2) Q) ->
+  False.
+Proof.
+  intro H.
+  specializes H Z_filterType Z_filterType
+    (fun (_: Z * Z) => True)
+    (fun (p: Z * Z) => let (x, y) := p in Z.le x y).
+  simpl in H.
+  specializes H ___.
+  { rewrite ZP. exists 0%Z. intros.
+    rewrite ZP. exists n. eauto. }
+  { apply filter_universe. }
+  rewrite productP in H. destruct H as (P1 & P2 & UP1 & UP2 & HP).
+  rewrite ZP in UP1, UP2. destruct UP1 as (x0 & HP1). destruct UP2 as (y0 & HP2).
+
+  destruct (Z.le_gt_cases x0 y0).
+  { specializes HP (y0 + 1)%Z y0 ___.
+    apply HP1. lia. apply HP2. lia.
+    lia. }
+  { specializes HP x0 y0 ___.
+    apply HP1. lia. apply HP2. lia.
+    lia. }
+Qed.
