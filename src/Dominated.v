@@ -371,13 +371,13 @@ Qed.
 
 Lemma dominated_big_sum :
   forall (f g : A * Z_filterType -> Z) (lo: Z),
-    (forall a i, lo <= i -> 0 <= f (a, i)) ->
-    (forall a i, lo <= i -> 0 <= g (a, i)) ->
+    ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
+    ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
     dominated (product_filterType A Z_filterType) f g ->
     (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
     dominated (product_filterType A Z_filterType) (cumul f lo) (cumul g lo).
 Proof.
-  introv f_nonneg g_nonneg dom_f_g f_mon. simpl in *.
+  introv Uf_nonneg Ug_nonneg dom_f_g f_mon. simpl in *.
   forwards (c & c_pos & U_f_le_g): dominated_nonneg_const dom_f_g.
   clear dom_f_g.
 
@@ -388,8 +388,12 @@ Proof.
 
   exists (c * (N - lo + 1)). rewrite productP.
 
-  exists P1 (fun n => Z.le N n). splits~. apply ultimately_ge_Z.
-  intros a n P1_a N_le_n.
+  revert Uf_nonneg Ug_nonneg UP1; filter_intersect; intro UP1'.
+
+  eexists. exists (fun n => Z.le N n). splits.
+  { apply UP1'. }
+  { apply ultimately_ge_Z. }
+  intros a n (f_nonneg & g_nonneg & P1_a) N_le_n.
   rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
   rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
 
@@ -464,8 +468,8 @@ Qed.
 
 Lemma dominated_big_sum_eq :
   forall (f g sum_f sum_g : A * Z_filterType -> Z) (lo: Z),
-    (forall a i, lo <= i -> 0 <= f (a, i)) ->
-    (forall a i, lo <= i -> 0 <= g (a, i)) ->
+    ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
+    ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
     dominated (product_filterType A Z_filterType) f g ->
     (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
     (forall a i, sum_f (a, i) = cumul f lo (a, i)) ->
