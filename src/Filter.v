@@ -552,7 +552,8 @@ Qed.
 
 (* Disprove some facts about [product] that may seem true. *)
 
-(* Symmetric product is strictly stronger than dissymetric products. *)
+(* Dissymetric products do not imply symmetric product.
+   Symmetric product is strictly stronger than dissymetric products. *)
 Goal
   (forall (A1 A2 : filterType) P,
    ultimately A1 (fun x => ultimately A2 (fun y => P (x, y))) ->
