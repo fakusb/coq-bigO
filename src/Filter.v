@@ -516,14 +516,16 @@ Lemma productP :
    (forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2))).
 Proof. reflexivity. Qed.
 
+Definition swap (A1 A2 B : Type) (f: A1 * A2 -> B) : A2 * A1 -> B :=
+  fun p => let (y, x) := p in f (x, y).
+
 Lemma product_swap :
   forall (A1 A2 : filterType) P,
-  ultimately (product_filterType A1 A2) P ->
-  ultimately (product_filterType A2 A1) (fun p => let (y, x) := p in P (x, y)).
+  ultimately (product_filterType A1 A2) P <->
+  ultimately (product_filterType A2 A1) (swap P).
 Proof.
-  introv UP.
-  rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
-  rewrite productP. exists P2 P1. splits~.
+  intros. do 2 rewrite productP.
+  split; introv (P1 & P2 & UP1 & UP2 & HP); exists P2 P1; unfold swap in *; splits~.
 Qed.
 
 (* Symmetric product implies both dissymetric products. *)
@@ -546,7 +548,7 @@ Lemma product_dissym_r :
   ultimately A2 (fun y => ultimately A1 (fun x => P (x, y))).
 Proof.
   introv UP.
-  forwards UP': product_swap UP.
+  forwards UP': proj1 product_swap UP.
   apply (product_dissym_l UP').
 Qed.
 
