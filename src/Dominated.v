@@ -323,11 +323,16 @@ Proof.
   assumption.
 Qed.
 
+Definition ShowLater (A: Type) := A.
+
+Hint Extern 100 (ShowLater _) =>
+  (unfold ShowLater; first [assumption | shelve]) : typeclass_instances.
+
 Program Instance proper_Zmult_left:
-  forall x, 0 <= x ->
+  forall x, ShowLater (0 <= x) ->
   Proper (Z.le ++> Z.le) (Z.mul x).
 Next Obligation.
-  intros x1 y1 h1. nia.
+  intros x1 y1 h1. unfold ShowLater in *. nia.
 Qed.
 
 (* Program Instance proper_Zmult_right: *)
@@ -336,8 +341,6 @@ Qed.
 (* Next Obligation. *)
 (*   intros x2 y2 h2. nia. *)
 (* Qed. *)
-
-Hint Extern 100 (0 <= _) => assumption : typeclass_instances.
 
 Goal forall a b c d, a <= b -> 0 <= c -> c * b <= c * d -> c * a <= c * d.
 Proof.
@@ -383,11 +386,11 @@ Proof.
 
   rewrite productP in U_f_le_g.
   destruct U_f_le_g as (P1 & P2 & UP1 & UP2 & H).
+
   rewrite (ZP_ultimately (filter_conj_alt (ultimately_ge_Z 0) (ultimately_ge_Z lo))) in UP2.
   destruct UP2 as (N & (Nnonneg & lo_le_N) & HN).
 
   exists (c * (N - lo + 1)). rewrite productP.
-
   revert Uf_nonneg Ug_nonneg UP1; filter_intersect; intro UP1'.
 
   eexists. exists (fun n => Z.le N n). splits.
@@ -427,8 +430,7 @@ Proof.
     applys f_mon x_le_N. } Unfocus.
 
   rewrite big_const_Z.
-  assert (N_m_lo_nonneg: 0 <= N - lo) by lia.
-  rewrite Hfg; try omega. clear N_m_lo_nonneg. (* meh *)
+  rewrite Hfg; try omega.
   rewrite <-cumulP.
 
   assert (split_cumul_g:
