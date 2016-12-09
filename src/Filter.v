@@ -453,6 +453,37 @@ Qed.
 
 Arguments ZP_ultimately [cond] [P] _.
 
+Definition Zshift (x0 : Z) : Z -> Z :=
+  fun x => (x0 + x)%Z.
+
+Lemma Zshift_inv (x0 : Z) :
+  forall x, Zshift (- x0) (Zshift x0 x) = x.
+Proof.
+  unfold Zshift. intros. omega.
+Qed.
+
+Lemma Zshift_limit (x0 : Z) :
+  limit Z_filterType Z_filterType (Zshift x0).
+Proof.
+  intros. unfold limit, finer. introv H. rewrite limitP.
+  rewrite ZP in H. destruct H as [x1 H1].
+  rewrite ZP. exists (x1 - x0)%Z. intros. apply H1.
+  unfold Zshift. lia.
+Qed.
+
+Lemma ZshiftP (x0 : Z) :
+  forall P,
+  ultimately Z_filterType (fun x => P (Zshift x0 x)) =
+  ultimately Z_filterType P.
+Proof.
+  intros. apply prop_ext.
+  split; do 2 rewrite ZP; intros (x1 & H1); unfold Zshift in *.
+  { exists (x1 + x0)%Z. intros.
+    assert (HH: n = (x0 + (n - x0))%Z) by lia. rewrite HH.
+    apply H1. lia. }
+  { exists (x1 - x0)%Z. intros. apply H1. lia. }
+Qed.
+
 (* ---------------------------------------------------------------------------- *)
 
 (* The product of two filters. *)
@@ -516,16 +547,50 @@ Lemma productP :
    (forall a1 a2, P1 a1 -> P2 a2 -> P (a1, a2))).
 Proof. reflexivity. Qed.
 
-Definition swap (A1 A2 B : Type) (f: A1 * A2 -> B) : A2 * A1 -> B :=
-  fun p => let (y, x) := p in f (x, y).
+Definition fswap (A1 A2 B : Type) (f: A1 * A2 -> B) : A2 * A1 -> B :=
+  fun p => let (x, y) := p in f (y, x).
 
-Lemma product_swap :
+Lemma product_fswap :
   forall (A1 A2 : filterType) P,
   ultimately (product_filterType A1 A2) P <->
-  ultimately (product_filterType A2 A1) (swap P).
+  ultimately (product_filterType A2 A1) (fswap P).
 Proof.
   intros. do 2 rewrite productP.
-  split; introv (P1 & P2 & UP1 & UP2 & HP); exists P2 P1; unfold swap in *; splits~.
+  split; introv (P1 & P2 & UP1 & UP2 & HP); exists P2 P1; unfold fswap in *; splits~.
+Qed.
+
+Definition liftl (A1 A2 B : Type) (f: A1 -> B) : A1 * A2 -> B * A2 :=
+  fun p => let (x, y) := p in (f x, y).
+
+Definition liftr (A1 A2 B : Type) (f: A2 -> B) : A1 * A2 -> A1 * B :=
+  fun p => let (x, y) := p in (x, f y).
+
+Lemma limit_liftl :
+  forall (A1 A2 B : filterType) f,
+  limit A1 B f ->
+  limit (product_filterType A1 A2) (product_filterType B A2) (liftl f).
+Proof.
+  unfold limit, finer. introv Lf UP. simpl in *.
+  rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
+  rewrite imageP. rewrite productP. unfold liftl.
+  specializes Lf UP1. rewrite imageP in Lf.
+  do 2 eexists. splits~.
+  exact Lf. exact UP2.
+  simpl. intros. eauto.
+Qed.
+
+Lemma limit_liftr :
+  forall (A1 A2 B : filterType) f,
+  limit A2 B f ->
+  limit (product_filterType A1 A2) (product_filterType A1 B) (liftr f).
+Proof.
+  unfold limit, finer. introv Lf UP. simpl in *.
+  rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
+  rewrite imageP. rewrite productP. unfold liftr.
+  specializes Lf UP2. rewrite imageP in Lf.
+  do 2 eexists. splits~.
+  exact UP1. exact Lf.
+  simpl. intros. eauto.
 Qed.
 
 (* Symmetric product implies both dissymetric products. *)
@@ -548,7 +613,7 @@ Lemma product_dissym_r :
   ultimately A2 (fun y => ultimately A1 (fun x => P (x, y))).
 Proof.
   introv UP.
-  forwards UP': proj1 product_swap UP.
+  forwards UP': proj1 product_fswap UP.
   apply (product_dissym_l UP').
 Qed.
 

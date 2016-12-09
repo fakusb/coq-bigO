@@ -245,6 +245,16 @@ Proof.
   intros. unfold dominated, image. tauto.
 Qed.
 
+Lemma dominated_shift :
+  forall f g x0,
+  dominated Z_filterType f g <->
+  dominated Z_filterType (fun x => f (Zshift x0 x)) (fun x => g (Zshift x0 x)).
+Proof.
+  intros. unfold dominated.
+  split; intros (c & U); exists c. simpl in *.
+  rewrite~ <-(ZshiftP x0) in U.
+  rewrite~ <-(ZshiftP x0).
+Qed.
 
 (* Property 2
 
