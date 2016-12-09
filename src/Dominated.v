@@ -289,9 +289,19 @@ Definition cumul (A: Type) (f: A * Z -> Z) (lo: Z) : A * Z -> Z :=
   fun an => let (a, n) := an in
   \big[Z.add]_(i <- interval lo n) f (a, i).
 
+Definition cumul_with (h: Z -> Z) (A: Type) (f: A * Z -> Z) (lo: Z) :
+  A * Z -> Z :=
+  fun an => let (a, n) := an in
+  \big[Z.add]_(i <- interval lo (h n)) f (a, i).
+
 Lemma cumulP :
   forall A (f: A * Z -> Z) lo a n,
   cumul f lo (a, n) = \big[Z.add]_(i <- interval lo n) f (a, i).
+Proof. reflexivity. Qed.
+
+Lemma cumul_withP :
+  forall h A (f: A * Z -> Z) lo a n,
+  cumul_with h f lo (a, n) = \big[Z.add]_(i <- interval lo (h n)) f (a, i).
 Proof. reflexivity. Qed.
 
 Lemma cumul_split (k: Z) :
@@ -496,6 +506,46 @@ Proof.
   forwards: func_ext_dep sum_f_eq'.
   forwards: func_ext_dep sum_g_eq'.
   subst. applys dominated_big_sum; eauto.
+Qed.
+
+Lemma dominated_big_sum_with (h: Z -> Z) :
+  forall (f g : A * Z_filterType -> Z) (lo: Z),
+  ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
+  ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
+  dominated (product_filterType A Z_filterType) f g ->
+  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  limit Z_filterType Z_filterType h ->
+  dominated (product_filterType A Z_filterType)
+    (cumul_with h f lo) (cumul_with h g lo).
+Proof.
+  introv Ufnonneg Ugnonneg dom_f_g f_mon h_lim.
+  forwards~ dom_cumul: dominated_big_sum lo dom_f_g.
+  eapply dominated_comp_eq.
+  - exact dom_cumul.
+  - eapply limit_liftr. apply h_lim.
+  - intros [? ?]. reflexivity.
+  - intros [? ?]. reflexivity.
+Qed.
+
+Lemma dominated_big_sum_with_eq (h: Z -> Z) :
+  forall (f g sum_f sum_g : A * Z_filterType -> Z) (lo: Z),
+  ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
+  ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
+  dominated (product_filterType A Z_filterType) f g ->
+  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  limit Z_filterType Z_filterType h ->
+  (forall a i, sum_f (a, i) = cumul_with h f lo (a, i)) ->
+  (forall a i, sum_g (a, i) = cumul_with h g lo (a, i)) ->
+  dominated (product_filterType A Z_filterType) sum_f sum_g.
+Proof.
+  introv ? ? ? ? ? sum_f_eq sum_g_eq.
+  assert (sum_f_eq': forall x, sum_f x = cumul_with h f lo x).
+  { intros [? ?]. eauto. }
+  assert (sum_g_eq': forall x, sum_g x = cumul_with h g lo x).
+  { intros [? ?]. eauto. }
+  forwards: func_ext_dep sum_f_eq'.
+  forwards: func_ext_dep sum_g_eq'.
+  subst. applys dominated_big_sum_with; eauto.
 Qed.
 
 End DominatedLaws.
