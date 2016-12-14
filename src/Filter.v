@@ -1,6 +1,7 @@
 Require Import Coq.Logic.Classical_Pred_Type.
 Require Import TLC.LibTactics.
 Require Import TLC.LibAxioms.
+Require Import TLC.LibLogic.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -358,6 +359,38 @@ Proof.
   intros. unfold limit. unfold finer.
   intros. rewrite limitP. eauto.
 Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* If the type A is inhabited, then the singleton set that contains just the set
+   [A] is a filter. We call this modality [everywhere]. *)
+
+Section FilterEverywhere.
+
+Variable A : Type.
+Context `{IA: Inhab A}.
+
+Definition everywhere_filterMixin : Filter.mixin_of A.
+Proof.
+  eapply Filter.Mixin with
+    (fun (P: A -> Prop) => forall a, P a);
+  eauto.
+  Unshelve.
+  forwards IA': indefinite_description IA.
+  destruct IA' as (a & _). apply a.
+Defined.
+
+Definition everywhere_filterType := FilterType A everywhere_filterMixin.
+
+End FilterEverywhere.
+
+Arguments everywhere_filterType A [IA].
+
+Lemma everywhereP A `{Inhab A} :
+  forall (P : A -> Prop),
+  ultimately (everywhere_filterType A) P =
+  forall a, P a.
+Proof. reflexivity. Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
