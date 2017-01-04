@@ -433,19 +433,31 @@ Proof.
   { apply UP1'. }
   { apply ultimately_ge_Z. }
   intros a n (f_nonneg & g_nonneg & P1_a) N_le_n.
+  clear UP1'.
+
+  asserts~ H' : (forall x, N <= x -> Z.abs (f (a, x)) <= c * Z.abs (g (a, x))).
+  clear H HN P1_a.
+
+  (* Product filter dance done. *)
+
+  (* Eliminate [Z.abs] in the goal, as [f] and [g] are nonnegative. *)
   rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
   rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
 
-  rewrite (cumul_split N) with (f := f); try omega.
-  assert (Hfg : forall i, Z.le N i -> f (a, i) <= c * g (a, i)). {
-    introv N_le_i.
-    forwards HN_i: HN N_le_i.
-    forwards H': H P1_a HN_i.
+  (* Eliminate [Z.abs] in H', for the same reason. *)
+  assert (Hfg : (forall x, N <= x -> f (a, x) <= c * g (a, x))). {
+    intros x N_le_x.
+    specializes H' x N_le_x.
     rewrite Z.abs_eq in H'; [| apply f_nonneg; lia].
     rewrite Z.abs_eq in H'; [| apply g_nonneg; lia].
     assumption.
   }
+  clear H'.
 
+  (* Start proving the main inequality, by splitting [cumul]s, and rewriting
+     under [Z.le]. *)
+
+  rewrite (cumul_split N) with (f := f); try omega.
   rewrite cumulP with (f := f) (lo := N).
   rewrite big_covariant with
     (xs := interval N n)
@@ -455,6 +467,7 @@ Proof.
   Focus 2. eauto using in_interval_lo.
 
   rewrite <-big_map_distributive; try typeclass.
+  rewrite <-cumulP with (f := g).
   rewrite cumulP with (f := f) (lo := lo).
   rewrite big_covariant with
     (xs := interval lo N)
@@ -467,13 +480,12 @@ Proof.
 
   rewrite big_const_Z.
   rewrite Hfg; try omega.
-  rewrite <-cumulP.
 
-  assert (split_cumul_g:
-            c * (N - lo + 1) * cumul g lo (a, n) =
-            c * (N - lo + 1) * cumul g lo (a, N) +
-            c * (N - lo) * cumul g N (a, n) +
-            c * cumul g N (a, n)).
+  asserts_rewrite
+    (c * (N - lo + 1) * cumul g lo (a, n) =
+     c * (N - lo + 1) * cumul g lo (a, N) +
+     c * (N - lo) * cumul g N (a, n) +
+     c * cumul g N (a, n)).
   { match goal with |- _ = ?r => remember r as rhs end.
     rewrite (cumul_split N); try omega.
     rewrite Z.mul_add_distr_l.
@@ -487,21 +499,21 @@ Proof.
     rewrite Z.mul_1_r.
     subst rhs. reflexivity. }
 
-  rewrite split_cumul_g.
   apply Zplus_le_compat_r.
 
-  assert (g_le_cumul : c * (N - lo) * g (a, N) <= c * (N - lo) * cumul g N (a, n)).
-  { apply Zmult_le_compat_l.
-    - apply cumul_ge_single_term; omega.
-    - nia. }
+  asserts_rewrite <-(0 <= c * (N - lo + 1) * cumul g lo (a, N)). {
+    apply Z.mul_nonneg_nonneg.
+    { nia. }
+    { apply big_nonneg_Z. intros.
+      apply g_nonneg. lia. }
+  }
+  rewrite Zplus_0_l.
+  rewrite Z.mul_assoc with (m := c).
+  rewrite Z.mul_comm with (m := c).
 
-  rewrite <-g_le_cumul.
-  assert (cancel_lemma : forall a b c, a = c -> 0 <= b -> a <= b + c)
-    by (intros; nia).
-  apply cancel_lemma. nia.
-  apply Z.mul_nonneg_nonneg.
-  { nia. }
-  { apply big_nonneg_Z. eauto. }
+  apply Zmult_le_compat_l.
+  - apply cumul_ge_single_term; omega.
+  - nia.
 Qed.
 
 Lemma dominated_big_sum_with (h : Z -> Z) :
