@@ -273,14 +273,6 @@ Lemma in_interval_hi :
   x < hi.
 Proof. admit. Admitted.
 
-Obligation Tactic := try solve [ intros; ring_simplify; omega ].
-Program Instance unit_plus : Unit Z.add := { unit := 0 }.
-Program Instance commutative_plus : Commutative Z.add.
-Program Instance associative_plus : Associative Z.add.
-Program Instance unit_mult : Unit Z.mul := { unit := 1 }.
-Program Instance commutative_mult : Commutative Z.mul.
-Program Instance associative_mult : Associative Z.mul.
-
 Lemma pack_forall_pair_eq :
   forall (A B C : Type) (P Q : A * B -> C),
   (forall (a : A) (b : B), P (a, b) = Q (a, b)) -> (forall x, P x = Q x).

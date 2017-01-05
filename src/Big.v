@@ -3,6 +3,7 @@ Require Import Coq.Sorting.Permutation.
 Require Import TLC.LibTactics.
 Require Import LibNatExtra.
 Require Import LibRewrite.
+Require Import ZArith.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -43,6 +44,12 @@ Program Instance associative_plus : Associative plus.
 Program Instance unit_mult : Unit mult := { unit := 1 }.
 Program Instance commutative_mult : Commutative mult.
 Program Instance associative_mult : Associative mult.
+Program Instance unit_Zplus : Unit Z.add := { unit := 0%Z }.
+Program Instance commutative_Zplus : Commutative Z.add.
+Program Instance associative_Zplus : Associative Z.add.
+Program Instance unit_Zmult : Unit Z.mul := { unit := 1%Z }.
+Program Instance commutative_Zmult : Commutative Z.mul.
+Program Instance associative_Zmult : Associative Z.mul.
 Obligation Tactic := try solve [ intros; repeat max_case; omega ].
 Program Instance unit_max  : Unit max  := { unit := 0 }.
 Program Instance commutative_max  : Commutative max.
@@ -146,6 +153,7 @@ Class Distributive {A : Type} (mult plus : A -> A -> A) `{Unit A plus} := {
 Obligation Tactic := intros; simpl; ring_simplify; omega.
 Program Instance distributive_mult_plus : Distributive mult plus.
 (* Program Instance distributive_plus_max  : Distributive plus max. (* fails, due to absorption *) *)
+Program Instance distributive_Zmult_Zplus : Distributive Z.mul Z.add.
 
 Lemma big_distributive:
   forall A mult plus `{Unit A plus, Associative A plus, Distributive A mult plus},
