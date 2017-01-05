@@ -3,6 +3,7 @@ Require Export Coq.Setoids.Setoid. (* required for [rewrite] *)
 Require Export Coq.Classes.Morphisms.
 Require Import Coq.Lists.List.
 Require Import Coq.Sorting.Permutation.
+Require Import ZArith Psatz.
 Require Import TLC.LibTactics.
 Require Import LibNatExtra.
 Obligation Tactic := idtac.
@@ -17,6 +18,11 @@ Ltac omega_rewrite P :=
 (* Addition is covariant in both arguments. *)
 
 Program Instance proper_plus: Proper (le ++> le ++> le) plus.
+Next Obligation.
+  intros x1 y1 h1 x2 y2 h2. omega.
+Qed.
+
+Program Instance proper_Zplus : Proper (Z.le ++> Z.le ++> Z.le) Z.add.
 Next Obligation.
   intros x1 y1 h1 x2 y2 h2. omega.
 Qed.
@@ -37,6 +43,36 @@ Next Obligation.
   rewrite mult_le_compat_l, mult_le_compat_r by eauto.
   reflexivity.
 Qed.
+
+(* However, multiplication on Z requires a positivity condition.
+
+   For rewriting on the right, the following work-around works.
+   However, for rewriting on the left, we do not know one...
+*)
+Definition ShowLater (A : Type) := A.
+
+Hint Extern 100 (ShowLater _) =>
+  (unfold ShowLater; first [assumption | shelve]) : typeclass_instances.
+
+Program Instance proper_Zmult_left :
+  forall x, ShowLater (Z.le 0 x) ->
+  Proper (Z.le ++> Z.le) (Z.mul x).
+Next Obligation.
+  intros ? ? ? ?. unfold ShowLater in *. nia.
+Qed.
+
+(* The following does not seem to work: *)
+
+(* Program Instance proper_Zmult_right: *)
+(*   forall y, Z.le 0 y -> *)
+(*   Proper (Z.le ++> Z.le) (fun x => Z.mul x y). *)
+(* Next Obligation. *)
+(*   intros ? ? ? ?. nia. *)
+(* Qed. *)
+
+(* Goal forall a b c d, a <= b -> 0 <= c -> b * c <= d * c -> a * c <= d * c. *)
+(* introv a_le_b O_le_c bc_le_dc. *)
+(* rewrite a_le_b. *)
 
 (* Maximum is covariant in both arguments. *)
 

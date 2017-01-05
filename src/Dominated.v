@@ -336,53 +336,12 @@ Lemma big_const_Z :
 Proof. admit. (* TODO *) Admitted.
 
 
-Require Export Coq.Setoids.Setoid. (* required for [rewrite] *)
-Require Export Coq.Classes.Morphisms.
+(* Lemma dominated_cumul_ultimately_eq : *)
+(*   forall (A : filterType) (f f' : A * Z -> Z) lo, *)
+(*   ultimately (product_filterType A Z_filterType) (fun p => f p = f' p) -> *)
+(*   dominated (product_filterType A Z_filterType) (cumul f lo) (cumul f' lo). *)
+(* Proof. *)
 
-Program Instance proper_Zplus : Proper (Z.le ++> Z.le ++> Z.le) Z.add.
-Next Obligation.
-  intros x1 y1 h1 x2 y2 h2. omega.
-Qed.
-
-Goal (forall a b c d, a <= b -> c + b <= c + d -> c + a <= c + d).
-Proof.
-  introv a_le_b cb_le_cd.
-  rewrite a_le_b.
-  assumption.
-Qed.
-
-Definition ShowLater (A : Type) := A.
-
-Hint Extern 100 (ShowLater _) =>
-  (unfold ShowLater; first [assumption | shelve]) : typeclass_instances.
-
-Program Instance proper_Zmult_left :
-  forall x, ShowLater (0 <= x) ->
-  Proper (Z.le ++> Z.le) (Z.mul x).
-Next Obligation.
-  intros x1 y1 h1. unfold ShowLater in *. nia.
-Qed.
-
-(* Program Instance proper_Zmult_right: *)
-(*   forall y, 0 <= y -> *)
-(*   Proper (Z.le ++> Z.le) (fun x => Z.mul x y). *)
-(* Next Obligation. *)
-(*   intros x2 y2 h2. nia. *)
-(* Qed. *)
-
-Goal forall a b c d, a <= b -> 0 <= c -> c * b <= c * d -> c * a <= c * d.
-Proof.
-  introv a_le_b O_le_c cb_le_cd.
-  rewrite a_le_b.
-  assumption.
-Qed.
-
-(* Goal forall a b c d, a <= b -> 0 <= c -> b * c <= d * c -> a * c <= d * c. *)
-(* introv a_le_b O_le_c bc_le_dc. *)
-(* rewrite a_le_b. *)
-
-Obligation Tactic := intros; simpl; ring_simplify; omega.
-Program Instance distributive_mul_add : Distributive Z.mul Z.add.
 
 Lemma big_nonneg_Z :
   forall lo hi (f : Z -> Z),
