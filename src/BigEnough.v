@@ -157,7 +157,8 @@ Ltac exists_big_fun m F T :=
    [true]. *)
 
 Ltac big :=
-  repeat first [ apply context; [ big_base | .. ] ].
+  repeat first [ apply context; [ big_base | .. ] ];
+  try tauto.
 
 (* The file mathcomp/real-closed/bigenough.v contains an additional twist,
    [big_enough_trans], which finds an ordering hypothesis and exploits the
@@ -181,9 +182,9 @@ Proof.
   (* We can split manually... *)
   repeat split.
   (* ... and apply [big] to each constraint. *)
-  big; tauto.
-  big; tauto.
-  big; tauto.
+  big.
+  big.
+  big.
   (* We are then finished. *)
   close.
 Qed.
@@ -193,7 +194,7 @@ Proof.
   intros k1 k2.
   exists_big i nat.
   (* We can also let [big] do the work by itself! *)
-  big; tauto.
+  big.
   close.
 Qed.
 
@@ -203,7 +204,6 @@ Proof.
   exists_big i nat.
   (* The goal can contain parts that [big] does not care about. *)
   big.
-  tauto.
   close.
 Qed.
 
@@ -212,7 +212,7 @@ Proof.
   exists_big_fun m nat nat.
   intro e.
   (* The left-hand sides of the constraints can refer to the variable [e]. *)
-  big; tauto.
+  big.
   close.
 Qed.
 
@@ -224,7 +224,7 @@ Goal forall (k1 k2 : N), exists i, (k1 <= i) /\ (1 <= i) /\ (k2 <= i).
 Proof.
   intros k1 k2.
   exists_big i N.
-  big; tauto.
+  big.
   close.
 Qed.
 
@@ -233,6 +233,6 @@ Goal forall (k1 k2 : Z), exists i, (k1 <= i) /\ (1 <= i) /\ (k2 <= i).
 Proof.
   intros k1 k2.
   exists_big i Z.
-  big; tauto.
+  big.
   close.
 Qed.
