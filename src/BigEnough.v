@@ -157,7 +157,7 @@ Ltac exists_big_fun m F T :=
    [true]. *)
 
 Ltac big :=
-  repeat first [ apply context; [ big_base | .. ] ];
+  repeat (apply context; [ big_base | .. ]);
   try tauto.
 
 (* The file mathcomp/real-closed/bigenough.v contains an additional twist,
