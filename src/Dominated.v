@@ -10,7 +10,9 @@ Require Import Psatz. (* nia *)
 Require Export Filter.
 Require Import Big.
 Require Export LibFunOrd.
+Require Import BigEnough.
 Require Import TLC.LibAxioms.
+Require Import TLC.LibLogic.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -122,6 +124,16 @@ Proof.
   intros U D.
   apply dominated_transitive with f1; eauto.
   apply subrelation_ultimately_le_dominated. eauto.
+Qed.
+
+Lemma dominated_ultimately_eq :
+  forall (A : filterType) f f',
+  ultimately A (fun x => f x = f' x) ->
+  dominated A f f'.
+Proof.
+  introv U.
+  exists 1. revert U; filter_closed_under_intersection.
+  intros. lia.
 Qed.
 
 (* Domination is compatible with mul.
@@ -258,6 +270,10 @@ Qed.
 
 End DominatedLaws.
 
+(* ---------------------------------------------------------------------------- *)
+
+(* TEMPORARY *)
+
 Definition interval (lo hi : Z) : list Z.
 Proof. admit. Admitted.
 
@@ -273,12 +289,36 @@ Lemma in_interval_hi :
   x < hi.
 Proof. admit. Admitted.
 
+Lemma big_const_Z :
+  forall lo hi c,
+  \big[Z.add]_(_ <- interval lo hi) c = (hi - lo) * c.
+Proof. admit. (* TODO *) Admitted.
+
+Lemma big_nonneg_Z :
+  forall lo hi (f : Z -> Z),
+  (forall x, lo <= x -> x < hi -> 0 <= f x) ->
+  0 <= \big[Z.add]_(i <- interval lo hi) f i.
+Proof.
+  intros.
+  rewrite <-big_covariant with
+    (R := Z.le)
+    (f := fun _ => 0);
+  try typeclass.
+  { rewrite big_const_Z. nia. }
+  { introv HIn.
+    forwards~: in_interval_lo HIn.
+    forwards~: in_interval_hi HIn. }
+Qed.
+
 Lemma pack_forall_pair_eq :
   forall (A B C : Type) (P Q : A * B -> C),
   (forall (a : A) (b : B), P (a, b) = Q (a, b)) -> (forall x, P x = Q x).
 Proof.
   introv H. intros [? ?]. eauto.
 Qed.
+
+Definition rel_after (A : Type) (a : A) (rel : A -> A -> Prop) : A -> A -> Prop :=
+  fun (x y : A) => rel a x /\ rel a y /\ rel x y.
 
 Module Product.
 
@@ -300,7 +340,7 @@ Definition cumul (A : Type) (f : A * Z -> Z) (lo : Z) : A * Z -> Z :=
 Definition cumul_with (h : Z -> Z) (A : Type) (f : A * Z -> Z) (lo : Z) :
   A * Z -> Z :=
   fun an => let (a, n) := an in
-  \big[Z.add]_(i <- interval lo (h n)) f (a, i).
+  cumul f lo (a, h n).
 
 Lemma cumulP :
   forall A (f : A * Z -> Z) lo a n,
@@ -330,41 +370,46 @@ Proof. admit. (* TODO *) Admitted.
 
 Arguments cumul_ge_single_term k [A] f [lo] a [n] _ _ _.
 
-Lemma big_const_Z :
-  forall lo hi c,
-  \big[Z.add]_(_ <- interval lo hi) c = (hi - lo) * c.
-Proof. admit. (* TODO *) Admitted.
+Lemma big_op_compat :
+  forall (A : Type) op `{Unit A op, Commutative A op, Associative A op} f1 f2 (xs : list A),
+  \big[op]_(x <- xs) (op (f1 x) (f2 x)) =
+  op (\big[op]_(x <- xs) (f1 x)) (\big[op]_(x <- xs) (f2 x)).
+Proof. admit. Qed.
 
+Ltac asserts_applys P :=
+  let H := fresh in
+  asserts H : P; [ | applys H; clear H ].
 
-(* Lemma dominated_cumul_ultimately_eq : *)
-(*   forall (A : filterType) (f f' : A * Z -> Z) lo, *)
-(*   ultimately (product_filterType A Z_filterType) (fun p => f p = f' p) -> *)
-(*   dominated (product_filterType A Z_filterType) (cumul f lo) (cumul f' lo). *)
-(* Proof. *)
+Ltac math_apply P :=
+  asserts_applys P; [ intros; omega | .. ].
 
+(* Note that the hypothesis:
 
-Lemma big_nonneg_Z :
-  forall lo hi (f : Z -> Z),
-  (forall x, lo <= x -> x < hi -> 0 <= f x) ->
-  0 <= \big[Z.add]_(i <- interval lo hi) f i.
-Proof.
-  intros.
-  rewrite <-big_covariant with
-    (R := Z.le)
-    (f := fun _ => 0);
-  try typeclass.
-  { rewrite big_const_Z. nia. }
-  { introv HIn.
-    forwards~: in_interval_lo HIn.
-    forwards~: in_interval_hi HIn. }
-Qed.
+     [forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))]
 
+   cannot be relaxed to:
+
+     [forall a, ultimately (fun x =>
+        monotonic (rel_after x Z.le) Z.le (fun i => f (a, i))].
+
+   I.e, f really has to be monotonic starting at the summation index.
+
+   For example, if we take:
+     f (a, x) = x if x > 10, -a*x + 20 otherwise
+     g (a, x) = x
+
+   then:
+     - dominated f g
+     - forall a, f is monotonic for x big enough
+     - however, for a fixed x > 10 and a going to infinity, Σf (a, x) goes
+       to infinity while Σg (a, x) remains constant.
+*)
 Lemma dominated_big_sum :
-  forall (f g : A * Z_filterType -> Z) (lo : Z),
+  forall (f g : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
   ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
   dominated (product_filterType A Z_filterType) f g ->
-  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
   dominated (product_filterType A Z_filterType) (cumul f lo) (cumul g lo).
 Proof.
   introv Uf_nonneg Ug_nonneg dom_f_g f_mon. simpl in *.
@@ -408,7 +453,7 @@ Proof.
   (* Start proving the main inequality, by splitting [cumul]s, and rewriting
      under [Z.le]. *)
 
-  rewrite (cumul_split N) with (f := f); try omega.
+  rewrite (cumul_split N) with (f := f) by omega.
   rewrite cumulP with (f := f) (lo := N).
   rewrite big_covariant with
     (xs := interval N n)
@@ -426,11 +471,12 @@ Proof.
   Focus 2.
   { introv inI.
     forwards x_lt_N: in_interval_hi inI.
+    forwards lo_le_x: in_interval_lo inI.
     forwards x_le_N: Z.lt_le_incl x_lt_N.
-    applys f_mon x_le_N. } Unfocus.
+    apply f_mon. unfold rel_after. lia. } Unfocus.
 
   rewrite big_const_Z.
-  rewrite Hfg; try omega.
+  rewrite Hfg by omega.
 
   asserts_rewrite
     (c * (N - lo + 1) * cumul g lo (a, n) =
@@ -438,7 +484,7 @@ Proof.
      c * (N - lo) * cumul g N (a, n) +
      c * cumul g N (a, n)).
   { match goal with |- _ = ?r => remember r as rhs end.
-    rewrite (cumul_split N); try omega.
+    rewrite (cumul_split N) by omega.
     rewrite Z.mul_add_distr_l.
 
     subst rhs. rewrite Zplus_assoc_reverse.
@@ -468,30 +514,29 @@ Proof.
 Qed.
 
 Lemma dominated_big_sum_with (h : Z -> Z) :
-  forall (f g : A * Z_filterType -> Z) (lo : Z),
+  forall (f g : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
   ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
   dominated (product_filterType A Z_filterType) f g ->
-  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
   limit Z_filterType Z_filterType h ->
   dominated (product_filterType A Z_filterType)
     (cumul_with h f lo) (cumul_with h g lo).
 Proof.
   introv Ufnonneg Ugnonneg dom_f_g f_mon h_lim.
-  forwards~ dom_cumul: dominated_big_sum lo dom_f_g.
   eapply dominated_comp_eq.
-  - exact dom_cumul.
+  - applys~ dominated_big_sum lo dom_f_g.
   - eapply limit_liftr. apply h_lim.
   - intros [? ?]. reflexivity.
   - intros [? ?]. reflexivity.
 Qed.
 
 Lemma dominated_big_sum_eq :
-  forall (f g sum_f sum_g : A * Z_filterType -> Z) (lo : Z),
+  forall (f g sum_f sum_g : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
   ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
   dominated (product_filterType A Z_filterType) f g ->
-  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
   (forall a i, sum_f (a, i) = cumul f lo (a, i)) ->
   (forall a i, sum_g (a, i) = cumul g lo (a, i)) ->
   dominated (product_filterType A Z_filterType) sum_f sum_g.
@@ -503,11 +548,11 @@ Proof.
 Qed.
 
 Lemma dominated_big_sum_with_eq (h : Z -> Z) :
-  forall (f g sum_f sum_g : A * Z_filterType -> Z) (lo : Z),
+  forall (f g sum_f sum_g : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
   ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
   dominated (product_filterType A Z_filterType) f g ->
-  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
   limit Z_filterType Z_filterType h ->
   (forall a i, sum_f (a, i) = cumul_with h f lo (a, i)) ->
   (forall a i, sum_g (a, i) = cumul_with h g lo (a, i)) ->
@@ -520,9 +565,9 @@ Proof.
 Qed.
 
 Lemma dominated_big_sum_bound :
-  forall (f : A * Z_filterType -> Z) (lo : Z),
+  forall (f : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
-  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
   dominated (product_filterType A Z_filterType)
     (cumul f lo)
     (fun p => let (a, n) := p in n * f (a, n)).
@@ -530,7 +575,7 @@ Proof.
   introv U_f_nonneg f_mon.
   eexists (Z.max 1 (1 - lo)). rewrite productP. do 2 eexists. splits.
   { apply U_f_nonneg. }
-  { apply (filter_conj_alt (ultimately_ge_Z 1) (ultimately_ge_Z lo)). }
+  { apply (filter_conj_alt (ultimately_ge_Z 1) (ultimately_ge_Z (lo + 1))). }
   { intros a n f_nonneg [one_le_n lo_le_n].
     rewrite Z.abs_eq; [| apply big_nonneg_Z; eauto].
     rewrite Z.abs_eq; [| eauto with zarith].
@@ -539,12 +584,13 @@ Proof.
       (g := (fun p => f (a, n-1)));
     try typeclass.
     Focus 2.
-    { intros x ?. apply f_mon.
-      cut (x < n); [lia |]. applys* in_interval_hi. }
+    { intros x I. apply f_mon. unfold rel_after.
+      forwards~: in_interval_lo I. forwards~: in_interval_hi I. lia. }
     Unfocus.
 
     rewrite big_const_Z.
-    assert (f_le: f (a, n - 1) <= f (a, n)) by (apply f_mon; lia).
+    assert (f_le: f (a, n - 1) <= f (a, n))
+      by (apply f_mon; unfold rel_after; lia).
     rewrite f_le; [| lia].
     assert (f_an_nonneg: 0 <= f (a, n)) by (apply f_nonneg; lia).
 
@@ -555,9 +601,9 @@ Proof.
 Qed.
 
 Lemma dominated_big_sum_bound_with (h : Z -> Z) :
-  forall (f : A * Z_filterType -> Z) (lo : Z),
+  forall (f : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
-  (forall a, monotonic Z.le Z.le (fun i => f (a, i))) ->
+  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
   limit Z_filterType Z_filterType h ->
   dominated (product_filterType A Z_filterType)
     (cumul_with h f lo)
@@ -579,89 +625,287 @@ Definition cumul (f : Z -> Z) (lo : Z) : Z -> Z :=
   fun n => \big[Z.add]_(i <- interval lo n) f i.
 
 Definition cumul_with (h : Z -> Z) (f : Z -> Z) (lo : Z) : Z -> Z :=
-  fun n => \big[Z.add]_(i <- interval lo (h n)) f i.
+  fun n => cumul f lo (h n).
+
+Lemma cumulP :
+  forall (f : Z -> Z) lo n,
+  cumul f lo n = \big[Z.add]_(i <- interval lo n) f i.
+Proof. reflexivity. Qed.
+
+(* TEMPORARY bigops *)
+
+Lemma cumul_split (k : Z) :
+  forall (f : Z -> Z) lo n,
+  Z.le lo k ->
+  Z.le k n ->
+  cumul f lo n = cumul f lo k + cumul f k n.
+Proof. admit. (* TODO *) Admitted.
+
+Arguments cumul_split k f [lo] [n] _ _.
+
+(* TEMPORARY move? *)
+Ltac asserts_applys P :=
+  let H := fresh in
+  asserts H : P; [ | applys H; clear H ].
+
+Ltac math_apply P :=
+  asserts_applys P; [ intros; omega | .. ].
+
+(* The [ultimately (fun x => 0 < f' x)] assumption is really required:
+   otherwise, take [f := fun x => if x = 0 then 1 else 0] and [f' := 0].
+
+   [ultimately (fun x => f x = f' x)] holds, but
+   [dominated (cumul f 0) (cumul f' 0)] doesn't.
+
+   This is not exactly tight; [often (fun x => 0 < f' x)] may be enough.
+   However, in practice the functions we handle tend to be ultimately
+   monotonic, in which case this boils down to the same thing.
+*)
+Lemma dominated_cumul_ultimately_eq :
+  forall (f f' : Z -> Z) lo,
+  ultimately Z_filterType (fun x => f x = f' x) ->
+  ultimately Z_filterType (fun x => 0 < f' x) ->
+  dominated Z_filterType (cumul f lo) (cumul f' lo).
+Proof.
+  introv.
+  generalize (ultimately_ge_Z lo). filter_intersect. rewrite ZP.
+  intros (N & HN).
+
+  exists 2. rewrite ZP.
+  exists_big n0 Z. intros n n0_le_n.
+
+  assert (N_le_n : N <= n) by (rewrite <-n0_le_n; big).
+  assert (lo_le_N : lo <= N) by (apply HN; omega).
+
+  assert (cumul_f'_ge_n : forall n, N <= n -> n - N <= cumul f' N n). {
+    assert (
+      cumul_minus_one : forall f lo x,
+        cumul f lo x = (x - lo) + cumul (fun x => f x - 1) lo x
+    ).
+    { admit. }
+
+    assert (cumul_minus_ge_0 :
+      forall n, 0 <= cumul (fun x => f' x - 1) N n
+    ).
+    { intros. unfold cumul. apply big_nonneg_Z.
+      intros x ? ?. forwards~ (? & ? & ?): HN x ___.
+      omega. }
+
+    intros x H.
+    rewrite cumul_minus_one.
+    rewrite <-cumul_minus_ge_0. omega.
+  }
+
+  assert (cumul_past_N_ge_0 : forall n, 0 <= cumul f N n).
+  { intros. unfold cumul. apply big_nonneg_Z.
+    intros x ? ?. forwards~ (? & ? & ?) : HN x ___.
+    omega. }
+
+  assert (cumul_past_N_eq : forall n,
+    N <= n -> cumul f' N n = cumul f N n
+  ).
+  { intros. unfold cumul. apply big_covariant; try typeclass.
+    introv I. symmetry. apply HN. applys* in_interval_lo. }
+
+  assert (cumul_f'_pos : 0 <= cumul f' lo n). {
+    rewrite (cumul_split N) by auto.
+    rewrite <-cumul_f'_ge_n; auto.
+    math_apply (forall a b c, c - a <= b -> 0 <= a + (b - c)).
+    rewrite <-n0_le_n. big.
+  }
+
+  rewrite Z.abs_eq with (cumul f' lo n) by auto.
+  rewrite (cumul_split N) with (f := f) by auto.
+  rewrite Z.abs_triangle.
+  rewrite Z.abs_eq with (cumul f N n) by auto.
+  rewrite (cumul_split N) with (f := f') by auto.
+  rewrite Z.mul_add_distr_l.
+  rewrite cumul_past_N_eq by auto.
+  math_apply (forall a b c, a <= c + b -> a + b <= c + 2 * b).
+  rewrite <-cumul_past_N_eq by auto.
+  rewrite <-cumul_f'_ge_n by auto.
+  math_apply (forall a b c d, a - b + d <= c -> a <= b + (c - d)).
+  rewrite <-n0_le_n. big.
+  close.
+Qed.
+
+(* We could deduce a [dominated_big_sum] lemma for the one parameter case from
+   [Product.dominated_big_sum], by instantiating [A] by [unit].
+
+   However, thanks to the previous lemma [dominated_cumul_ultimately_eq], we can
+   do better, and replace the monotonocity hypothesis by a "ultimately positive"
+   hypothesis.
+*)
+Lemma dominated_big_sum :
+  forall (f g : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun i => 0 < f i) ->
+  ultimately Z_filterType (fun i => 0 < g i) ->
+  dominated Z_filterType f g ->
+  dominated Z_filterType (cumul f lo) (cumul g lo).
+Proof.
+  introv Uf_pos Ug_pos dom_f_g. simpl in *.
+  forwards (c & c_pos & U_f_le_g): dominated_nonneg_const dom_f_g.
+  clear dom_f_g.
+
+  revert Uf_pos Ug_pos U_f_le_g. filter_intersect.
+  rewrite (ZP_ultimately (filter_conj_alt (ultimately_ge_Z 0) (ultimately_ge_Z lo))).
+  intros (N & (N_nonneg & lo_le_N) & HN).
+
+  (* "patch" [f] and [g] to make them equal to [0] between [lo] and [N].
+     [dominated_cumul_ultimately_eq] allows us to do precisely that. *)
+
+  pose (f' := fun x => If lo <= x < N then 0 else f x).
+  pose (g' := fun x => If lo <= x < N then 0 else g x).
+  apply dominated_transitive with (cumul f' lo).
+  { apply dominated_cumul_ultimately_eq;
+    subst f'; simpl; rewrite ZP; exists N; intros.
+    { cases_if; [omega | tauto]. }
+    { cases_if; [omega | applys~ HN]. } }
+  apply dominated_transitive with (cumul g' lo).
+  Focus 2.
+  { apply dominated_cumul_ultimately_eq;
+    subst g'; simpl; rewrite ZP; exists N; intros.
+    cases_if; [omega | tauto]. applys~ HN. }
+  Unfocus.
+
+  (* Instantiate the big-O constant, and do some cleanup. *)
+
+  exists c. rewrite ZP. exists N. intros n N_le_n.
+
+  assert (f_g_nonneg : forall n, N <= n -> 0 <= f n /\ 0 <= g n).
+  { intros. splits; apply Z.lt_le_incl; applys~ HN. }
+  assert (cumul_f'_nonneg : forall n, 0 <= cumul f' lo n).
+  { intros. subst f'. apply big_nonneg_Z. intros.
+    cases_if~; [| apply f_g_nonneg]; auto with zarith. }
+  assert (cumul_g'_nonneg : forall n1 n2, lo <= n1 -> 0 <= cumul g' n1 n2).
+  { intros. subst g'. apply big_nonneg_Z. intros.
+    cases_if~; [| apply f_g_nonneg]; auto with zarith. }
+
+  (* Eliminate [Z.abs] in the goal and HN, as [f] and [g] are nonnegative. *)
+  rewrite Z.abs_eq by auto.
+  rewrite Z.abs_eq by (apply cumul_g'_nonneg; auto with zarith).
+  assert (Hf'g' : forall x, N <= x -> f' x <= c * (g' x)). {
+    intros x N_le_x. specializes HN x N_le_x.
+    rewrite Z.abs_eq in HN by applys~ f_g_nonneg.
+    rewrite Z.abs_eq in HN by applys~ f_g_nonneg.
+    subst f' g'. simpl. cases_if~; omega.
+  }
+  clear HN.
+
+  (* Start proving the main inequality by splitting [cumul]s.
+     [cumul f' lo N] and [cumul g' lo N] are equal to 0, and
+     after [N], [f x <= c * g x] holds.
+  *)
+
+  rewrite (cumul_split N) with (f := f') by omega.
+  rewrite cumulP with (f := f') (lo := lo).
+  rewrite big_covariant with (g := fun _ => 0) (R := eq); try typeclass.
+  Focus 2.
+  { introv I. forwards: in_interval_lo I. forwards: in_interval_hi I.
+    subst f'; simpl. cases_if~. omega. }
+  Unfocus.
+  rewrite big_const_Z. ring_simplify.
+
+  rewrite (cumul_split N) with (f := g') by omega.
+  rewrite Z.mul_add_distr_l.
+  rewrite cumulP with (f := g') (lo := lo).
+  rewrite big_covariant with (g := fun _ => 0) (R := eq); try typeclass.
+  Focus 2.
+  { introv I. forwards: in_interval_lo I. forwards: in_interval_hi I.
+    subst g'; simpl. cases_if~. omega. }
+  Unfocus.
+  rewrite big_const_Z. ring_simplify.
+
+  rewrite cumulP with (f := f').
+  rewrite big_covariant with (R := Z.le) (g := (fun i => c * g' i));
+  try typeclass.
+  Focus 2. { intros. apply Hf'g'. applys* in_interval_lo. } Unfocus.
+  rewrite <-big_map_distributive; try typeclass.
+  rewrite <-cumulP.
+  omega.
+Qed.
 
 Lemma dominated_big_sum_with (h : Z -> Z) :
-  forall (f g : Z_filterType -> Z) (lo : Z),
-  (forall i, lo <= i -> 0 <= f i) ->
-  (forall i, lo <= i -> 0 <= g i) ->
+  forall (f g : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun i => 0 < f i) ->
+  ultimately Z_filterType (fun i => 0 < g i) ->
   dominated Z_filterType f g ->
-  monotonic Z.le Z.le f ->
   limit Z_filterType Z_filterType h ->
   dominated Z_filterType (cumul_with h f lo) (cumul_with h g lo).
 Proof.
-  introv f_nonneg g_nonneg dom_f_g f_mon h_lim.
-  pose (f' := fun (nn : Z_filterType * Z) => let (_, n) := nn in f n).
-  pose (g' := fun (nn : Z_filterType * Z) => let (_, n) := nn in g n).
-  forwards~ D: Product.dominated_big_sum_with h f' g' lo.
-  { apply filter_universe_alt. eauto. }
-  { apply filter_universe_alt. eauto. }
-  { destruct dom_f_g as [c U]. exists c.
-    rewrite productP. exists (fun (_ : Z) => True). eexists. splits.
-    { apply filter_universe. }
-    { apply U. }
-    eauto. }
-  destruct D as [c U]. rewrite productP in U.
-  destruct U as (P1 & P2 & UP1 & UP2 & U).
-  exists c. revert UP1 UP2; filter_closed_under_intersection.
-  introv (P1a & P2a). applys~ U P1a P2a.
-Qed.
-
-Lemma dominated_big_sum :
-  forall (f g : Z_filterType -> Z) (lo : Z),
-  (forall i, lo <= i -> 0 <= f i) ->
-  (forall i, lo <= i -> 0 <= g i) ->
-  dominated Z_filterType f g ->
-  monotonic Z.le Z.le f ->
-  dominated Z_filterType (cumul f lo) (cumul g lo).
-Proof.
-  intros. forwards~ D: dominated_big_sum_with (fun (i : Z) => i) f g lo.
-  unfold limit, finer. simpl. intros. rewrite imageP. eauto.
+  introv Ufpos Ugpos dom_f_g h_lim.
+  eapply dominated_comp_eq.
+  - applys~ dominated_big_sum lo dom_f_g.
+  - apply h_lim.
+  - reflexivity.
+  - reflexivity.
 Qed.
 
 Lemma dominated_big_sum_eq :
-  forall (f g sum_f sum_g : Z_filterType -> Z) (lo : Z),
-  (forall i, lo <= i -> 0 <= f i) ->
-  (forall i, lo <= i -> 0 <= g i) ->
+  forall (f g sum_f sum_g : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun i => 0 < f i) ->
+  ultimately Z_filterType (fun i => 0 < g i) ->
   dominated Z_filterType f g ->
-  monotonic Z.le Z.le f ->
   (forall i, sum_f i = cumul f lo i) ->
   (forall i, sum_g i = cumul g lo i) ->
   dominated Z_filterType sum_f sum_g.
 Proof.
-  introv ? ? ? ? sum_f_eq sum_g_eq.
+  introv ? ? ? sum_f_eq sum_g_eq.
   forwards: func_ext_dep sum_f_eq.
   forwards: func_ext_dep sum_g_eq.
   subst. applys dominated_big_sum; eauto.
 Qed.
 
 Lemma dominated_big_sum_with_eq (h : Z -> Z) :
-  forall (f g sum_f sum_g : Z_filterType -> Z) (lo : Z),
-  (forall i, lo <= i -> 0 <= f i) ->
-  (forall i, lo <= i -> 0 <= g i) ->
+  forall (f g sum_f sum_g : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun i => 0 < f i) ->
+  ultimately Z_filterType (fun i => 0 < g i) ->
   dominated Z_filterType f g ->
-  monotonic Z.le Z.le f ->
   limit Z_filterType Z_filterType h ->
   (forall i, sum_f i = cumul_with h f lo i) ->
   (forall i, sum_g i = cumul_with h g lo i) ->
   dominated Z_filterType sum_f sum_g.
 Proof.
-  introv ? ? ? ? ? sum_f_eq sum_g_eq.
+  introv ? ? ? ? sum_f_eq sum_g_eq.
   forwards: func_ext_dep sum_f_eq.
   forwards: func_ext_dep sum_g_eq.
   subst. applys dominated_big_sum_with; eauto.
 Qed.
 
 Lemma dominated_big_sum_bound :
-  forall (f : Z_filterType -> Z) (lo : Z),
-  (forall i, lo <= i -> 0 <= f i) ->
-  monotonic Z.le Z.le f ->
+  forall (f : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun i => 0 < f i) ->
+  ultimately Z_filterType (fun i => monotonic (rel_after i Z.le) Z.le f) ->
   dominated Z_filterType (cumul f lo) (fun n => n * f n).
 Proof.
-  introv f_nonneg f_mon.
-  pose (f' := fun (p : Z_filterType * Z) => let (_, n) := p in f n).
-  forwards~ D: Product.dominated_big_sum_bound f' lo.
-  { apply filter_universe_alt. eauto. }
+  introv. generalize (ultimately_ge_Z lo). filter_intersect.
+  rewrite ZP. intros (N & HN).
+
+  (* "Patch" [f] to be always monotonic. *)
+  pose (f' := fun x => If x < N then f N else f x).
+
+  eapply dominated_transitive with (cumul f' lo).
+  { apply dominated_cumul_ultimately_eq; exists N; intros; subst f'; simpl.
+    cases_if~; omega.
+    cases_if~; applys~ HN. auto with zarith. }
+
+  eapply dominated_transitive with (fun n => n * f' n).
+  Focus 2.
+  { apply dominated_ultimately_eq; exists N; intros; subst f'; simpl.
+    cases_if~; omega. }
+  Unfocus.
+
+  (* Use the version of this lemma on product filters. *)
+
+  pose (f'' := fun (p : Z * Z) => let (_, n) := p in f' n).
+
+  forwards~ D: @Product.dominated_big_sum_bound Z_filterType f'' lo.
+  { apply filter_universe_alt. intros. subst f'' f'. simpl.
+    cases_if; apply Z.lt_le_incl; apply HN; omega. }
+  { intros. subst f'' f'. simpl.
+    specializes HN N ___. omega. destruct HN as (? & ? & fmon).
+    unfold monotonic, rel_after in *. intros.
+    cases_if; cases_if; auto with zarith. }
   simpl in *. destruct D as [c U]. rewrite productP in U.
   destruct U as (P1 & P2 & UP1 & UP2 & H).
   exists c. revert UP1 UP2; filter_closed_under_intersection.
@@ -669,9 +913,9 @@ Proof.
 Qed.
 
 Lemma dominated_big_sum_bound_with (h : Z -> Z) :
-  forall (f : Z_filterType -> Z) (lo : Z),
-  (forall i, lo <= i -> 0 <= f i) ->
-  monotonic Z.le Z.le f ->
+  forall (f : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun i => 0 < f i) ->
+  ultimately Z_filterType (fun i => monotonic (rel_after i Z.le) Z.le f) ->
   limit Z_filterType Z_filterType h ->
   dominated Z_filterType (cumul_with h f lo) (fun n => h n * f (h n)).
 Proof.
