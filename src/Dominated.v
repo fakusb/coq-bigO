@@ -74,9 +74,7 @@ Proof.
   eauto with zarith.
 Qed.
 
-(* Domination is reflexive.
-   (Howell's Property 4)
-*)
+(* Domination is reflexive. *)
 
 Lemma dominated_reflexive f :
   dominated f f.
@@ -103,8 +101,6 @@ Arguments dominated : clear implicits.
 Section DominatedLaws.
 
 Variable A : filterType.
-
-(* Howell's Property 3. *)
 
 Lemma dominated_le_compat_r f g1 g2 :
   ultimately A (fun x => Z.abs (g1 x) <= Z.abs (g2 x)) ->
@@ -136,9 +132,7 @@ Proof.
   intros. lia.
 Qed.
 
-(* Domination is compatible with mul.
-   (Howell's Property 5)
-*)
+(* Domination is compatible with mul. *)
 
 Lemma dominated_mul f1 f2 g1 g2 :
   dominated A f1 g1 ->
@@ -325,13 +319,6 @@ Module Product.
 Section ProductLaws.
 
 Variable A : filterType.
-
-(* Property 2
-
-  pour f, g: NxB → Z, si f ∈ O (g), f croissante sur la première composante,
-  f, g positives sur [0, +infini[, alors
-  λ(x, y). Σᵢ₌₀ˣ f(i, y) ∈ O(λ(x, y). Σᵢ₌₀ˣ g(i, y))
-*)
 
 Definition cumul (A : Type) (f : A * Z -> Z) (lo : Z) : A * Z -> Z :=
   fun an => let (a, n) := an in
