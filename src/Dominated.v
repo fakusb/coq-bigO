@@ -98,6 +98,11 @@ Qed.
 End Domination.
 Arguments dominated : clear implicits.
 
+Add Parametric Relation (A : filterType) : (A -> Z) (dominated A)
+  reflexivity proved by (@dominated_reflexive A)
+  transitivity proved by (@dominated_transitive A)
+  as dominated_preorder.
+
 Section DominatedLaws.
 
 Variable A : filterType.
@@ -108,7 +113,7 @@ Lemma dominated_le_compat_r f g1 g2 :
   dominated A f g2.
 Proof.
   intros U D.
-  apply dominated_transitive with g1; eauto.
+  rewrite D.
   apply subrelation_ultimately_le_dominated. eauto.
 Qed.
 
@@ -118,7 +123,7 @@ Lemma dominated_le_compat_l f1 f2 g :
   dominated A f2 g.
 Proof.
   intros U D.
-  apply dominated_transitive with f1; eauto.
+  rewrite <-D.
   apply subrelation_ultimately_le_dominated. eauto.
 Qed.
 
