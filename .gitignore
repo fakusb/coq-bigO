@@ -1,0 +1,28 @@
+# Text editing.
+*~
+
+# OCaml.
+_build
+*.cm*
+*.o
+*.native
+*.byte
+
+# CFML.
+settings.sh
+*.d
+*.cmj
+*_ml.v
+_output
+_cf
+
+# Coq (using TLC's Makefile.coq).
+*.v.d
+*.vio
+*.vo
+*.vq
+_CoqProject
+*.glob
+*.coq-native
+.coqide
+nlia.cache
