@@ -192,6 +192,24 @@ Proof.
   intros. nia.
 Qed.
 
+Lemma dominated_sum_l f1 f2 :
+  dominated A f2 f1 ->
+  dominated A (fun x => f1 x + f2 x) f1.
+Proof.
+  intros (c & u). exists (c + 1).
+  revert u; filter_closed_under_intersection.
+  intros. lia.
+Qed.
+
+Lemma dominated_sum_r f1 f2 :
+  dominated A f1 f2 ->
+  dominated A (fun x => f1 x + f2 x) f2.
+Proof.
+  intros (c & u). exists (c + 1).
+  revert u; filter_closed_under_intersection.
+  intros. lia.
+Qed.
+
 (* This lemma offers a general mechanism for transforming the parameters
    of the asymptotic analysis. *)
 
