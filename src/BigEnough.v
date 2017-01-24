@@ -75,7 +75,7 @@ Ltac big_base :=
      an application of [m], where [m] has been introduced by [pose_big_fun],
      then it may be necessary to expand away the application of [m] before
      applying the lemmas [here] and [next]. *)
-  try ( match goal with |- is_true (leq _ (?m _)) => rewrite m end );
+  try ( match goal with |- leq _ (?m _) => unfold m end );
   repeat first [ apply here | apply next ].
 
 (* ------------------------------------------------------------------------ *)
@@ -197,6 +197,17 @@ Proof.
   big.
   close.
 Qed.
+
+Goal forall k1 k2, exists (f: nat -> nat), (k1 <= f 3) /\ (k2 <= f 3).
+Proof.
+  intros.
+  exists_big_fun f nat nat.
+  (* This also works with functions. *)
+  split.
+  big.
+  big.
+  close.
+Defined.
 
 Goal forall P : Prop, P -> exists i, P /\ (2 <= i).
 Proof.
