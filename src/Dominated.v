@@ -14,7 +14,7 @@ Require Import BigEnough.
 Require Import TLC.LibAxioms.
 Require Import TLC.LibLogic.
 
-(* ---------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 
 (* If we have a filter on [A], then we can define a domination relation between
    functions of type [A -> Z]. *)
@@ -36,7 +36,7 @@ Definition dominated (f g : A -> Z) :=
 
 (* This notion is analogous to [is_domin] in Coquelicot. *)
 
-(* ---------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 
 (* The multiplicative constant of [dominated] can always be assumed to be
    non-negative.
@@ -63,7 +63,7 @@ Proof.
   exists 1. apply filter_universe_alt. eauto with zarith.
 Qed.
 
-(* Ultimately pointwise inequality implies domination. *)
+(* Asymptotic pointwise inequality implies domination. *)
 
 Lemma subrelation_ultimately_le_dominated f g :
   ultimately A (fun x => Z.abs (f x) <= Z.abs (g x)) ->
@@ -107,25 +107,55 @@ Section DominatedLaws.
 
 Variable A : filterType.
 
-Lemma dominated_le_compat_r f g1 g2 :
+(* Domination is compatible with asymptotic pointwise inequality. *)
+
+Lemma dominated_le f1 f2 g1 g2 :
+  ultimately A (fun x => Z.abs (f2 x) <= Z.abs (f1 x)) ->
   ultimately A (fun x => Z.abs (g1 x) <= Z.abs (g2 x)) ->
-  dominated A f g1 ->
-  dominated A f g2.
+  dominated A f1 g1 ->
+  dominated A f2 g2.
 Proof.
-  intros U D.
-  rewrite D.
-  apply subrelation_ultimately_le_dominated. eauto.
+  intros Uf Ug D.
+  assert (D': dominated A f1 g2).
+  { rewrite D. applys subrelation_ultimately_le_dominated Ug. }
+  rewrite <-D'. applys subrelation_ultimately_le_dominated Uf.
 Qed.
 
-Lemma dominated_le_compat_l f1 f2 g :
+Lemma dominated_le_l f1 f2 g :
   ultimately A (fun x => Z.abs (f2 x) <= Z.abs (f1 x)) ->
   dominated A f1 g ->
   dominated A f2 g.
 Proof.
-  intros U D.
-  rewrite <-D.
-  apply subrelation_ultimately_le_dominated. eauto.
+  intros U D. applys dominated_le U D.
+  apply filter_universe_alt. intro; reflexivity.
 Qed.
+
+Lemma dominated_le_r f g1 g2 :
+  ultimately A (fun x => Z.abs (g1 x) <= Z.abs (g2 x)) ->
+  dominated A f g1 ->
+  dominated A f g2.
+Proof.
+  intros U D. applys dominated_le U D.
+  apply filter_universe_alt. intro; reflexivity.
+Qed.
+
+(* Asymptotic pointwise equality implies domination.
+
+   This is trivially true, but comes in handy to "patch" non-asymptotic parts of
+   a function that appear in a [dominated] goal, typically so that it has nicer
+   properties.
+
+   For example, this allows to change a goal
+
+     [dominated _ f g]
+
+   into
+
+     [dominated _ (fun x => max 0 (f x)) g]
+
+   when f is ultimately nonnegative. Now [fun x => max 0 (f x)] is always
+   nonnegative, which may be more convenient to handle.
+*)
 
 Lemma dominated_ultimately_eq :
   forall (A : filterType) f f',
@@ -145,10 +175,42 @@ Lemma dominated_mul f1 f2 g1 g2 :
   dominated A (fun x => (f1 x) * (f2 x)) (fun x => (g1 x) * (g2 x)).
 Proof.
   intros D1 D2.
-  forwards (c1 & c1_pos & U_f1_g1): dominated_nonneg_const D1.
-  forwards (c2 & c2_pos & U_f2_g2): dominated_nonneg_const D2.
+  forwards (c1 & c1_pos & U1): dominated_nonneg_const D1.
+  forwards (c2 & c2_pos & U2): dominated_nonneg_const D2.
   exists (c1 * c2).
-  apply (filter_closed_under_intersection U_f1_g1 U_f2_g2).
+  revert U1 U2; filter_closed_under_intersection.
+  intros. rewrite !Z.abs_mul. nia.
+Qed.
+
+(* Dominated is compatible with max. *)
+
+Lemma dominated_max f1 f2 g1 g2 :
+  ultimately A (fun x => 0 <= g1 x) ->
+  ultimately A (fun x => 0 <= g2 x) ->
+  dominated A f1 g1 ->
+  dominated A f2 g2 ->
+  dominated A (fun x => Z.max (f1 x) (f2 x)) (fun x => Z.max (g1 x) (g2 x)).
+Proof.
+  intros P1 P2 D1 D2.
+  forwards (c1 & c1_pos & U1): dominated_nonneg_const D1.
+  forwards (c2 & c2_pos & U2): dominated_nonneg_const D2.
+  exists (Z.max c1 c2).
+  revert P1 P2 U1 U2; filter_closed_under_intersection.
+  introv (? & ? & ? & ?). nia.
+Qed.
+
+(* One can "distribute" dominated over max, that is, a max is dominated by some
+   function if both its components are dominated by it.
+*)
+
+Lemma dominated_max_distr f g h :
+  dominated A f h ->
+  dominated A g h ->
+  dominated A (fun x => Z.max (f x) (g x)) h.
+Proof.
+  intros (c1 & U1) (c2 & U2).
+  exists (Z.max c1 c2).
+  revert U1 U2; filter_closed_under_intersection.
   intros. nia.
 Qed.
 
@@ -192,22 +254,15 @@ Proof.
   intros. nia.
 Qed.
 
-Lemma dominated_sum_l f1 f2 :
-  dominated A f2 f1 ->
-  dominated A (fun x => f1 x + f2 x) f1.
+Lemma dominated_sum_distr f g h :
+  dominated A f h ->
+  dominated A g h ->
+  dominated A (fun x => f x + g x) h.
 Proof.
-  intros (c & u). exists (c + 1).
-  revert u; filter_closed_under_intersection.
-  intros. lia.
-Qed.
-
-Lemma dominated_sum_r f1 f2 :
-  dominated A f1 f2 ->
-  dominated A (fun x => f1 x + f2 x) f2.
-Proof.
-  intros (c & u). exists (c + 1).
-  revert u; filter_closed_under_intersection.
-  intros. lia.
+  intros (c1 & U1) (c2 & U2).
+  exists (c1 + c2).
+  revert U1 U2; filter_closed_under_intersection.
+  introv (? & ?). nia.
 Qed.
 
 (* This lemma offers a general mechanism for transforming the parameters
@@ -247,6 +302,14 @@ Proof.
     simpl. eauto.
 Qed.
 
+(* Alternative formulation of [dominated_comp], that doesn't require the goal to
+   syntactically match the composition of [f] (resp. [g]) and [p].
+
+   It only requires the user to prove the pointwise equality between the
+   functions that appear in the goal and the composition of [f] (resp. [g]) and
+   [p].
+*)
+
 Lemma dominated_comp_eq :
   forall (I J : filterType) (f g : J -> Z),
   dominated J f g ->
@@ -262,7 +325,7 @@ Proof.
   subst. apply dominated_comp; eauto.
 Qed.
 
-(* Note: the conclusion of the above lemma could be rephrased as follows. *)
+(* Note: the conclusion of [dominated_comp] could be rephrased as follows. *)
 
 Goal
   forall (I J : filterType),
@@ -273,6 +336,8 @@ Goal
 Proof.
   intros. unfold dominated, image. tauto.
 Qed.
+
+(* TODO: move *)
 
 Lemma dominated_shift :
   forall f g x0,
@@ -393,7 +458,13 @@ Ltac asserts_applys P :=
 Ltac math_apply P :=
   asserts_applys P; [ intros; omega | .. ].
 
-(* Note that the hypothesis:
+(* Under some assumptions, domination is compatible with [cumul] (i.e "big sum").
+
+   Note that [f] and [g] are functions over [A * Z]. Moreover, their sums are
+   also functions over [A * Z]. Domination is expressed wrt. the product filter
+   of [A] and [Z], both for [f], [g] and their sums.
+
+   Note that the hypothesis:
 
      [forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))]
 
@@ -402,15 +473,15 @@ Ltac math_apply P :=
      [forall a, ultimately (fun x =>
         monotonic (rel_after x Z.le) Z.le (fun i => f (a, i))].
 
-   I.e, f really has to be monotonic starting at the summation index.
+   I.e, [f] really has to be monotonic starting at the summation index.
 
    For example, if we take:
      f (a, x) = x if x > 10, -a*x + 20 otherwise
      g (a, x) = x
 
    then:
-     - dominated f g
-     - forall a, f is monotonic for x big enough
+     - dominated f g holds
+     - for all a, f is monotonic for x big enough
      - however, for a fixed x > 10 and a going to infinity, Σf (a, x) goes
        to infinity while Σg (a, x) remains constant.
 *)
@@ -523,6 +594,10 @@ Proof.
   - nia.
 Qed.
 
+(* Corollary of the previous lemma, where the summation is done up to some
+   function [h], which is required to grow to infinity.
+*)
+
 Lemma dominated_big_sum_with (h : Z -> Z) :
   forall (f g : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
@@ -574,11 +649,14 @@ Proof.
   subst. applys dominated_big_sum_with; eauto.
 Qed.
 
+(* The iterated sum of [f] is dominated by [f] times the number of
+   iterations. *)
+
 Lemma dominated_big_sum_bound :
   forall (f : A * Z -> Z) (lo : Z),
   ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
   (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
-  dominated (product_filterType A Z_filterType)
+   dominated (product_filterType A Z_filterType)
     (cumul f lo)
     (fun p => let (a, n) := p in n * f (a, n)).
 Proof.
@@ -661,13 +739,21 @@ Ltac asserts_applys P :=
 Ltac math_apply P :=
   asserts_applys P; [ intros; omega | .. ].
 
-(* The [ultimately (fun x => 0 < f' x)] assumption is really required:
-   otherwise, take [f := fun x => if x = 0 then 1 else 0] and [f' := 0].
+(* Asymptotic pointwise equality implies domination of iterated sums.
+
+   Similarly to [dominated_ultimately_eq], this allows to "patch"
+   non-asymptotic parts of functions, which iterated sum appears in
+   a dominated goal.
+
+   Note:
+   The [ultimately (fun x => 0 < f' x)] assumption is really required.
+
+   Otherwise, take [f := fun x => if x = 0 then 1 else 0] and [f' := 0].
 
    [ultimately (fun x => f x = f' x)] holds, but
    [dominated (cumul f 0) (cumul f' 0)] doesn't.
 
-   This is not exactly tight; [often (fun x => 0 < f' x)] may be enough.
+   This is not completely tight; [often (fun x => 0 < f' x)] may be enough.
    However, in practice the functions we handle tend to be ultimately
    monotonic, in which case this boils down to the same thing.
 *)
@@ -933,3 +1019,6 @@ Proof.
   forwards~ dom_bound: dominated_big_sum_bound f lo.
   applys~ dominated_comp_eq dom_bound lim_h.
 Qed.
+
+(* TODO: corrollaire de dominated_big_sum_bound où f est une fonction
+   constante. *)
