@@ -616,39 +616,6 @@ Proof.
   - intros [? ?]. reflexivity.
 Qed.
 
-Lemma dominated_big_sum_eq :
-  forall (f g sum_f sum_g : A * Z -> Z) (lo : Z),
-  ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
-  ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
-  dominated (product_filterType A Z_filterType) f g ->
-  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
-  (forall a i, sum_f (a, i) = cumul f lo (a, i)) ->
-  (forall a i, sum_g (a, i) = cumul g lo (a, i)) ->
-  dominated (product_filterType A Z_filterType) sum_f sum_g.
-Proof.
-  introv ? ? ? ? sum_f_eq sum_g_eq.
-  forwards: func_ext_dep (pack_forall_pair_eq sum_f_eq).
-  forwards: func_ext_dep (pack_forall_pair_eq sum_g_eq).
-  subst. applys dominated_big_sum; eauto.
-Qed.
-
-Lemma dominated_big_sum_with_eq (h : Z -> Z) :
-  forall (f g sum_f sum_g : A * Z -> Z) (lo : Z),
-  ultimately A (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
-  ultimately A (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
-  dominated (product_filterType A Z_filterType) f g ->
-  (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
-  limit Z_filterType Z_filterType h ->
-  (forall a i, sum_f (a, i) = cumul_with h f lo (a, i)) ->
-  (forall a i, sum_g (a, i) = cumul_with h g lo (a, i)) ->
-  dominated (product_filterType A Z_filterType) sum_f sum_g.
-Proof.
-  introv ? ? ? ? ? sum_f_eq sum_g_eq.
-  forwards: func_ext_dep (pack_forall_pair_eq sum_f_eq).
-  forwards: func_ext_dep (pack_forall_pair_eq sum_g_eq).
-  subst. applys dominated_big_sum_with; eauto.
-Qed.
-
 (* The iterated sum of [f] is dominated by [f] times the number of
    iterations. *)
 
@@ -935,37 +902,6 @@ Proof.
   - apply h_lim.
   - reflexivity.
   - reflexivity.
-Qed.
-
-Lemma dominated_big_sum_eq :
-  forall (f g sum_f sum_g : Z -> Z) (lo : Z),
-  ultimately Z_filterType (fun i => 0 < f i) ->
-  ultimately Z_filterType (fun i => 0 < g i) ->
-  dominated Z_filterType f g ->
-  (forall i, sum_f i = cumul f lo i) ->
-  (forall i, sum_g i = cumul g lo i) ->
-  dominated Z_filterType sum_f sum_g.
-Proof.
-  introv ? ? ? sum_f_eq sum_g_eq.
-  forwards: func_ext_dep sum_f_eq.
-  forwards: func_ext_dep sum_g_eq.
-  subst. applys dominated_big_sum; eauto.
-Qed.
-
-Lemma dominated_big_sum_with_eq (h : Z -> Z) :
-  forall (f g sum_f sum_g : Z -> Z) (lo : Z),
-  ultimately Z_filterType (fun i => 0 < f i) ->
-  ultimately Z_filterType (fun i => 0 < g i) ->
-  dominated Z_filterType f g ->
-  limit Z_filterType Z_filterType h ->
-  (forall i, sum_f i = cumul_with h f lo i) ->
-  (forall i, sum_g i = cumul_with h g lo i) ->
-  dominated Z_filterType sum_f sum_g.
-Proof.
-  introv ? ? ? ? sum_f_eq sum_g_eq.
-  forwards: func_ext_dep sum_f_eq.
-  forwards: func_ext_dep sum_g_eq.
-  subst. applys dominated_big_sum_with; eauto.
 Qed.
 
 Lemma dominated_big_sum_bound :
