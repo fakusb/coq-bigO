@@ -956,5 +956,27 @@ Proof.
   applys~ dominated_comp_eq dom_bound lim_h.
 Qed.
 
-(* TODO: corrollaire de dominated_big_sum_bound où f est une fonction
-   constante. *)
+(* Special case of [dominated_big_sum_bound], where the function in the big sum
+   is constant.
+*)
+
+Lemma dominated_big_sum_cst_bound : forall (c : Z) (lo : Z),
+  dominated Z_filterType (cumul (fun (_ : Z) => c) lo) (fun n => n).
+Proof.
+  intros. exists_big k Z.
+  generalize (ultimately_ge_Z 1) (ultimately_ge_Z lo); filter_closed_under_intersection.
+  intros x (one_le_x & lo_le_x).
+  rewrite cumulP. rewrite big_const_Z.
+  rewrite Z.mul_sub_distr_r.
+  cut (Z.abs c + Z.abs (lo * c) <= k). { generalize k; clear k. intros. nia. }
+  big. close.
+Qed.
+
+Lemma dominated_big_sum_cst_bound_with (h : Z -> Z) : forall (c : Z) (lo : Z),
+  limit Z_filterType Z_filterType h ->
+  dominated Z_filterType (cumul_with h (fun (_ : Z) => c) lo) (fun n => h n).
+Proof.
+  introv lim_h.
+  forwards D: dominated_big_sum_cst_bound c lo.
+  applys~ dominated_comp_eq D lim_h.
+Qed.
