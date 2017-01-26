@@ -409,13 +409,11 @@ Section ProductLaws.
 Variable A : filterType.
 
 Definition cumul (A : Type) (f : A * Z -> Z) (lo : Z) : A * Z -> Z :=
-  fun an => let (a, n) := an in
-  \big[Z.add]_(i <- interval lo n) f (a, i).
+  fun '(a, n) => \big[Z.add]_(i <- interval lo n) f (a, i).
 
 Definition cumul_with (h : Z -> Z) (A : Type) (f : A * Z -> Z) (lo : Z) :
   A * Z -> Z :=
-  fun an => let (a, n) := an in
-  cumul f lo (a, h n).
+  fun '(a, n) => cumul f lo (a, h n).
 
 Lemma cumulP :
   forall A (f : A * Z -> Z) lo a n,
@@ -625,7 +623,7 @@ Lemma dominated_big_sum_bound :
   (forall a, monotonic (rel_after lo Z.le) Z.le (fun i => f (a, i))) ->
    dominated (product_filterType A Z_filterType)
     (cumul f lo)
-    (fun p => let (a, n) := p in n * f (a, n)).
+    (fun '(a, n) => n * f (a, n)).
 Proof.
   introv U_f_nonneg f_mon.
   eexists (Z.max 1 (1 - lo)). rewrite productP. do 2 eexists. splits.
@@ -662,7 +660,7 @@ Lemma dominated_big_sum_bound_with (h : Z -> Z) :
   limit Z_filterType Z_filterType h ->
   dominated (product_filterType A Z_filterType)
     (cumul_with h f lo)
-    (fun p => let (a, n) := p in h n * f (a, h n)).
+    (fun '(a, n) => h n * f (a, h n)).
 Proof.
   introv U_f_nonneg f_mon lim_h.
   forwards~ dom_bound: dominated_big_sum_bound f lo.
@@ -929,7 +927,7 @@ Proof.
 
   (* Use the version of this lemma on product filters. *)
 
-  pose (f'' := fun (p : Z * Z) => let (_, n) := p in f' n).
+  pose (f'' := fun '((_, n) : Z * Z) => f' n).
 
   forwards~ D: @Product.dominated_big_sum_bound Z_filterType f'' lo.
   { apply filter_universe_alt. intros. subst f'' f'. simpl.

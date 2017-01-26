@@ -581,7 +581,7 @@ Lemma productP :
 Proof. reflexivity. Qed.
 
 Definition fswap (A1 A2 B : Type) (f: A1 * A2 -> B) : A2 * A1 -> B :=
-  fun p => let (x, y) := p in f (y, x).
+  fun '(x, y) => f (y, x).
 
 Lemma product_fswap :
   forall (A1 A2 : filterType) P,
@@ -593,10 +593,10 @@ Proof.
 Qed.
 
 Definition liftl (A1 A2 B : Type) (f: A1 -> B) : A1 * A2 -> B * A2 :=
-  fun p => let (x, y) := p in (f x, y).
+  fun '(x, y) => (f x, y).
 
 Definition liftr (A1 A2 B : Type) (f: A2 -> B) : A1 * A2 -> A1 * B :=
-  fun p => let (x, y) := p in (x, f y).
+  fun '(x, y) => (x, f y).
 
 Lemma limit_liftl :
   forall (A1 A2 B : filterType) f,
@@ -663,7 +663,7 @@ Goal
 Proof.
   intro H.
   specializes H nat_filterType nat_filterType
-    (fun (p: nat * nat) => let (x, y) := p in x < y \/ y < x).
+    (fun '(x, y) => x < y \/ y < x).
   simpl in H.
   specializes H ___.
   { rewrite natP. exists 0. intros.
@@ -692,7 +692,7 @@ Proof.
   intro H.
   specializes H Z_filterType Z_filterType
     (fun (_: Z * Z) => True)
-    (fun (p: Z * Z) => let (x, y) := p in Z.le x y).
+    (fun '(x, y) => Z.le x y).
   simpl in H.
   specializes H ___.
   { rewrite ZP. exists 0%Z. intros.
