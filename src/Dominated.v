@@ -24,8 +24,7 @@ Require Import TLC.LibLogic.
    domain; so do the reals. *)
 
 (* [dominated f g] holds if and only if, for some constant [c], [f x] is
-   ultimately bounded (in norm) by [c * g x]. We explicitly require [c] to be
-   nonnegative, because this seems more convenient. *)
+   ultimately bounded (in norm) by [c * g x]. *)
 
 Section Domination.
 
@@ -115,9 +114,8 @@ Qed.
 
 (* Asymptotic pointwise equality implies domination.
 
-   This is trivially true, but comes in handy to "patch" non-asymptotic parts of
-   a function that appear in a [dominated] goal, typically so that it has nicer
-   properties.
+   This comes in handy to "patch" non-asymptotic parts of a function that appear
+   in a [dominated] goal, typically so that it has nicer properties.
 
    For example, this allows to change a goal
 
