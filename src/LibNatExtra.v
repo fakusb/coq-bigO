@@ -10,7 +10,6 @@ Require Export Coq.Numbers.Natural.Peano.NPeano.
      For this reason, we do NOT import [Nat]. *)
   Notation log2 := Nat.log2.
 Require Import TLC.LibTactics.
-Ltac unpack := jauto_set_hyps; intros. (* TEMPORARY also in TLCBuffer *)
 Require Import LibFunOrd.
 
 (* ---------------------------------------------------------------------------- *)
