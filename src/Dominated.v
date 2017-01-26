@@ -54,32 +54,12 @@ Proof.
   - eauto.
 Qed.
 
-(* Pointwise inequality implies domination. *)
-
-Lemma subrelation_le_dominated f g :
-  (forall x, Z.abs (f x) <= Z.abs (g x)) ->
-  dominated f g.
-Proof.
-  exists 1. apply filter_universe_alt. eauto with zarith.
-Qed.
-
-(* Asymptotic pointwise inequality implies domination. *)
-
-Lemma subrelation_ultimately_le_dominated f g :
-  ultimately A (fun x => Z.abs (f x) <= Z.abs (g x)) ->
-  dominated f g.
-Proof.
-  intros U. exists 1.
-  apply (filter_closed_under_inclusion U).
-  eauto with zarith.
-Qed.
-
 (* Domination is reflexive. *)
 
 Lemma dominated_reflexive f :
   dominated f f.
 Proof.
-  eauto using subrelation_le_dominated with zarith.
+  exists 1. auto using filter_universe_alt with zarith.
 Qed.
 
 (* Domination is transitive. *)
@@ -107,36 +87,30 @@ Section DominatedLaws.
 
 Variable A : filterType.
 
-(* Domination is compatible with asymptotic pointwise inequality. *)
+(* Pointwise equality implies domination. *)
 
-Lemma dominated_le f1 f2 g1 g2 :
-  ultimately A (fun x => Z.abs (f2 x) <= Z.abs (f1 x)) ->
-  ultimately A (fun x => Z.abs (g1 x) <= Z.abs (g2 x)) ->
-  dominated A f1 g1 ->
-  dominated A f2 g2.
+Lemma dominated_eq f f' :
+  (forall a, f a = f' a) ->
+  dominated A f f'.
 Proof.
-  intros Uf Ug D.
-  assert (D': dominated A f1 g2).
-  { rewrite D. applys subrelation_ultimately_le_dominated Ug. }
-  rewrite <-D'. applys subrelation_ultimately_le_dominated Uf.
+  introv H. exists 1. apply filter_universe_alt.
+  intros. rewrite H. auto with zarith.
 Qed.
 
-Lemma dominated_le_l f1 f2 g :
-  ultimately A (fun x => Z.abs (f2 x) <= Z.abs (f1 x)) ->
-  dominated A f1 g ->
-  dominated A f2 g.
+Lemma dominated_eq_l f f' g :
+  (forall a, f a = f' a) ->
+  dominated A f g ->
+  dominated A f' g.
 Proof.
-  intros U D. applys dominated_le U D.
-  apply filter_universe_alt. intro; reflexivity.
+  introv E D. rewrite dominated_eq. apply D. auto.
 Qed.
 
-Lemma dominated_le_r f g1 g2 :
-  ultimately A (fun x => Z.abs (g1 x) <= Z.abs (g2 x)) ->
-  dominated A f g1 ->
-  dominated A f g2.
+Lemma dominated_eq_r f g g' :
+  (forall a, g a = g' a) ->
+  dominated A f g ->
+  dominated A f g'.
 Proof.
-  intros U D. applys dominated_le U D.
-  apply filter_universe_alt. intro; reflexivity.
+  introv E D. rewrite <-dominated_eq with (f' := g'). apply D. auto.
 Qed.
 
 (* Asymptotic pointwise equality implies domination.
@@ -157,14 +131,44 @@ Qed.
    nonnegative, which may be more convenient to handle.
 *)
 
-Lemma dominated_ultimately_eq :
-  forall (A : filterType) f f',
+Lemma dominated_ultimately_eq f f' :
   ultimately A (fun x => f x = f' x) ->
   dominated A f f'.
 Proof.
   introv U.
   exists 1. revert U; filter_closed_under_intersection.
   intros. lia.
+Qed.
+
+(* Pointwise inequality implies domination. *)
+
+Lemma dominated_le f g :
+  (forall x, Z.abs (f x) <= Z.abs (g x)) ->
+  dominated A f g.
+Proof.
+  exists 1. apply filter_universe_alt. eauto with zarith.
+Qed.
+
+(* Asymptotic pointwise inequality implies domination. *)
+
+Lemma dominated_ultimately_le f g :
+  ultimately A (fun x => Z.abs (f x) <= Z.abs (g x)) ->
+  dominated A f g.
+Proof.
+  intros U. exists 1.
+  apply (filter_closed_under_inclusion U).
+  eauto with zarith.
+Qed.
+
+(* A constant is dominated by any other non-zero constant. *)
+
+Lemma dominated_cst c1 c2 :
+  c2 <> 0 ->
+  dominated A (fun _ => c1) (fun _ => c2).
+Proof.
+  intros.
+  exists (Z.abs (c1 * c2)).
+  apply filter_universe_alt. intros. nia.
 Qed.
 
 (* Domination is compatible with mul. *)
@@ -180,6 +184,37 @@ Proof.
   exists (c1 * c2).
   revert U1 U2; filter_closed_under_intersection.
   intros. rewrite !Z.abs_mul. nia.
+Qed.
+
+(* As a corollary, domination is compatible with multiplying by constants. *)
+
+Lemma dominated_mul_cst c1 c2 f g :
+  c2 <> 0 ->
+  dominated A f g ->
+  dominated A (fun x => c1 * (f x)) (fun x => c2 * (g x)).
+Proof.
+  intros c2_nz D.
+  equates 1 2. applys~ dominated_mul (fun (_:A) => c1) f (fun (_:A) => c2) g.
+  applys~ dominated_cst. auto. auto.
+Qed.
+
+Lemma dominated_mul_cst_l c f g :
+  dominated A f g ->
+  dominated A (fun x => c * (f x)) g.
+Proof.
+  intros D. rewrite <-dominated_eq with (f' := g).
+  applys dominated_mul_cst 1 D. omega.
+  auto with zarith.
+Qed.
+
+Lemma dominated_mul_cst_r c f g :
+  dominated A f g ->
+  c <> 0 ->
+  dominated A f (fun x => c * (g x)).
+Proof.
+  intros D NZ. rewrite dominated_eq.
+  applys dominated_mul_cst 1 D. assumption.
+  auto with zarith.
 Qed.
 
 (* Dominated is compatible with max. *)
