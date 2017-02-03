@@ -55,7 +55,8 @@ COQINCLUDE := \
 # We copy these source files to $(CF), and process them with CFML there.
 
 SOURCES := \
-  max_subsequence_sum.ml
+  max_subsequence_sum.ml \
+  simple.ml
 
 CF := $(PWD)/_cf
 
