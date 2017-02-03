@@ -42,12 +42,19 @@ SRC := $(shell cd ../src && pwd)
 # Define COQINCLUDE.
 
 PWD := $(shell pwd)
+BIGO := $(shell cd ../../src && pwd)
 
 COQINCLUDE := \
   -R $(TLC) TLC                \
   -R $(CFML)/lib/coq CFML      \
   -R $(CFML)/lib/stdlib STDLIB \
   -R $(PWD) EXAMPLES           \
+	-R $(BIGO) BigO              \
+
+##############################################################################
+# Instrument the produced CF to enable reasoning about time credits
+
+CFML_FLAGS := -credits
 
 ##############################################################################
 # Define ML.
