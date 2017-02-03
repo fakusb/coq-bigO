@@ -35,18 +35,17 @@ Ltac add_fact_to_type P facts :=
   unify TE (prod TE' P);
   subst TE'.
 
-Ltac add_fact P facts :=
+Ltac add_fact fact_name P facts :=
   add_fact_to_type P facts;
-  let new_fact := fresh in
-  evar (new_fact : P);
+  evar (fact_name : P);
   let T := get_body_type facts in
   let TE' := nested_prod_fst T in
   let FE' := fresh in
   evar (FE' : TE');
   let F := get_body facts in
   let FE := nested_pair_fst F in
-  unify FE (pair FE' new_fact);
-  subst new_fact FE'.
+  unify FE (pair FE' fact_name);
+  subst FE'; fold fact_name in facts.
 
 Ltac get_last_fact facts :=
   let F := get_body facts in
@@ -72,38 +71,48 @@ Ltac close_facts facts :=
 
 Ltac prove_facts_tuple F :=
   match F with
-  | @pair _ _ ?x ?y =>
-    (try (is_evar y; prove_evar y)); [| prove_facts_tuple x]
+  | pair ?x ?y =>
+    (let E := (eval unfold y in y) in
+     prove_evar E);
+    [| prove_facts_tuple x]
+  | pair _ _ =>
+    fail
   | _ =>
     idtac
   end.
 
-Ltac generalize_proved_facts_tuple F :=
+Ltac clearbody_proved_facts_tuple F :=
   match F with
   | pair ?x ?y =>
-    generalize_proved_facts_tuple x;
-    generalize y
+    clearbody y;
+    clearbody_proved_facts_tuple x
+  | pair _ _ =>
+    fail
   | _ =>
     idtac
   end.
 
-Ltac generalize_proved_facts facts :=
+Ltac clearbody_proved_facts facts :=
   let F := get_body facts in
-  generalize_proved_facts_tuple F.
+  clearbody_proved_facts_tuple F.
 
 Ltac prove_facts facts :=
   close_facts facts;
   let F := get_body facts in
   prove_facts_tuple F;
-  [ .. | generalize_proved_facts facts; clear facts ].
+  [ .. | clearbody_proved_facts facts; clear facts ].
 
 Goal True.
   pose_facts facts.
-  add_fact (1 + 1 = 2) facts.
-  add_fact (1 + 2 = 3) facts.
+
+  add_fact H1 (1 + 1 = 2) facts.
+  add_fact H2 (1 + 2 = 3) facts.
+
+  assert (1 + 1 = 2 /\ 1 + 2 = 3).
+  { split. apply H1. apply H2. }
 
   prove_facts facts.
   - reflexivity.
   - reflexivity.
-  - intros H1 H2. tauto.
+  - tauto.
 Qed.
