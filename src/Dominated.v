@@ -1,8 +1,8 @@
 Require Import TLC.LibTactics.
 
 Require Import Coq.Logic.Classical_Pred_Type.
-Require Import ZArith.
-Local Open Scope Z_scope.
+Require Export ZArith.
+Open Scope Z_scope.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -97,19 +97,19 @@ Proof.
 Qed.
 
 Lemma dominated_eq_l f f' g :
-  (forall a, f a = f' a) ->
   dominated A f g ->
+  (forall a, f a = f' a) ->
   dominated A f' g.
 Proof.
-  introv E D. rewrite dominated_eq. apply D. auto.
+  introv D E. rewrite dominated_eq. apply D. auto.
 Qed.
 
 Lemma dominated_eq_r f g g' :
-  (forall a, g a = g' a) ->
   dominated A f g ->
+  (forall a, g a = g' a) ->
   dominated A f g'.
 Proof.
-  introv E D. rewrite <-dominated_eq with (f' := g'). apply D. auto.
+  introv D E. rewrite <-dominated_eq with (f' := g'). apply D. auto.
 Qed.
 
 (* Asymptotic pointwise equality implies domination.
