@@ -394,6 +394,27 @@ Proof. reflexivity. Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
+(* A filter on [unit], as an instance of [everywhere]. *)
+
+Instance Inhab_unit : Inhab unit.
+Proof. apply (prove_Inhab tt). Qed.
+
+Definition unit_filterMixin : Filter.mixin_of unit.
+Proof. eapply everywhere_filterMixin. typeclass. Defined.
+
+Definition unit_filterType := FilterType unit unit_filterMixin.
+
+Lemma unitP :
+  forall (P : unit -> Prop), ultimately unit_filterType P = P tt.
+Proof.
+  intro P.
+  assert (H: ultimately unit_filterType P = (forall tt, P tt)) by reflexivity.
+  rewrite H.
+  apply prop_ext. splits; auto. intros ? x. dependent inversion x. assumption.
+Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
 (* The standard filter on [nat]. *)
 
 Definition nat_filterMixin : Filter.mixin_of nat.
