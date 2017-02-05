@@ -20,6 +20,7 @@ Ltac prove_evar_in id :=
   unshelve instantiate (1 := _) in (Value of id).
 
 Ltac prove_evar E :=
+  is_evar E;
   let x := fresh in
   pose (x := E);
   prove_evar_in x;
