@@ -63,16 +63,11 @@ Ltac add_fact fact_name P facts :=
   unify FE (pair FE' fact_name);
   subst FE'; fold fact_name in facts.
 
-Ltac get_last_fact facts :=
-  let F := get_body facts in
-  nested_pair_snd F.
-
-Ltac prove_later_using facts :=
+Ltac prove_later_as_fact fact facts :=
   match goal with
-    |- ?P => add_fact P facts
+    |- ?P => add_fact fact P facts
   end;
-  let fact_P := get_last_fact facts in
-  apply fact_P.
+  apply fact.
 
 Ltac close_facts_type facts :=
   let T := get_body_type facts in
