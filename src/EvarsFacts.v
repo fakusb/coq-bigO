@@ -63,13 +63,7 @@ Ltac prove_later_as_fact fact facts :=
   end;
   apply fact.
 
-Ltac close_facts_type facts :=
-  let T := get_body_type facts in
-  let TE := nested_prod_fst T in
-  unify TE True.
-
 Ltac close_facts facts :=
-  close_facts_type facts;
   let F := get_body facts in
   let FE := nested_pair_fst F in
   unify FE I.
