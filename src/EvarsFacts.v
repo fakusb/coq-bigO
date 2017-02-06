@@ -1,5 +1,18 @@
 Require Import LibEvars.
 
+(******************************************************************************)
+(* pose_facts facts                                                           *)
+(* add_fact fact H facts                                                      *)
+(* prove_later_as_fact fact facts                                             *)
+(* prove_facts facts                                                          *)
+(* prove_fact fact facts                                                      *)
+(* prove_fact_using_facts fact facts                                          *)
+(* prove_fact_using aux_facts fact facts                                      *)
+(*                                                                            *)
+(* trim_facts facts                                                           *)
+(* clear_fact fact facts                                                      *)
+(******************************************************************************)
+
 Ltac is_def_to_evar id :=
   is_var id;
   let X := get_body id in
