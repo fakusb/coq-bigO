@@ -32,9 +32,8 @@ Ltac is_def id :=
 Ltac pose_facts facts :=
   let facts_t := fresh "facts_t" in
   evar (facts_t : Type);
-  let E := get_body facts_t in
-  clear facts_t;
-  evar (facts : E).
+  evar (facts : facts_t);
+  subst facts_t.
 
 Ltac nested_prod_fst p :=
   lazymatch p with
@@ -57,17 +56,24 @@ Ltac nested_pair_snd p :=
     end
   end.
 
+Ltac add_fact_to_type P facts :=
+  let T := get_body_type facts in
+  let TE := nested_prod_fst T in
+  let TE' := fresh in
+  evar (TE' : Type);
+  unify TE (prod TE' P);
+  subst TE'.
+
 Ltac add_fact fact_name P facts :=
+  add_fact_to_type P facts;
   evar (fact_name : P);
+  let T := get_body_type facts in
+  let TE' := nested_prod_fst T in
   let FE' := fresh in
-  let T' := fresh in
-  evar (T' : Type);
-  let TE' := get_body T' in
-  clear T';
   evar (FE' : TE');
   let F := get_body facts in
   let FE := nested_pair_fst F in
-  unify FE (@pair TE' P FE' fact_name);
+  unify FE (pair FE' fact_name);
   subst FE'; fold fact_name in facts.
 
 Ltac prove_later_as_fact fact facts :=
@@ -159,8 +165,8 @@ Ltac trim_facts facts :=
 
 Ltac clear_fact fact facts :=
   let F := get_body facts in
-  let F' := remove_fact_tuple fact F in
   clear facts;
+  let F' := remove_fact_tuple fact F in
   clear fact;
   pose (facts := F').
 
