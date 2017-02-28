@@ -19,6 +19,7 @@ Require Import Simple_ml.
 Lemma simpl_zero_credits : forall n, n = 0 -> \$ n ==> \[].
 Proof. intros. subst. rewrite <-credits_int_zero_eq. hsimpl. Qed.
 
+(* TODO: cas où f ne dépend pas de i *)
 Lemma xfor_inv_lemma_pred_credits : forall (I:int->hprop) (f: int -> int),
   forall (a:int) (n:int) (F:int->~~unit) H H',
   (a <= n) ->
@@ -45,7 +46,6 @@ Proof.
   { xchange HH. math_rewrite (a = n). xsimpl. }
 Qed.
 
-(* + cas où f ne dépend pas de i *)
 Lemma xfor_inv_lemma_credits : forall (I:int->hprop) (f: int -> int),
   forall (a:int) (b:int) (F:int->~~unit) H H',
   (a <= b+1) ->
@@ -140,15 +140,14 @@ Proof.
 Qed.
 
 Lemma loop1_spec :
+  exists (cost: int -> int),
   forall (n: int),
   0 <= n ->
-  exists (cost: int -> int),
   app loop1 [n]
     PRE (\$ cost n)
     POST (fun (tt:unit) => \[]) /\
   dominated Z_filterType cost (fun (n:Z) => n).
 Proof.
-  intros.
   exists_big_fun cost int int; try split; swap 2 3.
   xcf.
   xpay. { xsimpl_credits. apply le_implies_ge. tlc_big. math. }
@@ -298,6 +297,23 @@ Proof.
   }
 Qed.
 
+Ltac hsimpl_cancel_credits_int_alt facts :=
+  hsimpl_setup tt; hsimpl_step tt; eapply hsimpl_cancel_credits_int_alt;
+  [ reflexivity
+  |
+  | match goal with
+      |- _ <= _ ?x => generalize x; prove_later_as_fact facts
+    end
+  | hsimpl
+  ].
+
+(*
+Ltac Hcost_bookkeeping Hcost facts :=
+  let Hcost' := fresh in
+  name_latest_fact Hcost' facts;
+  prove_fact_using Hcost' Hcost facts; [ intros H x; specializes H x; omega |];
+  trim_facts facts; rename Hcost' into Hcost.
+
 Lemma tick3_spec_3 :
   appO tick3 [tt]
     unit_filterType (fun tt => 1) tt
@@ -305,71 +321,605 @@ Lemma tick3_spec_3 :
     (fun (tt:unit) => \[]).
 Proof.
   exists_cost cost unit. split.
-  let E := get_evar_in cost in evar (Hcost : forall x, 0 <= E x).
+  pose_facts facts; cut True.
+  let E := get_evar_in cost in add_fact Hcost (forall x, 0 <= E x) facts.
 
   xcf.
 
-  add_credits 1 cost. simpl in *.
-  let E := get_evar_in cost in evar (Hcost' : forall x, 0 <= E x).
-  prove_Hcost_with Hcost' cost Hcost. math. rename Hcost' into Hcost.
-  xpay. credits_split. hsimpl. math. apply le_implies_ge. apply Hcost.
+  xpay.
+  hsimpl_cancel_credits_int_alt facts. math.
+  Hcost_bookkeeping Hcost facts.
+
+  xapp.
+  hsimpl_cancel_credits_int_alt facts. math.
+  Hcost_bookkeeping Hcost facts.
+
+  xapp.
+  hsimpl_cancel_credits_int_alt facts. math.
+  Hcost_bookkeeping Hcost facts.
+
+  xapp.
+  hsimpl_cancel_credits_int_alt facts. math.
+
+  (* arg *)
+  (* trim_facts facts. *) (* ???? *)
+  close_facts facts. trim_facts facts.
+  let E := get_evar_in cost in unify E (fun (_:unit) => 0). simpl in *.
+  (* .... *) exact I.
+
+  simpl in *. apply dominated_cst. math.
+
+  Unshelve. math. math.
+Qed.
+ *)
+
+Record cost_fun A := make_cost_fun {
+  cost :> A -> Z ;
+  cost_nonneg : forall x, 0 <= cost x
+}.
+
+Arguments make_cost_fun [A].
 
 (*
-  xapp. {
-    add_credits 1 cost. simpl.
-
-    let E := get_evar_in cost in evar (Hcost' : forall x, 0 <= E x).
-    credits_split.
-    { hsimpl_credits. }
-    { math. }
-    { apply le_implies_ge. apply Hcost'. }
-  }
-
-  Unshelve.
+Lemma costP A (f : cost_fun A) :
+  cost f = fun (x : A) => f x.
+Proof. reflexivity. Qed.
 *)
 
-  evar (foo_t : Type).
-  evar (foo : foo_t).
+(* Hint Rewrite costP : rew_cost. *)
 
-  xapp. {
-    hsimpl_setup tt. hsimpl_step tt. eapply hsimpl_cancel_credits_int_alt.
-    reflexivity. math. simpl in *.
-
-    let E := get_evar_in cost in evar (Hcost' : forall x, 0 <= E x).
-
-    let H' := get_body Hcost' in
-    let T := type of H' in
-    unify foo_t T.
-
-    let H' := get_body Hcost' in
-    unify H' foo.
-
-    apply Hcost'. hsimpl_credits.
-  }
-
-  subst foo_t. simpl in *.
-  prove_Hcost_with foo cost Hcost. math.
-  rename foo into Hcost.
-
-  admit_evar Hcost.
-  admit. admit.
-  Unshelve. exact (fun (_:unit) => 0).
+Global Instance cost_fun_inhab A : Inhab (cost_fun A).
+Proof using.
+  applys prove_Inhab.
+  applys make_cost_fun (fun (_ : A) => 0). intros _.
+  omega.
 Qed.
 
-(*
-  let P := cfml_get_precondition tt in
-  match P with context [\$ ?X _] => pose X end. *)
-(* hsimpl_cancel_credits_int
-  n >= m
-  m>= 0
-  $(n -m ) * HT => HA
-  $n * HT ==> HA * $m
+Definition myif A (cond : Prop) (a b : A) :=
+  if (classicT cond) then a else b.
 
-  0 <= m  ->
-  0 <= rest x ->
-  (forall x, n x = m + rest x) ->
-  $(n x) * HT ==> HA * $m
+(*
+Program Definition cost_cst A (c : Z) :=
+  If (0 <= c) then make_cost_fun (fun (_ : A) => c) _ else arbitrary.
 *)
+
+Opaque myif.
+
+Program Definition cost_cst A (c : Z) :=
+  myif (0 <= c) (make_cost_fun (fun (_ : A) => c) _) arbitrary.
+Next Obligation.
+  admit.
+Defined.
+
+Program Definition cost_one A :=
+  make_cost_fun (fun (_ : A) => 1) _.
+
+Arguments cost_one : clear implicits.
+
+Program Definition cost_add A (f g : cost_fun A) :=
+  make_cost_fun (fun (x : A) => f x + g x) _.
+Next Obligation.
+  intros A f g x. simpl.
+  forwards: cost_nonneg f x.
+  forwards: cost_nonneg g x.
+  math.
+Defined.
+
+Program Definition cost_max A (f g : cost_fun A) :=
+  make_cost_fun (fun (x : A) => Z.max (f x) (g x)) _.
+Next Obligation.
+  intros A f g x. simpl.
+  forwards: cost_nonneg f x.
+  forwards: cost_nonneg g x.
+  math_lia.
+Defined.
+
+Lemma cost_cstP :
+  forall A (c : Z) (x : A),
+  0 <= c ->
+  cost_cst A c x = c.
+Proof.
+  introv N.
+  unfold cost_cst. (* todo notation *)
+  Transparent myif. unfold myif.
+  destruct (classicT (0 <= c)). simpl. auto. false. auto.
+Qed.
+
+Hint Rewrite cost_cstP : rew_cost.
+
+Lemma cost_oneP :
+  forall A (x : A),
+  cost_one A x = 1.
+Proof. reflexivity. Qed.
+
+Hint Rewrite cost_oneP : rew_cost.
+
+Lemma cost_cst_one :
+  forall A x,
+  cost_cst A 1 x = cost_one A x.
+Proof. intros. rewrite cost_cstP. rewrite cost_oneP. math. math. Qed.
+
+Lemma cost_addP :
+  forall A (f g : cost_fun A) x,
+  cost_add f g x = f x + g x.
+Proof. reflexivity. Qed.
+
+Hint Rewrite cost_addP : rew_cost.
+
+Tactic Notation "rew_cost" :=
+  autorewrite with rew_cost.
+Tactic Notation "rew_cost" "~" :=
+  rew_cost; auto_tilde.
+Tactic Notation "rew_cost" "in" hyp(H) :=
+  autorewrite with rew_cost in H.
+Tactic Notation "rew_cost" "~" "in" hyp(H) :=
+  rew_cost in H; auto_tilde.
+Tactic Notation "rew_cost" "in" "*" :=
+  autorewrite with rew_cost in *.
+Tactic Notation "rew_cost" "~" "in" "*" :=
+  rew_cost in *; auto_tilde.
+
+Definition appO_
+  (f: func) (xs: list dynamic)
+  (A: filterType) (costO : A -> Z) (x : A)
+  {B} (H: hprop) (Q : B -> hprop)
+  :=
+  exists (cost : cost_fun A),
+   app f xs
+     PRE (\$ cost x \* H)
+     POST Q /\
+   dominated A cost costO.
+
+(* TODO : fix the parenthesis around the notation *)
+Notation "'appO_' f xs A costO x" :=
+  (@appO_ f (xs)%dynlist A costO x _)
+  (at level 80,
+   f at level 0, xs at level 0,
+   A at level 0, costO at level 0, x at level 0) : charac.
+
+Lemma xpay_refine :
+  forall A B (cost cost' : cost_fun A) (x: A)
+         (F: hprop -> (B -> hprop) -> Prop) H Q,
+  (cost = cost_add (cost_one A) cost') ->
+  is_local F ->
+  F (\$ cost' x \* H) Q ->
+  (Pay_ ;; F) (\$ cost x \* H) Q.
+Proof.
+  introv E L HH. rewrite E. rew_cost.
+  xpay_start tt.
+  { unfold pay_one. credits_split. hsimpl. math.
+    forwards: cost_nonneg cost' x. math. }
+  xapply HH. hsimpl. hsimpl.
+Qed.
+
+(* tmp *)
+Ltac xpay_core tt ::=
+  eapply xpay_refine; [ reflexivity | xlocal | ].
+
+Lemma xseq_refine :
+  forall (A B : Type) cost cost1 cost2 (x : A) F1 F2 H (Q : B -> hprop),
+  (cost = cost_add cost1 cost2) ->
+  is_local F1 ->
+  is_local F2 ->
+  (exists Q',
+    F1 (\$ cost1 x \* H) Q' /\
+    F2 (\$ cost2 x \* Q' tt) Q) ->
+  (F1 ;; F2) (\$ cost x \* H) Q.
+Proof.
+  introv E L1 L2 (Q' & H1 & H2).
+  rewrite E. rew_cost.
+  xseq_pre tt. apply local_erase. eexists. split.
+  { xapply H1. credits_split. hsimpl.
+    forwards~: cost_nonneg cost1 x.
+    forwards~: cost_nonneg cost2 x. }
+  { xapply H2. hsimpl. hsimpl. }
+Qed.
+
+(* tmp *)
+Ltac xseq_noarg_core tt ::=
+  eapply xseq_refine; [ reflexivity | xlocal | xlocal | eexists; split ].
+
+Ltac dominated_rew_cost :=
+  eapply dominated_eq_l; [ | intros; rew_cost; reflexivity ]; simpl.
+
+(*
+Lemma group_credits_lemma : forall H1 H2 H3,
+    H1 \* H2 \* H3 = (H2 \* H1) \* H3.
+Proof. intros. rewrite (star_comm H2 H1). rew_heap. auto. Qed.
+
+Ltac group_credits_step H :=
+  match H with
+  | ?H1 \* ?H2 \* ?H3 =>
+    tryif is_credits H2 then
+      tryif is_credits H3 then
+        fail
+      else
+        rewrite (group_credits_lemma H1 H2 H3)
+    else fail
+  end.
+
+Ltac group_credits_in_pre tt :=
+  repeat on_formula_pre group_credits_step.
+
+Ltac group_credits_in_post tt :=
+  repeat on_formula_post group_credits_step.
+
+Goal forall H H' n m p,
+    (\$ p \* \$ m \* \$ n) \* H ==> H' ->
+    \$ n \* \$ m \* \$ p \* H ==> H'.
+Proof.
+  intros. dup.
+  (* detailed *)
+  on_formula_pre group_credits_step.
+  on_formula_pre group_credits_step.
+  assumption.
+  (* short *)
+  group_credits_in_pre tt.
+  assumption.
+Qed.
+
+Goal forall H' n m p,
+    \$ n \* \$ m \* \$ p ==> H'.
+Proof.
+  intros.
+  group_credits_in_pre tt.
+Admitted. (* demo *)
+
+Goal forall H H' n,
+    \$ n \* H ==> H'.
+Proof.
+  intros.
+  group_credits_in_pre tt.
+Admitted. (* demo *)
+*)
+
+Ltac is_credits H :=
+  match H with
+  | \$ _ => idtac
+  | \$_nat _ => idtac
+  | _ => fail 1
+  end.
+
+Ltac bring_credits_to_head H :=
+  match H with
+  | context [?A \* \$ ?x \* _] =>
+    tryif is_credits A then fail
+    else rewrite (star_comm_assoc A (\$ x))
+  | context [?A \* \$ ?x] =>
+    tryif is_credits A then fail
+    else rewrite (star_comm A (\$ x))
+  | context [?A \* \$_nat ?x \* _] =>
+    tryif is_credits A then fail
+    else rewrite (star_comm_assoc A (\$_nat x))
+  | context [?A \* \$_nat ?x] =>
+    tryif is_credits A then fail
+    else rewrite (star_comm A (\$_nat x))
+  end.
+
+Ltac bring_credits_to_head_of_pre tt :=
+  repeat on_formula_pre bring_credits_to_head.
+
+Goal forall H1 H2 H3 H' p n m,
+    \$ p \* \$ n \* \$_nat m \* H1 \* H2 \* H3 ==> H' ->
+    \$ p \* H1 \* H2 \* \$ n \* H3 \* \$_nat m ==> H'.
+Proof.
+  intros. dup.
+  (* detailed *)
+  on_formula_pre bring_credits_to_head.
+  on_formula_pre bring_credits_to_head.
+  on_formula_pre bring_credits_to_head.
+  on_formula_pre bring_credits_to_head.
+  on_formula_pre bring_credits_to_head.
+  assumption.
+  (* short *)
+  bring_credits_to_head_of_pre tt.
+  assumption. (* demo *)
+Qed.
+
+Ltac hpull_main tt ::=
+  hpull_setup tt;
+  (repeat (hpull_step tt));
+  bring_credits_to_head_of_pre tt;
+  hpull_cleanup tt.
+
+Lemma inst_credits_cost : forall A (cost : cost_fun A) x credits H H' H'',
+    (cost = cost_cst A credits) ->
+    0 <= credits ->
+    H ==> H' \* H'' ->
+    \$ cost x \* H ==> H' \* \$ credits \* H''.
+Proof.
+  introv E P HH.
+  rewrite E.
+  rewrite cost_cstP.
+  xchange HH. hsimpl.
+  auto.
+Qed.
+
+Lemma inst_credits_cost_1 : forall A (cost : cost_fun A) x H H' H'',
+    (cost = cost_one A) ->
+    H ==> H' \* H'' ->
+    \$ cost x \* H ==> H' \* \$ 1 \* H''.
+Proof.
+  introv E HH.
+  rewrite E. rewrite <-cost_cst_one.
+  applys~ inst_credits_cost.
+  math.
+Qed.
+
+Ltac inst_credits_cost :=
+  first [
+      (apply inst_credits_cost_1; [ reflexivity | ])
+    | (apply inst_credits_cost; [ reflexivity | try math | ])
+  ].
+
+Ltac is_cost_evar f :=
+  match f with cost ?body => is_evar body end.
+
+(* \$_nat ? *)
+Ltac hsimpl_inst_credits_cost_setup tt :=
+  match goal with
+  | |- \$ ?f _ ==> _ => is_cost_evar f; apply hsimpl_start_1
+  | |- \$ ?f _ \* _ ==> _ => is_cost_evar f
+  end;
+  match goal with
+  | |- _ ==> _ \* \$ _ => apply hsimpl_starify
+  | |- _ ==> _ \* \$ _ \* _ => idtac
+  end.
+
+Ltac hsimpl_inst_credits_cost tt :=
+  tryif hsimpl_inst_credits_cost_setup tt then
+    inst_credits_cost
+  else
+    idtac.
+
+Ltac hsimpl_setup process_credits ::=
+  prepare_goal_hpull_himpl tt;
+  try (check_arg_true process_credits; credits_join_left_repeat tt);
+  hsimpl_left_empty tt;
+  hsimpl_inst_credits_cost tt;
+  apply hsimpl_start.
+
+Lemma tick3_spec_4 :
+  appO_ tick3 [tt]
+    unit_filterType (fun tt => 1) tt
+    \[]
+    (fun (tt:unit) => \[]).
+Proof.
+  eexists. split.
+  xcf.
+  xpay.
+  xseq.
+  xapp. hsimpl.
+  xapp. hsimpl.
+  xapp. hsimpl.
+
+  dominated_rew_cost.
+  apply dominated_cst. math.
+Qed.
+
+Lemma loop1_spec_2 :
+  exists (cost: cost_fun int),
+  forall (n: int),
+  0 <= n ->
+  app loop1 [n]
+    PRE (\$ cost n)
+    POST (fun (tt:unit) => \[]) /\
+  dominated Z_filterType cost (fun (n:Z) => n).
+Proof. admit. Admitted.
+
+Lemma xlet_refine :
+  forall
+    (A B C : Type) cost cost1 cost2 (x : A)
+    (F1 : hprop -> (B -> hprop) -> Prop)
+    (F2 : B -> hprop -> (C -> hprop) -> Prop)
+    (H : hprop) (Q : C -> hprop),
+  (cost = cost_add cost1 cost2) ->
+  (* is_local F1 -> *)
+  (* is_local F2 -> *)
+  (exists (Q' : B -> hprop),
+    F1 (\$ cost1 x \* H) Q' /\
+    (forall r, F2 r (\$ cost2 x \* Q' r) Q)) ->
+
+  (* (Let r := F1 in F2) (\$ cost x \* H) Q. *)
+  exists (Q1 : B -> hprop),
+    F1 (\$ cost x \* H) Q1 /\
+    forall (r : B), F2 r (Q1 r) Q.
+Proof.
+  (* introv E (Q' & H1 & H2). *)
+  (* rewrite E. rew_cost. *)
+  (* (* xuntag tag_let. *) *)
+  (* (* apply local_erase. *) *)
+  (* eexists. split. *)
+  (* { xapply H1. credits_split. hsimpl. *)
+  (*   forwards~: cost_nonneg cost1 x. *)
+  (*   forwards~: cost_nonneg cost2 x. } *)
+  (* { intro r. xapply H2; hsimpl. hsimpl. } *)
+  admit.
+Qed.
+
+Definition cf_let (A B : Type) (F1 : ~~A) (F2 : A -> ~~B) :=
+  Let r : A := F1 in (F2 r).
+
+Lemma cf_let_intro (A B : Type) (F1 : ~~A) (F2 : A -> ~~B) H Q:
+  (Let r : A := F1 in (F2 r)) H Q = (cf_let F1 F2) H Q.
+Proof. reflexivity. Qed.
+
+Lemma foo :
+  forall (A B:Type)
+         (F1 : hprop -> (B -> hprop) -> Prop)
+         (F2 : B -> hprop -> (A -> hprop) -> Prop)
+         (H:hprop) (Q : A -> hprop),
+    @cf_let B A F1 F2 H Q.
+admit. Qed.
+
+Lemma let1_spec :
+  exists (cost : cost_fun int),
+  forall n,
+  0 <= n ->
+  app let1 [n]
+    PRE (\$ cost n \* \[])
+    POST (fun (tt:unit) => \[]) /\
+  dominated Z_filterType cost (fun (n:Z) => n).
+Proof.
+  forwards (loop1_cost & L): loop1_spec_2.
+  eexists. intros n N. split.
+
+  Lemma spec_cost_is_constant :
+    forall A (F : ~~A) B (x : B) (costf: cost_fun B) (cost : int) H (Q : A -> hprop),
+      (PRE \$cost \* H
+       POST Q
+       CODE F) ->
+      (0 <= cost) ->
+      (cost = costf x) ->
+      (PRE \$costf x \* H
+       POST Q
+       CODE F).
+  Proof. introv HF P E. rewrite <-E. apply HF. Qed.
+
+  eapply spec_cost_is_constant.
+
+  xcf.
+  xpay.
+
+  forwards: (@xlet_refine int int unit)
+              (fun H (Q : int -> hprop) => ((App tick tt;) ;; (Ret (n + 1))) H Q)
+              (fun (m : int) H (Q : unit -> hprop) => App loop1 m; H Q).
+
+  Focus 3.
+  xuntag tag_let. apply local_erase.
+  apply H.
+
+  Focus 2.
+  eexists. split.
+  { xseq. xapp. hsimpl. instantiate (2 := (cost_one int)). (* TODO: tactique spéciale pour xret *)
+    xgc (\$(cost_one int) n). xret.
+    }
+
+  intro m. xpull. intro Hm.
+
+  exists cost,
+  (forall n m ...,
+          app f [n; x] (\$ cost n \* H) Q
+
+          app f [n; x] (\$ cost' \* H) Q
+  ) /\
+  dominated cost (fun n => n)
+
+  assert (LLL: forall (A B : Type) F (x : A) g c c' (Q : B -> hprop),
+             F (\$ cost c') Q ->
+             (forall x, cost c' <= cost (cost_compose c g) x) ->
+             F (\$ cost c x) Q).
+  { admit. }
+
+  eapply LLL. (*Set Printing Existential Instances. idtac. *)
+
+  xapp. math.
+
+  assert (LL: forall f y cost,
+             f n = loop1_cost y ->
+             forall (P: forall x, 0 <= f x),
+               cost = make_cost_fun f P ->
+               \$ cost n ==> \GC \* \$ loop1_cost y).
+  { admit. }
+  unshelve eapply (LL (fun n => loop1_cost (n+1))). admit.
+  subst m. reflexivity.
+
+  reflexivity.
+
+  simpl. intro x.  (*apply le_refl.*) apply Z.eq_le_incl.
+  Set Printing Existential Instances. idtac.
+  Set Printing Coercions. idtac.
+
+(*
+  assert (LL: forall y (cost : Z -> Z), cost n = loop1_cost y -> forall H: (forall n, 0 <= cost n), \$ make_cost_fun cost H n ==> \GC \* \$ loop1_cost y).
+  { introv E. intro H. simpl. rewrite E. hsimpl. }
+  unshelve apply LL; [ shelve | ..]; swap 1 2.
+  rewrite Hy.
+*)
+
+
+(*
+  assert (LL: forall (x y : int) cost cost' H, \$ cost' (x, y) ==> H -> cost x = cost' (x, y) -> \$ cost x ==> H).
+  { introv H1 H2. auto. rewrite H2. auto. }
+  eapply LL with (y := y).
+
+  rewrite Hy.
+*)
+
+
+(*
+Parameter N_ : Type.
+Parameter ω : N_.
+Parameter inj : N -> N_.
+Parameter le_ : N_ -> N_ -> Prop.
+
+Goal
+  forall (P : N_ -> Prop),
+    (forall x : N_, (forall n : N, le_ (inj n) x) -> P x) ->
+    (exists (n0 : N_), forall (n : N_), le_ n0 n -> P n).
+intro P.
+
+intros H.
+exists ω.
+intros ω' Hω'.
+apply H.
+intros n.
+(* ok *) admit.
+Qed.
+*)
+
+
+Lemma xfor_inv_lemma_pred_credits' : forall A (I:int->hprop) (cost : cost_fun A) (cost' : cost_fun (Z * A)),
+  forall (x: A) (a:int) (b:int) (F:int->~~unit) H H',
+  (a <= b) ->
+  (forall i, a <= i < b -> F i (\$ cost' (i, x) \* I i) (# I(i+1))) ->
+  (cost x = cumul (fun i => cost' (i, x)) a b) ->
+  (H ==> I a \* H') ->
+  (forall i, is_local (F i)) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ cost x \* H) (# I b \* H').
+Proof.
+  introv a_le_b HI Hcost HH Flocal.
+  applys xfor_inv_case_lemma (fun (i: int) => \$ cumul (fun i => cost' (i, x)) i b \* I i); intros C.
+  { exists H'. splits~.
+    - hchange HH. rewrite Hcost. hsimpl.
+    - intros i Hi.
+      (* xframe (\$cumul f (i + 1) n). auto. *) (* ?? *)
+      xframe_but (\$cost' (i, x) \* I i). auto.
+      assert (forall f, cumul f i b = f i + cumul f (i + 1) b) as cumul_lemma by admit.
+      rewrite cumul_lemma; clear cumul_lemma.
+      credits_split. hsimpl. forwards~: cost_nonneg cost' (i, x).
+      admit. (* cumul cost' >= 0 *)
+      applys HI. math.
+      xsimpl_credits.
+    - math_rewrite ((b - 1) + 1 = b). hsimpl. }
+  { xchange HH. math_rewrite (a = b). xsimpl. }
+Qed.
+
+Lemma loop1_spec_1 :
+  forall (n: int),
+  0 <= n ->
+  appO_ loop1 [n]
+    Z_filterType (fun n => n) n
+    \[]
+    (fun (tt:unit) => \[]).
+Proof.
+  intros n Hn.
+  eexists. split.
+  xcf.
+  xpay.
+  xfor_pre_ensure_evar_post ltac:(fun _ => eapply (xfor_inv_lemma_pred_credits' (fun _ => \[]))).
+  - auto.
+  - intros i Hi.
+    xseq. xapp. hsimpl. xapp. hsimpl.
+  - simpl. admit.
+  - hsimpl.
+  - intros. xlocal.
+  - hsimpl.
+  - dominated_rew_cost. admit.
+    Unshelve. admit.
+Admitted.
+
+
 
 (*
   xpay => xpay+hsimpl si$1 visible   OR  xpay_add_credits_1  OR  xpay_avec_soustraction
