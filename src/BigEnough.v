@@ -209,6 +209,31 @@ Proof.
   close.
 Defined.
 
+Set Printing Existential Instances.
+
+(* ...but not as well apparently: here applying [context] apparently
+   breaks some dependencies of the evar body. Is it a bug?
+*)
+Goal forall (a b : nat -> nat), exists (f : nat -> nat),
+      (forall x, a x <= f x) /\ (forall x, b x <= f x).
+Proof.
+  intros a b.
+  exists_big_fun f nat nat.
+  split.
+  intro. big. (* not ok: ?Goal1 cannot depend on b *)
+    Undo. Undo.
+  intro. unfold f. apply Big.context. apply Big.here. tauto. (* not ok *)
+    Undo. Undo. Undo. Undo. Undo.
+  intro. replace (a x) with (a x - b x + b x); swap 1 2. admit. big. (* ok *)
+    Undo. Undo. Undo. Undo.
+  intro. unfold f. apply Big.here. (* ok *)
+
+  intro. big.
+  close.
+Defined.
+
+Unset Printing Existential Instances.
+
 Goal forall P : Prop, P -> exists i, P /\ (2 <= i).
 Proof.
   intros P H.
