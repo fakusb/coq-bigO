@@ -133,7 +133,7 @@ Proof using.
   rewrite <- associativity. rewrite (@commutativity _ _ _ y x). rewrite associativity. congruence.
 Qed.
 
-Obligation Tactic := repeat intro; eauto using big_permutation.
+Obligation Tactic := try (repeat intro; eauto using big_permutation).
 Program Instance big_permutation_ A op `{Unit A op, Commutative A op, Associative A op} :
   Proper (@Permutation A ++> @eq A) (big op).
 
@@ -150,7 +150,7 @@ Class Distributive {A : Type} (mult plus : A -> A -> A) `{Unit A plus} := {
     forall c, mult c unit = unit
 }.
 
-Obligation Tactic := intros; simpl; ring_simplify; omega.
+Obligation Tactic := try (intros; simpl; ring_simplify; omega).
 Program Instance distributive_mult_plus : Distributive mult plus.
 (* Program Instance distributive_plus_max  : Distributive plus max. (* fails, due to absorption *) *)
 Program Instance distributive_Zmult_Zplus : Distributive Z.mul Z.add.
