@@ -698,137 +698,204 @@ Proof.
 Qed.
 
 Lemma loop1_spec_2 :
-  exists (cost: cost_fun int),
-  forall (n: int),
-  0 <= n ->
-  app loop1 [n]
-    PRE (\$ cost n)
-    POST (fun (tt:unit) => \[]) /\
+  exists (cost: Z -> Z),
+  (forall (n: Z),
+   0 <= n ->
+   app loop1 [n]
+     PRE (\$ cost n)
+     POST (fun (tt:unit) => \[])) /\
+  (forall x, 0 <= cost x) /\
   dominated Z_filterType cost (fun (n:Z) => n).
 Proof. admit. Admitted.
 
 Lemma xlet_refine :
   forall
-    (A B C : Type) cost cost1 cost2 (x : A)
-    (F1 : hprop -> (B -> hprop) -> Prop)
-    (F2 : B -> hprop -> (C -> hprop) -> Prop)
-    (H : hprop) (Q : C -> hprop),
-  (cost = cost_add cost1 cost2) ->
-  (* is_local F1 -> *)
-  (* is_local F2 -> *)
-  (exists (Q' : B -> hprop),
-    F1 (\$ cost1 x \* H) Q' /\
-    (forall r, F2 r (\$ cost2 x \* Q' r) Q)) ->
-
-  (* (Let r := F1 in F2) (\$ cost x \* H) Q. *)
-  exists (Q1 : B -> hprop),
-    F1 (\$ cost x \* H) Q1 /\
-    forall (r : B), F2 r (Q1 r) Q.
+    (A B : Type) cost cost1 cost2
+    (F1 : hprop -> (A -> hprop) -> Prop)
+    (F2 : A -> hprop -> (B -> hprop) -> Prop)
+    (H : hprop) (Q : B -> hprop),
+  (cost = cost1 + cost2)%nat ->
+  is_local F1 ->
+  (forall x, is_local (F2 x)) ->
+  (exists (Q' : A -> hprop),
+    F1 (\$ Z.of_nat cost1 \* H) Q' /\
+    (forall r, F2 r (\$ Z.of_nat cost2 \* Q' r) Q)) ->
+  (Let r := F1 in F2 r) (\$ Z.of_nat cost \* H) Q.
 Proof.
-  (* introv E (Q' & H1 & H2). *)
-  (* rewrite E. rew_cost. *)
-  (* (* xuntag tag_let. *) *)
-  (* (* apply local_erase. *) *)
-  (* eexists. split. *)
-  (* { xapply H1. credits_split. hsimpl. *)
-  (*   forwards~: cost_nonneg cost1 x. *)
-  (*   forwards~: cost_nonneg cost2 x. } *)
-  (* { intro r. xapply H2; hsimpl. hsimpl. } *)
-  admit.
+  introv E L1 L2 (Q' & H1 & H2).
+  rewrite E.
+  unfold cf_let. xuntag tag_let. apply local_erase.
+  eexists. split.
+  { xapply H1. rewrite Nat2Z.inj_add. credits_split. hsimpl. math. math. }
+  { intro r. specializes L2 r. xapply H2; hsimpl. }
 Qed.
 
-Definition cf_let (A B : Type) (F1 : ~~A) (F2 : A -> ~~B) :=
-  Let r : A := F1 in (F2 r).
+Ltac xlet_pre tt ::=
+  xpull_check_not_needed tt.
 
-Lemma cf_let_intro (A B : Type) (F1 : ~~A) (F2 : A -> ~~B) H Q:
-  (Let r : A := F1 in (F2 r)) H Q = (cf_let F1 F2) H Q.
-Proof. reflexivity. Qed.
+Ltac xlet_core cont0 cont1 cont2 ::=
+  match goal with |- (tag tag_let (local (cf_let ?F1 (fun x => _)))) ?H ?Q =>
+    eapply xlet_refine;
+    [ reflexivity | xlocal | intro; xlocal | ];
+    cont0 tt;
+    split; [ | cont1 x; cont2 tt ];
+    xtag_pre_post
+  end.
 
-Lemma foo :
-  forall (A B:Type)
-         (F1 : hprop -> (B -> hprop) -> Prop)
-         (F2 : B -> hprop -> (A -> hprop) -> Prop)
-         (H:hprop) (Q : A -> hprop),
-    @cf_let B A F1 F2 H Q.
-admit. Qed.
+Lemma xpay_refine_nat :
+  forall A (cost cost' : nat)
+         (F: hprop -> (A -> hprop) -> Prop) H Q,
+  (cost = 1 + cost')%nat ->
+  is_local F ->
+  F (\$ Z.of_nat cost' \* H) Q ->
+  (Pay_ ;; F) (\$ Z.of_nat cost \* H) Q.
+Proof.
+  introv E L HH. rewrite E. rew_cost.
+  xpay_start tt.
+  { unfold pay_one. credits_split.
+    hsimpl_credits. math. math. }
+  xapply HH. hsimpl_credits. math. math.
+  hsimpl.
+Qed.
+
+(* tmp *)
+Ltac xpay_core tt ::=
+  eapply xpay_refine_nat; [ reflexivity | xlocal | ].
+
+Lemma xseq_refine_nat :
+  forall (A : Type) cost cost1 cost2 F1 F2 H (Q : A -> hprop),
+  (cost = cost1 + cost2)%nat ->
+  is_local F1 ->
+  is_local F2 ->
+  (exists Q',
+    F1 (\$ Z.of_nat cost1 \* H) Q' /\
+    F2 (\$ Z.of_nat cost2 \* Q' tt) Q) ->
+  (F1 ;; F2) (\$ Z.of_nat cost \* H) Q.
+Proof.
+  introv E L1 L2 (Q' & H1 & H2).
+  rewrite E. rew_cost.
+  xseq_pre tt. apply local_erase. eexists. split.
+  { xapply H1. rewrite Nat2Z.inj_add. credits_split. hsimpl. math. math. }
+  { xapply H2. hsimpl. hsimpl. }
+Qed.
+
+(* tmp *)
+Ltac xseq_noarg_core tt ::=
+  eapply xseq_refine_nat; [ reflexivity | xlocal | xlocal | eexists; split ].
+
+
+Lemma xret_refine_nat : forall cost A (x : A) H (Q : A -> hprop),
+  (cost = 0)%nat ->
+  local (fun H' Q' => H' ==> Q' x) H Q ->
+  local (fun H' Q' => H' ==> Q' x) (\$ Z.of_nat cost \* H) Q.
+Proof.
+  introv E HH.
+  rewrite E. simpl. rewrite credits_int_zero_eq. rewrite star_neutral_l.
+  assumption.
+Qed.
+
+Ltac xret_inst_credits_zero :=
+  apply xret_refine_nat; [ reflexivity | ].
+
+Ltac xret_pre cont1 cont2 ::=
+  xpull_check_not_needed tt;
+  match cfml_get_tag tt with
+  | tag_ret => xret_inst_credits_zero; cont1 tt
+  | tag_let => xlet; [ xret_inst_credits_zero; cont1 tt | instantiate; cont2 tt ]
+  end.
+
+Lemma spec_cost_is_constant :
+  forall A (F : ~~A) B (x : B) (costf: B -> Z) (cost : nat) H (Q : A -> hprop),
+    (PRE \$ Z.of_nat cost \* H
+     POST Q
+     CODE F) ->
+    (Z.of_nat cost = costf x) ->
+    (PRE \$costf x \* H
+     POST Q
+     CODE F).
+Proof.
+  introv HF E. rewrite <-E. apply HF.
+Qed.
+
+
+Definition to_nat' : forall (x : Z), 0 <= x -> nat.
+Proof.
+  intros x Px.
+  exact (Z.to_nat x).
+Defined.
+
+Arguments to_nat' : clear implicits.
+
+Lemma Z2Nat_id' : forall (x : int) Px, Z.of_nat (to_nat' x Px) = x.
+Proof.
+  intros x Px.
+  unfold to_nat'.
+  apply Z2Nat.id.
+  exact Px.
+Qed.
+
+(* todo: notation for to_nat' in order to hide the proof term *)
 
 Lemma let1_spec :
-  exists (cost : cost_fun int),
-  forall n,
-  0 <= n ->
-  app let1 [n]
-    PRE (\$ cost n \* \[])
-    POST (fun (tt:unit) => \[]) /\
+  exists (cost : Z -> Z),
+  (forall n,
+   0 <= n ->
+   app let1 [n]
+     PRE (\$ cost n \* \[])
+     POST (fun (tt:unit) => \[])) /\
+  (forall x, 0 <= cost x) /\
   dominated Z_filterType cost (fun (n:Z) => n).
 Proof.
-  forwards (loop1_cost & L): loop1_spec_2.
-  eexists. intros n N. split.
-
-  Lemma spec_cost_is_constant :
-    forall A (F : ~~A) B (x : B) (costf: cost_fun B) (cost : int) H (Q : A -> hprop),
-      (PRE \$cost \* H
-       POST Q
-       CODE F) ->
-      (0 <= cost) ->
-      (cost = costf x) ->
-      (PRE \$costf x \* H
-       POST Q
-       CODE F).
-  Proof. introv HF P E. rewrite <-E. apply HF. Qed.
+  destruct loop1_spec_2 as (loop1_cost & L & LP & LD).
+  eexists. splits. intros n N.
 
   eapply spec_cost_is_constant.
 
   xcf.
   xpay.
 
-  forwards: (@xlet_refine int int unit)
-              (fun H (Q : int -> hprop) => ((App tick tt;) ;; (Ret (n + 1))) H Q)
-              (fun (m : int) H (Q : unit -> hprop) => App loop1 m; H Q).
+  xlet.
+  { xseq. xapp. instantiate (2 := 1%nat). instantiate (1 := \[]). admit.
+    xret. }
 
-  Focus 3.
-  xuntag tag_let. apply local_erase.
-  apply H.
-
-  Focus 2.
-  eexists. split.
-  { xseq. xapp. hsimpl. instantiate (2 := (cost_one int)). (* TODO: tactique spéciale pour xret *)
-    xgc (\$(cost_one int) n). xret.
-    }
-
-  intro m. xpull. intro Hm.
-
-  exists cost,
-  (forall n m ...,
-          app f [n; x] (\$ cost n \* H) Q
-
-          app f [n; x] (\$ cost' \* H) Q
-  ) /\
-  dominated cost (fun n => n)
-
-  assert (LLL: forall (A B : Type) F (x : A) g c c' (Q : B -> hprop),
-             F (\$ cost c') Q ->
-             (forall x, cost c' <= cost (cost_compose c g) x) ->
-             F (\$ cost c x) Q).
-  { admit. }
-
-  eapply LLL. (*Set Printing Existential Instances. idtac. *)
+  xpull. intro Hm.
 
   xapp. math.
 
-  assert (LL: forall f y cost,
-             f n = loop1_cost y ->
-             forall (P: forall x, 0 <= f x),
-               cost = make_cost_fun f P ->
-               \$ cost n ==> \GC \* \$ loop1_cost y).
-  { admit. }
-  unshelve eapply (LL (fun n => loop1_cost (n+1))). admit.
-  subst m. reflexivity.
+  hsimpl_credits.
+  { assert (LL: forall a b, b = a -> ge a b). admit. apply LL. clear LL.
+    subst m.
+
+    Lemma inst_nat :
+      forall (a : Z) (n : nat) (Pa : 0 <= a),
+        (n = to_nat' a Pa) ->
+        (a = Z.of_nat n).
+    Proof. introv E. rewrite E. rewrite Z2Nat_id'; auto. Qed.
+
+    unshelve eapply inst_nat. apply LP. reflexivity.
+  }
+  { (* ... *) specializes LP m. math. }
+
+  match goal with
+    |- _ = ?rhs =>
+    let hide_cost := fresh in
+    set (hide_cost := rhs);
+    repeat rewrite Nat2Z.inj_add;
+    repeat rewrite Z2Nat_id';
+    simpl;
+    ring_simplify;
+    subst hide_cost
+  end.
 
   reflexivity.
 
-  simpl. intro x.  (*apply le_refl.*) apply Z.eq_le_incl.
-  Set Printing Existential Instances. idtac.
-  Set Printing Coercions. idtac.
+  { intros x. simpl. specializes LP (x + 1). math. }
+  { apply dominated_sum_distr.
+    { apply dominated_transitive with loop1_cost.
+      - admit.
+      - apply LD. }
+    admit. }
+Qed.
 
 (*
   assert (LL: forall y (cost : Z -> Z), cost n = loop1_cost y -> forall H: (forall n, 0 <= cost n), \$ make_cost_fun cost H n ==> \GC \* \$ loop1_cost y).
