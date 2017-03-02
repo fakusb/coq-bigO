@@ -809,12 +809,12 @@ Lemma spec_cost_is_constant :
     (PRE \$ Z.of_nat cost \* H
      POST Q
      CODE F) ->
-    (Z.of_nat cost = costf x) ->
+    (costf x = Z.of_nat cost) ->
     (PRE \$costf x \* H
      POST Q
      CODE F).
 Proof.
-  introv HF E. rewrite <-E. apply HF.
+  introv HF E. rewrite E. apply HF.
 Qed.
 
 
@@ -834,7 +834,103 @@ Proof.
   exact Px.
 Qed.
 
+Ltac can_eval_to_nat x :=
+  let xn := constr:(Z.to_nat x) in
+  let xn' := (eval simpl in xn) in
+  lazymatch xn' with
+    context [Z.to_nat _] => fail
+  | _ => idtac
+  end.
+
+Lemma inst_credits_cost_nat : forall (cost : nat) (credits : int) H H' H'',
+    (cost = Z.to_nat credits) ->
+    (0 <= credits) ->
+    H ==> H' \* H'' ->
+    \$ Z.of_nat cost \* H ==> H' \* \$ credits \* H''.
+Proof.
+  introv E P HH.
+  rewrite E. rewrite Z2Nat.id.
+  xchange HH. hsimpl_credits. auto.
+Qed.
+
+Lemma inst_credits_cost_nat' :
+  forall (credits : int) (Pcredits : 0 <= credits) (cost : nat) H H' H'',
+    (cost = to_nat' credits Pcredits) ->
+    H ==> H' \* H'' ->
+    \$ Z.of_nat cost \* H ==> H' \* \$ credits \* H''.
+Proof.
+  introv E HH.
+  rewrite E. rewrite Z2Nat_id'.
+  xchange HH. hsimpl_credits.
+Qed.
+
+Lemma inst_credits_cost_nat_1 : forall (cost : nat) H H' H'',
+    (cost = 1%nat) ->
+    H ==> H' \* H'' ->
+    \$ Z.of_nat cost \* H ==> H' \* \$ 1 \* H''.
+Proof.
+  introv E HH.
+  rewrite E. simpl. xchange HH. hsimpl.
+Qed.
+
+Ltac inst_credits_cost_nat_core cont :=
+  match goal with
+    |- _ ==> _ \* \$ ?credits \* _ =>
+    tryif can_eval_to_nat credits then
+      apply inst_credits_cost_nat; [ simpl; reflexivity | try math | ]
+    else (
+      let Pcredits := fresh "Pcredits" in
+      evar (Pcredits : 0 <= credits);
+      apply (@inst_credits_cost_nat' credits Pcredits); [
+        reflexivity
+      | prove_evar_in Pcredits; [
+          try math (* todo: more precise and better automation *)
+        | subst Pcredits; cont tt ] ]
+    )
+  end.
+
+Ltac inst_credits_cost_nat cont :=
+  first [
+      (apply inst_credits_cost_nat_1; [ reflexivity | cont tt ])
+    | inst_credits_cost_nat_core cont
+  ].
+
+(* \$_nat ? *)
+Ltac hsimpl_inst_credits_cost_setup_nat tt :=
+  match goal with
+  | |- \$ Z.of_nat ?cost ==> _ => is_evar cost; apply hsimpl_start_1
+  | |- \$ Z.of_nat ?cost \* _ ==> _ => is_evar cost
+  end;
+  match goal with
+  | |- _ ==> _ \* \$ _ => apply hsimpl_starify
+  | |- _ ==> _ \* \$ _ \* _ => idtac
+  end.
+
+Ltac hsimpl_inst_credits_cost_nat cont :=
+  tryif hsimpl_inst_credits_cost_setup_nat tt then
+    inst_credits_cost_nat cont
+  else
+    cont tt.
+
+Ltac hsimpl_setup process_credits ::=
+  prepare_goal_hpull_himpl tt;
+  try (check_arg_true process_credits; credits_join_left_repeat tt);
+  hsimpl_left_empty tt;
+  hsimpl_inst_credits_cost_nat ltac:(fun _ => apply hsimpl_start).
+
 (* todo: notation for to_nat' in order to hide the proof term *)
+
+Ltac cleanup_cost tt :=
+  match goal with
+    |- ?lhs = _ =>
+    let hide_cost := fresh in
+    set (hide_cost := lhs);
+    repeat rewrite Nat2Z.inj_add;
+    repeat rewrite Z2Nat_id';
+    simpl;
+    ring_simplify;
+    subst hide_cost
+  end.
 
 Lemma let1_spec :
   exists (cost : Z -> Z),
@@ -855,45 +951,27 @@ Proof.
   xpay.
 
   xlet.
-  { xseq. xapp. instantiate (2 := 1%nat). instantiate (1 := \[]). admit.
-    xret. }
+  { xseq. xapp. hsimpl. xret. }
 
   xpull. intro Hm.
-
   xapp. math.
 
-  hsimpl_credits.
-  { assert (LL: forall a b, b = a -> ge a b). admit. apply LL. clear LL.
-    subst m.
+  subst m. hsimpl. apply LP.
 
-    Lemma inst_nat :
-      forall (a : Z) (n : nat) (Pa : 0 <= a),
-        (n = to_nat' a Pa) ->
-        (a = Z.of_nat n).
-    Proof. introv E. rewrite E. rewrite Z2Nat_id'; auto. Qed.
+  cleanup_cost tt. reflexivity.
 
-    unshelve eapply inst_nat. apply LP. reflexivity.
-  }
-  { (* ... *) specializes LP m. math. }
-
-  match goal with
-    |- _ = ?rhs =>
-    let hide_cost := fresh in
-    set (hide_cost := rhs);
-    repeat rewrite Nat2Z.inj_add;
-    repeat rewrite Z2Nat_id';
-    simpl;
-    ring_simplify;
-    subst hide_cost
-  end.
-
-  reflexivity.
-
-  { intros x. simpl. specializes LP (x + 1). math. }
+  { intros x. simpl. auto with zarith. }
   { apply dominated_sum_distr.
-    { apply dominated_transitive with loop1_cost.
-      - admit.
-      - apply LD. }
+    { apply dominated_transitive with (fun x => x + 1).
+      - eapply dominated_comp_eq with
+          (I := Z_filterType) (J := Z_filterType)
+          (f := loop1_cost).
+        apply LD. Focus 2. reflexivity.
+        admit.
+        simpl. reflexivity.
+      - apply dominated_sum_distr.
+        apply dominated_reflexive.
+        admit. }
     admit. }
 Qed.
 
