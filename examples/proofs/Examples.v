@@ -939,10 +939,11 @@ Ltac cleanup_cost :=
   end.
 
 Lemma spec_exists_cost :
-  forall A (cost cost_clean : A -> Z) (P Q R : (A -> Z) -> Prop),
+  forall A (cost cost_clean : A -> Z)
+         (P Q R : (A -> Z) -> Prop),
     P cost ->
     cleanup_cost cost cost_clean ->
-    Q cost_clean ->
+    Q cost ->
     R cost_clean ->
     (exists cost, P cost /\ Q cost /\ R cost).
 Proof.
@@ -952,7 +953,7 @@ Proof.
   exists cost_.
   splits.
   assumption.
-  rewrite E'. assumption.
+  assumption.
   rewrite E'. assumption.
 Qed.
 
@@ -964,18 +965,19 @@ Lemma let1_spec :
      PRE (\$ cost n \* \[])
      POST (fun (tt:unit) => \[])) /\
   (forall x, 0 <= cost x) /\
-  dominated Z_filterType cost (fun (n:Z) => n).
+  dominated Z_filterType cost (fun n => n).
 Proof.
   destruct loop1_spec_2 as (loop1_cost & L & LP & LD).
 
-  evar (cost : Z -> Z). evar (cost_clean : Z -> Z).
-  apply (@spec_exists_cost Z cost cost_clean); subst cost_clean;
-    [ | | subst cost | subst cost ].
+  refine (let cost := (fun (x : Z) => Z.of_nat _ ) : Z -> Z in _).
+  evar (cost_clean : Z -> Z).
+  eapply (@spec_exists_cost Z cost cost_clean); subst cost_clean;
+    [ | | intro; apply Nat2Z.is_nonneg | subst cost ].
 
   intros n N.
 
   (* en fait facultatif *)
-  eapply spec_cost_is_constant; [| reflexivity].
+  (* eapply spec_cost_is_constant; [| reflexivity]. *)
 
   xcf.
   xpay.
@@ -990,7 +992,6 @@ Proof.
 
   cleanup_cost.
 
-  { intros x. simpl. auto with zarith. }
   { apply dominated_sum_distr.
     { apply dominated_transitive with (fun x => x + 1).
       - eapply dominated_comp_eq with
