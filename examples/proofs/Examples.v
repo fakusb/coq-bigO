@@ -920,17 +920,41 @@ Ltac hsimpl_setup process_credits ::=
 
 (* todo: notation for to_nat' in order to hide the proof term *)
 
-Ltac cleanup_cost tt :=
+Definition cleanup_cost A (cost cost_clean : A -> Z) :=
+  forall x, cost x = cost_clean x.
+
+Ltac cleanup_cost_core :=
+  repeat rewrite Nat2Z.inj_add;
+  repeat rewrite Z2Nat_id';
+  simpl;
+  ring_simplify.
+
+Ltac cleanup_cost :=
   match goal with
-    |- ?lhs = _ =>
-    let hide_cost := fresh in
-    set (hide_cost := lhs);
-    repeat rewrite Nat2Z.inj_add;
-    repeat rewrite Z2Nat_id';
-    simpl;
-    ring_simplify;
-    subst hide_cost
+    |- cleanup_cost ?cost ?cost_clean =>
+    let cost_clean_ := fresh "cost_clean" in
+    set (cost_clean_ := cost_clean);
+    intro; subst cost; hnf; cleanup_cost_core;
+    subst cost_clean_; reflexivity
   end.
+
+Lemma spec_exists_cost :
+  forall A (cost cost_clean : A -> Z) (P Q R : (A -> Z) -> Prop),
+    P cost ->
+    cleanup_cost cost cost_clean ->
+    Q cost_clean ->
+    R cost_clean ->
+    (exists cost, P cost /\ Q cost /\ R cost).
+Proof.
+  intros ? cost_ cost_clean.
+  introv HP E HQ HR.
+  forwards E': func_ext_dep E.
+  exists cost_.
+  splits.
+  assumption.
+  rewrite E'. assumption.
+  rewrite E'. assumption.
+Qed.
 
 Lemma let1_spec :
   exists (cost : Z -> Z),
@@ -943,9 +967,15 @@ Lemma let1_spec :
   dominated Z_filterType cost (fun (n:Z) => n).
 Proof.
   destruct loop1_spec_2 as (loop1_cost & L & LP & LD).
-  eexists. splits. intros n N.
 
-  eapply spec_cost_is_constant.
+  evar (cost : Z -> Z). evar (cost_clean : Z -> Z).
+  apply (@spec_exists_cost Z cost cost_clean); subst cost_clean;
+    [ | | subst cost | subst cost ].
+
+  intros n N.
+
+  (* en fait facultatif *)
+  eapply spec_cost_is_constant; [| reflexivity].
 
   xcf.
   xpay.
@@ -958,7 +988,7 @@ Proof.
 
   subst m. hsimpl. apply LP.
 
-  cleanup_cost tt. reflexivity.
+  cleanup_cost.
 
   { intros x. simpl. auto with zarith. }
   { apply dominated_sum_distr.
