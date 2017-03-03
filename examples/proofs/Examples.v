@@ -842,7 +842,8 @@ Ltac can_eval_to_nat x :=
   | _ => idtac
   end.
 
-Lemma inst_credits_cost_nat : forall (cost : nat) (credits : int) H H' H'',
+(* To use only when [Z.to_nat credits] reduces. *)
+Lemma inst_credits_cost_to_nat : forall (cost : nat) (credits : int) H H' H'',
     (cost = Z.to_nat credits) ->
     (0 <= credits) ->
     H ==> H' \* H'' ->
@@ -853,7 +854,29 @@ Proof.
   xchange HH. hsimpl_credits. auto.
 Qed.
 
-Lemma inst_credits_cost_nat' :
+Lemma inst_credits_cost_to_nat_1 : forall (cost : nat) H H' H'',
+    (cost = 1%nat) ->
+    H ==> H' \* H'' ->
+    \$ Z.of_nat cost \* H ==> H' \* \$ 1 \* H''.
+Proof.
+  introv E HH.
+  rewrite E. simpl. xchange HH. hsimpl.
+Qed.
+
+Ltac inst_credits_cost_to_nat credits cont :=
+  match credits with
+  | 1%Z =>
+    apply inst_credits_cost_to_nat_1;
+    [ reflexivity | cont tt ]
+  | _ =>
+    apply inst_credits_cost_to_nat;
+    [ simpl; reflexivity | try math | cont tt ]
+  end.
+
+(* To use when [Z.to_nat credits] doesn't reduce, and proving [0 <= credits] may
+   require a manual proof. *)
+
+Lemma inst_credits_cost_to_nat' :
   forall (credits : int) (Pcredits : 0 <= credits) (cost : nat) H H' H'',
     (cost = to_nat' credits Pcredits) ->
     H ==> H' \* H'' ->
@@ -864,36 +887,26 @@ Proof.
   xchange HH. hsimpl_credits.
 Qed.
 
-Lemma inst_credits_cost_nat_1 : forall (cost : nat) H H' H'',
-    (cost = 1%nat) ->
-    H ==> H' \* H'' ->
-    \$ Z.of_nat cost \* H ==> H' \* \$ 1 \* H''.
-Proof.
-  introv E HH.
-  rewrite E. simpl. xchange HH. hsimpl.
-Qed.
+Ltac inst_credits_cost_to_nat' credits cont :=
+    let Pcredits := fresh "Pcredits" in
+    evar (Pcredits : 0 <= credits);
+    apply (@inst_credits_cost_to_nat' credits Pcredits);
+    [ reflexivity
+    | prove_evar_in Pcredits;
+      [ auto with zarith; try math
+      | subst Pcredits; cont tt ] ].
 
 Ltac inst_credits_cost_nat_core cont :=
   match goal with
     |- _ ==> _ \* \$ ?credits \* _ =>
     tryif can_eval_to_nat credits then
-      apply inst_credits_cost_nat; [ simpl; reflexivity | try math | ]
-    else (
-      let Pcredits := fresh "Pcredits" in
-      evar (Pcredits : 0 <= credits);
-      apply (@inst_credits_cost_nat' credits Pcredits); [
-        reflexivity
-      | prove_evar_in Pcredits; [
-          try math (* todo: more precise and better automation *)
-        | subst Pcredits; cont tt ] ]
-    )
+      inst_credits_cost_to_nat credits cont
+    else
+      inst_credits_cost_to_nat' credits cont
   end.
 
 Ltac inst_credits_cost_nat cont :=
-  first [
-      (apply inst_credits_cost_nat_1; [ reflexivity | cont tt ])
-    | inst_credits_cost_nat_core cont
-  ].
+  inst_credits_cost_nat_core cont.
 
 (* \$_nat ? *)
 Ltac hsimpl_inst_credits_cost_setup_nat tt :=
@@ -988,7 +1001,7 @@ Proof.
   xpull. intro Hm.
   xapp. math.
 
-  subst m. hsimpl. apply LP.
+  subst m. hsimpl.
 
   cleanup_cost.
 
