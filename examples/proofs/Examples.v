@@ -949,6 +949,13 @@ Proof.
   rewrite E'. assumption.
 Qed.
 
+Ltac exists_cost cost ::=
+  let cost_clean := fresh "cost_clean" in
+  refine (let cost := (fun (x : Z) => Z.of_nat _ ) : Z -> Z in _);
+  evar (cost_clean : Z -> Z);
+  eapply (@spec_exists_cost Z cost cost_clean); subst cost_clean;
+    [ | | intro; apply Nat2Z.is_nonneg | subst cost ].
+
 Lemma let1_spec :
   exists (cost : Z -> Z),
   (forall n,
@@ -961,11 +968,7 @@ Lemma let1_spec :
 Proof.
   destruct loop1_spec_2 as (loop1_cost & L & LP & LD).
 
-  refine (let cost := (fun (x : Z) => Z.of_nat _ ) : Z -> Z in _).
-  evar (cost_clean : Z -> Z).
-  eapply (@spec_exists_cost Z cost cost_clean); subst cost_clean;
-    [ | | intro; apply Nat2Z.is_nonneg | subst cost ].
-
+  exists_cost mycost.
   intros n N.
 
   (* en fait facultatif *)
