@@ -817,23 +817,6 @@ Proof.
   introv HF E. rewrite E. apply HF.
 Qed.
 
-
-Definition to_nat' : forall (x : Z), 0 <= x -> nat.
-Proof.
-  intros x Px.
-  exact (Z.to_nat x).
-Defined.
-
-Arguments to_nat' : clear implicits.
-
-Lemma Z2Nat_id' : forall (x : int) Px, Z.of_nat (to_nat' x Px) = x.
-Proof.
-  intros x Px.
-  unfold to_nat'.
-  apply Z2Nat.id.
-  exact Px.
-Qed.
-
 Ltac can_eval_to_nat x :=
   let xn := constr:(Z.to_nat x) in
   let xn' := (eval simpl in xn) in
@@ -842,8 +825,23 @@ Ltac can_eval_to_nat x :=
   | _ => idtac
   end.
 
-(* To use only when [Z.to_nat credits] reduces. *)
-Lemma inst_credits_cost_to_nat : forall (cost : nat) (credits : int) H H' H'',
+Lemma inst_credits_cost_to_nat :
+  forall (cost : nat) (cost_int : int) (credits : int) H H' H'',
+  (cost = Z.to_nat cost_int) ->
+  (cost_int = credits) ->
+  (0 <= credits) ->
+  H ==> H' \* H'' ->
+  \$ Z.of_nat cost \* H ==> H' \* \$ credits \* H''.
+Proof.
+  introv E1 E2 P HH.
+  rewrite E1. rewrite E2. rewrite Z2Nat.id.
+  xchange HH. hsimpl_credits. auto.
+Qed.
+
+(* To use when [credits] is a constant and therefore [Z.to_nat credits]
+   reduces.
+*)
+Lemma inst_credits_cost_to_nat_cst : forall (cost : nat) (credits : int) H H' H'',
     (cost = Z.to_nat credits) ->
     (0 <= credits) ->
     H ==> H' \* H'' ->
@@ -863,7 +861,7 @@ Proof.
   rewrite E. simpl. xchange HH. hsimpl.
 Qed.
 
-Ltac inst_credits_cost_to_nat credits cont :=
+Ltac inst_credits_cost_to_nat_cst credits cont :=
   match credits with
   | 1%Z =>
     apply inst_credits_cost_to_nat_1;
@@ -873,36 +871,17 @@ Ltac inst_credits_cost_to_nat credits cont :=
     [ simpl; reflexivity | try math | cont tt ]
   end.
 
-(* To use when [Z.to_nat credits] doesn't reduce, and proving [0 <= credits] may
-   require a manual proof. *)
-
-Lemma inst_credits_cost_to_nat' :
-  forall (credits : int) (Pcredits : 0 <= credits) (cost : nat) H H' H'',
-    (cost = to_nat' credits Pcredits) ->
-    H ==> H' \* H'' ->
-    \$ Z.of_nat cost \* H ==> H' \* \$ credits \* H''.
-Proof.
-  introv E HH.
-  rewrite E. rewrite Z2Nat_id'.
-  xchange HH. hsimpl_credits.
-Qed.
-
-Ltac inst_credits_cost_to_nat' credits cont :=
-    let Pcredits := fresh "Pcredits" in
-    evar (Pcredits : 0 <= credits);
-    apply (@inst_credits_cost_to_nat' credits Pcredits);
-    [ reflexivity
-    | prove_evar_in Pcredits;
-      [ auto with zarith; try math
-      | subst Pcredits; cont tt ] ].
+Ltac inst_credits_cost_to_nat_noncst credits cont :=
+  eapply inst_credits_cost_to_nat;
+  [ reflexivity | try reflexivity | auto with zarith | cont tt ].
 
 Ltac inst_credits_cost_nat_core cont :=
   match goal with
     |- _ ==> _ \* \$ ?credits \* _ =>
     tryif can_eval_to_nat credits then
-      inst_credits_cost_to_nat credits cont
+      inst_credits_cost_to_nat_cst credits cont
     else
-      inst_credits_cost_to_nat' credits cont
+      inst_credits_cost_to_nat_noncst credits cont
   end.
 
 Ltac inst_credits_cost_nat cont :=
@@ -938,7 +917,7 @@ Definition cleanup_cost A (cost cost_clean : A -> Z) :=
 
 Ltac cleanup_cost_core :=
   repeat rewrite Nat2Z.inj_add;
-  repeat rewrite Z2Nat_id';
+  repeat (rewrite Z2Nat.id; [| auto with zarith ]);
   simpl;
   ring_simplify.
 
@@ -1001,7 +980,7 @@ Proof.
   xpull. intro Hm.
   xapp. math.
 
-  subst m. hsimpl.
+  hsimpl. subst m. reflexivity.
 
   cleanup_cost.
 
@@ -1019,43 +998,6 @@ Proof.
     admit. }
 Qed.
 
-(*
-  assert (LL: forall y (cost : Z -> Z), cost n = loop1_cost y -> forall H: (forall n, 0 <= cost n), \$ make_cost_fun cost H n ==> \GC \* \$ loop1_cost y).
-  { introv E. intro H. simpl. rewrite E. hsimpl. }
-  unshelve apply LL; [ shelve | ..]; swap 1 2.
-  rewrite Hy.
-*)
-
-
-(*
-  assert (LL: forall (x y : int) cost cost' H, \$ cost' (x, y) ==> H -> cost x = cost' (x, y) -> \$ cost x ==> H).
-  { introv H1 H2. auto. rewrite H2. auto. }
-  eapply LL with (y := y).
-
-  rewrite Hy.
-*)
-
-
-(*
-Parameter N_ : Type.
-Parameter ω : N_.
-Parameter inj : N -> N_.
-Parameter le_ : N_ -> N_ -> Prop.
-
-Goal
-  forall (P : N_ -> Prop),
-    (forall x : N_, (forall n : N, le_ (inj n) x) -> P x) ->
-    (exists (n0 : N_), forall (n : N_), le_ n0 n -> P n).
-intro P.
-
-intros H.
-exists ω.
-intros ω' Hω'.
-apply H.
-intros n.
-(* ok *) admit.
-Qed.
-*)
 
 
 Lemma xfor_inv_lemma_pred_credits' : forall A (I:int->hprop) (cost : cost_fun A) (cost' : cost_fun (Z * A)),
