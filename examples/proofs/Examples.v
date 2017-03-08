@@ -736,10 +736,10 @@ Ltac xlet_pre tt ::=
 Ltac xlet_core cont0 cont1 cont2 ::=
   match goal with |- (tag tag_let (local (cf_let ?F1 (fun x => _)))) ?H ?Q =>
     eapply xlet_refine;
-    [ reflexivity | xlocal | intro; xlocal | ];
-    cont0 tt;
-    split; [ | cont1 x; cont2 tt ];
-    xtag_pre_post
+    [ reflexivity | xlocal | intro; xlocal
+      | cont0 tt;
+        split; [ | cont1 x; cont2 tt ];
+        (* xtag_pre_post *) (* ??? *) idtac ]
   end.
 
 Lemma xpay_refine_nat :
@@ -917,6 +917,7 @@ Definition cleanup_cost A (cost cost_clean : A -> Z) :=
 
 Ltac cleanup_cost_core :=
   repeat rewrite Nat2Z.inj_add;
+  simpl;
   repeat (rewrite Z2Nat.id; [| auto with zarith ]);
   simpl;
   ring_simplify.
@@ -926,8 +927,9 @@ Ltac cleanup_cost :=
     |- cleanup_cost ?cost ?cost_clean =>
     let cost_clean_ := fresh "cost_clean" in
     set (cost_clean_ := cost_clean);
-    intro; subst cost; hnf; cleanup_cost_core;
-    subst cost_clean_; reflexivity
+    intro; subst cost; hnf;
+    cleanup_cost_core;
+    [ subst cost_clean_; reflexivity | .. ]
   end.
 
 Lemma spec_exists_cost :
@@ -979,11 +981,8 @@ Proof.
 
   xlet.
   { xseq. xapp. hsimpl. xret. }
-
-  xpull. intro Hm.
-  xapp. math.
-
-  hsimpl. subst m. reflexivity.
+  { xpull. intro Hm. xapp. math.
+    hsimpl. subst m. reflexivity. }
 
   cleanup_cost.
 
@@ -1001,34 +1000,175 @@ Proof.
     admit. }
 Qed.
 
-
-
-Lemma xfor_inv_lemma_pred_credits' : forall A (I:int->hprop) (cost : cost_fun A) (cost' : cost_fun (Z * A)),
-  forall (x: A) (a:int) (b:int) (F:int->~~unit) H H',
+Lemma xfor_inv_lemma_pred_refine :
+  forall
+    (I : int -> hprop) (cost : nat) (cost_int : int)
+    (cost_body : int -> nat)
+    (a : int) (b : int) (F : int-> ~~unit) H H',
+  (cost = Z.to_nat cost_int) ->
   (a <= b) ->
-  (forall i, a <= i < b -> F i (\$ cost' (i, x) \* I i) (# I(i+1))) ->
-  (cost x = cumul (fun i => cost' (i, x)) a b) ->
+  (forall i, a <= i < b -> F i (\$ Z.of_nat (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (For i = a To (b - 1) Do F i Done_) (\$ cost x \* H) (# I b \* H').
+  (cumul (fun i => Z.of_nat (cost_body i)) a b <= cost_int) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ Z.of_nat cost \* H) (# I b \* H').
 Proof.
-  introv a_le_b HI Hcost HH Flocal.
-  applys xfor_inv_case_lemma (fun (i: int) => \$ cumul (fun i => cost' (i, x)) i b \* I i); intros C.
+  introv E a_le_b HI HH Flocal E'.
+  assert (0 <= cost_int). admit. (* ok *)
+  applys xfor_inv_case_lemma
+    (fun (i: int) => \$ cumul (fun i => Z.of_nat (cost_body i)) i b \* I i);
+  intros C.
   { exists H'. splits~.
-    - hchange HH. rewrite Hcost. hsimpl.
+    - hchange HH. rewrite E. hsimpl.
+      rewrite Z2Nat.id; [| auto].
+      hsimpl_credits; admit.
     - intros i Hi.
       (* xframe (\$cumul f (i + 1) n). auto. *) (* ?? *)
-      xframe_but (\$cost' (i, x) \* I i). auto.
+      xframe_but (\$Z.of_nat (cost_body i) \* I i). auto.
       assert (forall f, cumul f i b = f i + cumul f (i + 1) b) as cumul_lemma by admit.
       rewrite cumul_lemma; clear cumul_lemma.
-      credits_split. hsimpl. forwards~: cost_nonneg cost' (i, x).
+      credits_split. hsimpl. math.
       admit. (* cumul cost' >= 0 *)
       applys HI. math.
       xsimpl_credits.
     - math_rewrite ((b - 1) + 1 = b). hsimpl. }
   { xchange HH. math_rewrite (a = b). xsimpl. }
+Admitted.
+
+(* todo: fix xpay setup *)
+
+Lemma loop1_spec_3 :
+  exists (cost: Z -> Z),
+  (forall (n: Z),
+   0 <= n ->
+   app loop1 [n]
+     PRE (\$ cost n \* \[])
+     POST (fun (tt:unit) => \[])) /\
+  (forall x, 0 <= cost x) /\
+  dominated Z_filterType cost (fun (n:Z) => n).
+Proof.
+  exists_cost mycost.
+  intros n N.
+
+  xcf.
+  xpay.
+  xfor_ensure_evar_post ltac:(fun _ => idtac).
+  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]);
+    [ reflexivity | ..].
+
+  auto.
+  { intros i Hi.
+    xseq.
+    xapp. hsimpl. xapp. hsimpl. }
+  hsimpl.
+  intro; xlocal.
+
+  simpl. reflexivity.
+  hsimpl.
+
+  cleanup_cost. admit.
+
+  apply dominated_sum_distr.
+  { rewrite dominated_big_sum_bound.
+    { eapply dominated_eq_l.
+      eapply dominated_mul_cst_l.
+      apply dominated_reflexive.
+      eauto with zarith. }
+    apply filter_universe_alt. math.
+    apply filter_universe_alt. intros. (* monotonic_cst *) admit.
+  }
+  { admit. }
 Qed.
 
+Lemma rand_spec :
+  forall (n:Z),
+  0 <= n ->
+  app rand [n]
+    PRE (\$ 1 \* \[])
+    POST (fun m => \[0 <= m <= n]).
+Proof.
+  intros n N.
+  xcf. admit. (* xx *)
+Qed.
+
+Hint Extern 1 (RegisterSpec rand) => Provide rand_spec.
+
+Lemma xtac_refine_start :
+  forall A (F : ~~A) H Q,
+  F (H \* \[]) Q ->
+  F H Q.
+Proof.
+  introv S.
+  rewrite star_neutral_r in S. assumption.
+Qed.
+
+(* Coq Bug *)
+(*
+Goal exists x, x = 0.
+  refine (let y := _ in _).
+  exists y. subst y.
+  ring_simplify.
+*)
+
+Lemma loop2_spec_1 :
+  exists (cost : Z -> Z),
+  (forall (n: Z),
+   0 <= n ->
+   app loop2 [n]
+     PRE (\$ cost n \* \[])
+     POST (fun (tt:unit) => \[])) /\
+  (forall x, 0 <= cost x) /\
+  dominated Z_filterType cost (fun n => n).
+Proof.
+  exists_cost mycost.
+  intros n N.
+  xcf.
+  xpay.
+  xlet. { xapp. auto. hsimpl. }
+  xpull. intros Ha.
+  apply xtac_refine_start.
+  xlet. { xapp. math. hsimpl. }
+  xpull. intros Hb.
+  apply xtac_refine_start.
+  xfor_ensure_evar_post ltac:(fun _ => idtac).
+  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]);
+    [ reflexivity | ..].
+  math.
+  { intros i Hi.
+    xapp. hsimpl. (* FIXME *)
+    assert (LL: forall a b, a = Z.to_nat b -> \$ Z.of_nat a ==> \$ b \* \GC) by admit.
+    apply LL. reflexivity.
+
+  }
+  hsimpl.
+  intro; xlocal.
+  simpl. rewrite cumulP. rewrite big_const_Z.
+
+  (* XX *)
+  match goal with |- ?lhs <= ?rhs => set (foo := rhs) end.
+  ring_simplify. subst foo.
+
+  (* xx *) destruct Hb as [Hb1 Hb2]. apply Hb2.
+
+
+  hsimpl.
+
+  unfold cleanup_cost. intro. subst mycost.
+  hnf.
+  match goal with |- _ = ?rhs => set (foo := rhs) end.
+  repeat rewrite Nat2Z.inj_add. simpl. ring_simplify.
+  subst foo.
+  rewrite Z_of_nat_zify.
+  reflexivity.
+
+
+  apply dominated_sum_distr.
+  { apply dominated_max_distr. admit.
+    apply dominated_reflexive. }
+  { admit. }
+Qed.
+
+(*
 Lemma loop1_spec_1 :
   forall (n: int),
   0 <= n ->
@@ -1052,7 +1192,7 @@ Proof.
   - dominated_rew_cost. admit.
     Unshelve. admit.
 Admitted.
-
+*)
 
 
 (*

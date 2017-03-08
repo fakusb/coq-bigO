@@ -14,3 +14,13 @@ let loop1 n =
 let let1 n =
   let m = tick (); n + 1 in
   loop1 m
+
+let rand n =
+  0
+
+let loop2 n =
+  let a = rand n in
+  let b = rand n in
+  for i = a to (a + b) - 1 do
+    tick ()
+  done
