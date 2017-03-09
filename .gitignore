@@ -20,9 +20,12 @@ _cf
 *.v.d
 *.vio
 *.vo
+*.vo.aux
 *.vq
 _CoqProject
 *.glob
 *.coq-native
 .coqide
 nlia.cache
+.lia.cache
+.nia.cache
