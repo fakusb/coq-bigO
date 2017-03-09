@@ -904,6 +904,8 @@ Ltac hsimpl_inst_credits_cost_setup_nat tt :=
   match goal with
   | |- \$ ceil ?cost ==> _ => is_evar cost; apply hsimpl_start_1
   | |- \$ ceil ?cost \* _ ==> _ => is_evar cost
+  | |- \$ ceil (?cost _) ==> _ => is_evar cost; apply hsimpl_start_1
+  | |- \$ ceil (?cost _) \* _ ==> _ => is_evar cost
   end;
   match goal with
   | |- _ ==> _ \* \$ _ => apply hsimpl_starify
@@ -1102,17 +1104,22 @@ Ltac dominated_cleanup_cost :=
     | apply dominated_reflexive
     ].
 
-Ltac simple_cleanup_cost :=
-  intro; simpl;
-  (* workaround because ring_simplify apparently sometimes chokes on
-     evars. *)
+(* workaround because ring_simplify apparently sometimes chokes on
+   evars. *)
+Ltac hide_evars_then cont :=
   match goal with
-    |- _ = ?rhs =>
-    let hide_rhs := fresh in
-    set (hide_rhs := rhs);
-    ring_simplify;
-    subst hide_rhs
+    |- context [ ?X ] =>
+    is_evar X;
+    let hide_X := fresh in
+    set (hide_X := X);
+    hide_evars_then cont;
+    subst hide_X
+  | _ =>
+    cont tt
   end.
+
+Ltac simple_cleanup_cost :=
+  intro; simpl; hide_evars_then ltac:(fun _ => ring_simplify).
 
 Ltac cleanup_cost ::=
   eapply dominated_eq_r;
@@ -1197,6 +1204,9 @@ Goal exists x, x = 0.
   ring_simplify.
 *)
 
+Ltac ring_simplify' :=
+  hide_evars_then ltac:(fun _ => ring_simplify).
+
 Lemma loop2_spec_1 :
   exists (cost : Z -> Z),
   (forall (n: Z),
@@ -1220,20 +1230,12 @@ Proof.
   xfor_ensure_evar_post ltac:(fun _ => idtac).
   eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]).
   math.
-  { intros i Hi.
-    xapp. hsimpl. (* FIXME *)
-    assert (LL: forall a b, a = b -> 0 <= b -> \$ ceil a ==> \$ b \* \GC) by admit.
-    apply LL. reflexivity. auto with zarith.
-  }
+  { intros i Hi. xapp. hsimpl. }
   hsimpl.
   intro; xlocal.
   simpl. rewrite cumulP. rewrite big_const_Z.
 
-  (* XX *)
-  match goal with |- ?lhs <= ?rhs => set (foo := rhs) end.
-  ring_simplify. subst foo.
-
-  (* xx *) apply Hb.
+  ring_simplify'. (* xx *) apply Hb.
 
   hsimpl.
 
