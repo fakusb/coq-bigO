@@ -573,6 +573,48 @@ Proof.
 Admitted. (* demo *)
 *)
 
+Definition ceil (x : Z) : Z :=
+  match x with
+  | Z0 => Z0
+  | Zpos p => Zpos p
+  | Zneg _ => Z0
+  end.
+  (* Z.max 0 x. *)
+
+Lemma ceil_max_0 : forall x, ceil x = Z.max 0 x.
+Proof.
+  intro x. destruct x.
+  - reflexivity.
+  - simpl. auto with zarith.
+  - simpl. auto with zarith.
+Qed.
+
+Lemma ceil_pos : forall x, 0 <= ceil x.
+Proof. intros. rewrite ceil_max_0. math_lia. Qed.
+
+Lemma ceil_eq : forall x, 0 <= x -> ceil x = x.
+Proof. intros. rewrite ceil_max_0. math_lia. Qed.
+
+Lemma ceil_add_eq : forall x y,
+    0 <= x ->
+    0 <= y ->
+    ceil (x + y) = ceil x + ceil y.
+Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+
+Lemma ceil_add_le : forall x y,
+  ceil (x + y) <= ceil x + ceil y.
+Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+
+Lemma ceil_ceil : forall x, ceil (ceil x) = ceil x.
+Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+
+Lemma ceil_ceil_add : forall x y, ceil (ceil x + ceil y) = ceil x + ceil y.
+Proof.
+  intros x y.
+  rewrite ceil_add_eq; try apply ceil_pos.
+  rewrite !ceil_ceil. reflexivity.
+Qed.
+
 Ltac is_credits H :=
   match H with
   | \$ _ => idtac
@@ -714,19 +756,21 @@ Lemma xlet_refine :
     (F1 : hprop -> (A -> hprop) -> Prop)
     (F2 : A -> hprop -> (B -> hprop) -> Prop)
     (H : hprop) (Q : B -> hprop),
-  (cost = cost1 + cost2)%nat ->
+  (cost = ceil cost1 + ceil cost2) ->
   is_local F1 ->
   (forall x, is_local (F2 x)) ->
   (exists (Q' : A -> hprop),
-    F1 (\$ Z.of_nat cost1 \* H) Q' /\
-    (forall r, F2 r (\$ Z.of_nat cost2 \* Q' r) Q)) ->
-  (Let r := F1 in F2 r) (\$ Z.of_nat cost \* H) Q.
+    F1 (\$ ceil cost1 \* H) Q' /\
+    (forall r, F2 r (\$ ceil cost2 \* Q' r) Q)) ->
+  (Let r := F1 in F2 r) (\$ ceil cost \* H) Q.
 Proof.
   introv E L1 L2 (Q' & H1 & H2).
   rewrite E.
   unfold cf_let. xuntag tag_let. apply local_erase.
   eexists. split.
-  { xapply H1. rewrite Nat2Z.inj_add. credits_split. hsimpl. math. math. }
+  { xapply H1. rewrite ceil_add_eq; try apply ceil_pos. repeat rewrite ceil_ceil.
+    forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+    credits_split. hsimpl. math. math. }
   { intro r. specializes L2 r. xapply H2; hsimpl. }
 Qed.
 
@@ -743,19 +787,20 @@ Ltac xlet_core cont0 cont1 cont2 ::=
   end.
 
 Lemma xpay_refine_nat :
-  forall A (cost cost' : nat)
+  forall A (cost cost' : Z)
          (F: hprop -> (A -> hprop) -> Prop) H Q,
-  (cost = 1 + cost')%nat ->
+  (cost = 1 + ceil cost') ->
   is_local F ->
-  F (\$ Z.of_nat cost' \* H) Q ->
-  (Pay_ ;; F) (\$ Z.of_nat cost \* H) Q.
+  F (\$ ceil cost' \* H) Q ->
+  (Pay_ ;; F) (\$ ceil cost \* H) Q.
 Proof.
-  introv E L HH. rewrite E. rew_cost.
+  introv E L HH. rewrite E.
   xpay_start tt.
-  { unfold pay_one. credits_split.
-    hsimpl_credits. math. math. }
-  xapply HH. hsimpl_credits. math. math.
-  hsimpl.
+  { unfold pay_one.
+    rewrite ceil_eq; [| forwards: ceil_pos cost'; math_lia ].
+    credits_split.
+    hsimpl_credits. math. forwards~: ceil_pos cost'. }
+  xapply HH. hsimpl_credits. hsimpl.
 Qed.
 
 (* tmp *)
@@ -764,18 +809,20 @@ Ltac xpay_core tt ::=
 
 Lemma xseq_refine_nat :
   forall (A : Type) cost cost1 cost2 F1 F2 H (Q : A -> hprop),
-  (cost = cost1 + cost2)%nat ->
+  (cost = ceil cost1 + ceil cost2) ->
   is_local F1 ->
   is_local F2 ->
   (exists Q',
-    F1 (\$ Z.of_nat cost1 \* H) Q' /\
-    F2 (\$ Z.of_nat cost2 \* Q' tt) Q) ->
-  (F1 ;; F2) (\$ Z.of_nat cost \* H) Q.
+    F1 (\$ ceil cost1 \* H) Q' /\
+    F2 (\$ ceil cost2 \* Q' tt) Q) ->
+  (F1 ;; F2) (\$ ceil cost \* H) Q.
 Proof.
   introv E L1 L2 (Q' & H1 & H2).
-  rewrite E. rew_cost.
+  rewrite E.
   xseq_pre tt. apply local_erase. eexists. split.
-  { xapply H1. rewrite Nat2Z.inj_add. credits_split. hsimpl. math. math. }
+  { xapply H1. rewrite ceil_add_eq; try apply ceil_pos. repeat rewrite ceil_ceil.
+    forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+    credits_split. hsimpl. math. math. }
   { xapply H2. hsimpl. hsimpl. }
 Qed.
 
@@ -785,12 +832,12 @@ Ltac xseq_noarg_core tt ::=
 
 
 Lemma xret_refine_nat : forall cost A (x : A) H (Q : A -> hprop),
-  (cost = 0)%nat ->
+  (cost = 0) ->
   local (fun H' Q' => H' ==> Q' x) H Q ->
-  local (fun H' Q' => H' ==> Q' x) (\$ Z.of_nat cost \* H) Q.
+  local (fun H' Q' => H' ==> Q' x) (\$ ceil cost \* H) Q.
 Proof.
   introv E HH.
-  rewrite E. simpl. rewrite credits_int_zero_eq. rewrite star_neutral_l.
+  rewrite E. rewrite ceil_eq; [| math]. rewrite credits_int_zero_eq. rewrite star_neutral_l.
   assumption.
 Qed.
 
@@ -805,11 +852,11 @@ Ltac xret_pre cont1 cont2 ::=
   end.
 
 Lemma spec_cost_is_constant :
-  forall A (F : ~~A) B (x : B) (costf: B -> Z) (cost : nat) H (Q : A -> hprop),
-    (PRE \$ Z.of_nat cost \* H
+  forall A (F : ~~A) B (x : B) (costf: B -> Z) (cost : Z) H (Q : A -> hprop),
+    (PRE \$ ceil cost \* H
      POST Q
      CODE F) ->
-    (costf x = Z.of_nat cost) ->
+    (costf x = ceil cost) ->
     (PRE \$costf x \* H
      POST Q
      CODE F).
@@ -817,6 +864,7 @@ Proof.
   introv HF E. rewrite E. apply HF.
 Qed.
 
+(*
 Ltac can_eval_to_nat x :=
   let xn := constr:(Z.to_nat x) in
   let xn' := (eval simpl in xn) in
@@ -824,64 +872,28 @@ Ltac can_eval_to_nat x :=
     context [Z.to_nat _] => fail
   | _ => idtac
   end.
+*)
 
 Lemma inst_credits_cost_to_nat :
-  forall (cost : nat) (cost_int : int) (credits : int) H H' H'',
-  (cost = Z.to_nat cost_int) ->
-  (cost_int = credits) ->
+  forall (cost : int) (credits : int) H H' H'',
+  (cost = credits) ->
   (0 <= credits) ->
   H ==> H' \* H'' ->
-  \$ Z.of_nat cost \* H ==> H' \* \$ credits \* H''.
-Proof.
-  introv E1 E2 P HH.
-  rewrite E1. rewrite E2. rewrite Z2Nat.id.
-  xchange HH. hsimpl_credits. auto.
-Qed.
-
-(* To use when [credits] is a constant and therefore [Z.to_nat credits]
-   reduces.
-*)
-Lemma inst_credits_cost_to_nat_cst : forall (cost : nat) (credits : int) H H' H'',
-    (cost = Z.to_nat credits) ->
-    (0 <= credits) ->
-    H ==> H' \* H'' ->
-    \$ Z.of_nat cost \* H ==> H' \* \$ credits \* H''.
+  \$ ceil cost \* H ==> H' \* \$ credits \* H''.
 Proof.
   introv E P HH.
-  rewrite E. rewrite Z2Nat.id.
-  xchange HH. hsimpl_credits. auto.
+  rewrite E. rewrite ceil_eq; auto.
+  xchange HH. hsimpl_credits.
 Qed.
 
-Lemma inst_credits_cost_to_nat_1 : forall (cost : nat) H H' H'',
-    (cost = 1%nat) ->
-    H ==> H' \* H'' ->
-    \$ Z.of_nat cost \* H ==> H' \* \$ 1 \* H''.
-Proof.
-  introv E HH.
-  rewrite E. simpl. xchange HH. hsimpl.
-Qed.
-
-Ltac inst_credits_cost_to_nat_cst credits cont :=
-  match credits with
-  | 1%Z =>
-    apply inst_credits_cost_to_nat_1;
-    [ reflexivity | cont tt ]
-  | _ =>
-    apply inst_credits_cost_to_nat;
-    [ simpl; reflexivity | try math | cont tt ]
-  end.
-
-Ltac inst_credits_cost_to_nat_noncst credits cont :=
+Ltac inst_credits_cost_to_nat credits cont :=
   eapply inst_credits_cost_to_nat;
-  [ reflexivity | try reflexivity | auto with zarith | cont tt ].
+  [ try reflexivity | auto with zarith | cont tt ].
 
 Ltac inst_credits_cost_nat_core cont :=
   match goal with
     |- _ ==> _ \* \$ ?credits \* _ =>
-    tryif can_eval_to_nat credits then
-      inst_credits_cost_to_nat_cst credits cont
-    else
-      inst_credits_cost_to_nat_noncst credits cont
+    inst_credits_cost_to_nat credits cont
   end.
 
 Ltac inst_credits_cost_nat cont :=
@@ -890,8 +902,8 @@ Ltac inst_credits_cost_nat cont :=
 (* \$_nat ? *)
 Ltac hsimpl_inst_credits_cost_setup_nat tt :=
   match goal with
-  | |- \$ Z.of_nat ?cost ==> _ => is_evar cost; apply hsimpl_start_1
-  | |- \$ Z.of_nat ?cost \* _ ==> _ => is_evar cost
+  | |- \$ ceil ?cost ==> _ => is_evar cost; apply hsimpl_start_1
+  | |- \$ ceil ?cost \* _ ==> _ => is_evar cost
   end;
   match goal with
   | |- _ ==> _ \* \$ _ => apply hsimpl_starify
@@ -915,19 +927,22 @@ Ltac hsimpl_setup process_credits ::=
 Definition cleanup_cost A (cost cost_clean : A -> Z) :=
   forall x, cost x = cost_clean x.
 
+Lemma cleanup_under_ceil: forall x y, x = y -> ceil x = ceil y.
+Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+
+(* rewrite ceil_ceil ? *)
 Ltac cleanup_cost_core :=
-  repeat rewrite Nat2Z.inj_add;
-  simpl;
-  repeat (rewrite Z2Nat.id; [| auto with zarith ]);
-  simpl;
+  rewrite ?ceil_ceil_add;
+  repeat (rewrite ceil_eq; [| auto with zarith]);
   ring_simplify.
 
 Ltac cleanup_cost :=
+  unfold cleanup_cost; intro;
+  apply cleanup_under_ceil;
   match goal with
-    |- cleanup_cost ?cost ?cost_clean =>
+    |- _ = ?cost_clean =>
     let cost_clean_ := fresh "cost_clean" in
     set (cost_clean_ := cost_clean);
-    intro; subst cost; hnf;
     cleanup_cost_core;
     [ subst cost_clean_; reflexivity | .. ]
   end.
@@ -951,12 +966,25 @@ Proof.
   rewrite E'. assumption.
 Qed.
 
+Lemma dominated_ceil : forall A f g,
+    dominated A f g ->
+    dominated A (fun x => ceil (f x)) g.
+Proof.
+  introv (c & U). exists c.
+  revert U; filter_closed_under_intersection.
+  intros.
+  assert (I: Z.abs (ceil (f a)) <= Z.abs (f a)). {
+    rewrite ceil_max_0. math_lia.
+  }
+  rewrite I. assumption.
+Qed.
+
 Ltac exists_cost cost ::=
   let cost_clean := fresh "cost_clean" in
-  refine (let cost := (fun (x : Z) => Z.of_nat _ ) : Z -> Z in _);
+  refine (let cost := (fun (x : Z) => ceil _ ) : Z -> Z in _);
   evar (cost_clean : Z -> Z);
   eapply (@spec_exists_cost Z cost cost_clean); subst cost_clean;
-    [ | | intro; apply Nat2Z.is_nonneg | subst cost ].
+    [ | | intro; apply ceil_pos | subst cost; apply dominated_ceil ].
 
 Lemma let1_spec :
   exists (cost : Z -> Z),
@@ -985,7 +1013,6 @@ Proof.
     hsimpl. subst m. reflexivity. }
 
   cleanup_cost.
-
   { apply dominated_sum_distr.
     { apply dominated_transitive with (fun x => x + 1).
       - eapply dominated_comp_eq with
@@ -1002,17 +1029,17 @@ Qed.
 
 Lemma xfor_inv_lemma_pred_refine :
   forall
-    (I : int -> hprop) (cost : nat) (cost_int : int)
-    (cost_body : int -> nat)
+    (I : int -> hprop) (cost : int)
+    (cost_body : int -> int)
     (a : int) (b : int) (F : int-> ~~unit) H H',
-  (cost = Z.to_nat cost_int) ->
   (a <= b) ->
-  (forall i, a <= i < b -> F i (\$ Z.of_nat (cost_body i) \* I i) (# I(i+1))) ->
+  (forall i, a <= i < b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul (fun i => Z.of_nat (cost_body i)) a b <= cost_int) ->
-  (For i = a To (b - 1) Do F i Done_) (\$ Z.of_nat cost \* H) (# I b \* H').
+  (cumul (fun i => cost_body i) a b <= cost) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ ceil cost \* H) (# I b \* H').
 Proof.
+(*
   introv E a_le_b HI HH Flocal E'.
   assert (0 <= cost_int). admit. (* ok *)
   applys xfor_inv_case_lemma
@@ -1033,9 +1060,65 @@ Proof.
       xsimpl_credits.
     - math_rewrite ((b - 1) + 1 = b). hsimpl. }
   { xchange HH. math_rewrite (a = b). xsimpl. }
+*)
 Admitted.
 
+Lemma spec_exists_cost' :
+  forall (A : filterType) (cost cost_clean g : A -> Z)
+         (P Q : (A -> Z) -> Prop),
+    P cost ->
+    dominated A cost cost_clean ->
+    Q cost ->
+    dominated A cost_clean g ->
+    (exists cost, P cost /\ Q cost /\ dominated A cost g).
+Proof.
+  intros ? cost_ cost_clean g.
+  introv HP D1 HQ D2.
+  exists cost_.
+  splits.
+  assumption.
+  assumption.
+  rewrite D1. assumption.
+Qed.
+
+Ltac exists_cost cost ::=
+  let cost_clean := fresh "cost_clean" in
+  refine (let cost := (fun (x : Z) => ceil _ ) : Z -> Z in _);
+  evar (cost_clean : Z -> Z);
+  eapply (@spec_exists_cost' Z_filterType cost cost_clean); subst cost_clean;
+    [ | | intro; apply ceil_pos | subst cost ].
+
 (* todo: fix xpay setup *)
+
+Require Import UltimatelyNonneg.
+
+Ltac dominated_cleanup_cost :=
+  first [
+      apply dominated_ceil; dominated_cleanup_cost
+    | apply dominated_sum;
+      [ | | dominated_cleanup_cost | dominated_cleanup_cost];
+      simpl;
+      ultimately_nonneg
+    | apply dominated_reflexive
+    ].
+
+Ltac simple_cleanup_cost :=
+  intro; simpl;
+  (* workaround because ring_simplify apparently sometimes chokes on
+     evars. *)
+  match goal with
+    |- _ = ?rhs =>
+    let hide_rhs := fresh in
+    set (hide_rhs := rhs);
+    ring_simplify;
+    subst hide_rhs
+  end.
+
+Ltac cleanup_cost ::=
+  eapply dominated_eq_r;
+  [ dominated_cleanup_cost |];
+  simple_cleanup_cost;
+  reflexivity.
 
 Lemma loop1_spec_3 :
   exists (cost: Z -> Z),
@@ -1053,8 +1136,7 @@ Proof.
   xcf.
   xpay.
   xfor_ensure_evar_post ltac:(fun _ => idtac).
-  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]);
-    [ reflexivity | ..].
+  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]).
 
   auto.
   { intros i Hi.
@@ -1063,21 +1145,26 @@ Proof.
   hsimpl.
   intro; xlocal.
 
-  simpl. reflexivity.
+  simpl.
+(*
+  rewrite cumulP. rewrite big_const_Z.
+  match goal with |- _ <= ?rhs => set (toto := rhs) end. ring_simplify. subst toto. reflexivity.*)
+  reflexivity.
   hsimpl.
 
-  cleanup_cost. admit.
+  { cleanup_cost. }
 
-  apply dominated_sum_distr.
-  { rewrite dominated_big_sum_bound.
-    { eapply dominated_eq_l.
-      eapply dominated_mul_cst_l.
-      apply dominated_reflexive.
-      eauto with zarith. }
-    apply filter_universe_alt. math.
-    apply filter_universe_alt. intros. (* monotonic_cst *) admit.
+  { apply dominated_sum_distr.
+    { rewrite dominated_big_sum_bound.
+      { eapply dominated_eq_l.
+        eapply dominated_mul_cst_l.
+        apply dominated_reflexive.
+        eauto with zarith. }
+      apply filter_universe_alt. math.
+      apply filter_universe_alt. intros. (* monotonic_cst *) admit.
+    }
+    { admit. }
   }
-  { admit. }
 Qed.
 
 Lemma rand_spec :
@@ -1131,14 +1218,12 @@ Proof.
   xpull. intros Hb.
   apply xtac_refine_start.
   xfor_ensure_evar_post ltac:(fun _ => idtac).
-  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]);
-    [ reflexivity | ..].
+  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]).
   math.
   { intros i Hi.
     xapp. hsimpl. (* FIXME *)
-    assert (LL: forall a b, a = Z.to_nat b -> \$ Z.of_nat a ==> \$ b \* \GC) by admit.
-    apply LL. reflexivity.
-
+    assert (LL: forall a b, a = b -> 0 <= b -> \$ ceil a ==> \$ b \* \GC) by admit.
+    apply LL. reflexivity. auto with zarith.
   }
   hsimpl.
   intro; xlocal.
@@ -1148,23 +1233,14 @@ Proof.
   match goal with |- ?lhs <= ?rhs => set (foo := rhs) end.
   ring_simplify. subst foo.
 
-  (* xx *) destruct Hb as [Hb1 Hb2]. apply Hb2.
-
+  (* xx *) apply Hb.
 
   hsimpl.
 
-  unfold cleanup_cost. intro. subst mycost.
-  hnf.
-  match goal with |- _ = ?rhs => set (foo := rhs) end.
-  repeat rewrite Nat2Z.inj_add. simpl. ring_simplify.
-  subst foo.
-  rewrite Z_of_nat_zify.
-  reflexivity.
-
+  cleanup_cost.
 
   apply dominated_sum_distr.
-  { apply dominated_max_distr. admit.
-    apply dominated_reflexive. }
+  { apply dominated_reflexive. }
   { admit. }
 Qed.
 
