@@ -1207,6 +1207,25 @@ Goal exists x, x = 0.
 Ltac ring_simplify' :=
   hide_evars_then ltac:(fun _ => ring_simplify).
 
+Record specO (A : filterType) (P : (A -> Z) -> Prop) (g : A -> Z) := SpecO {
+  cost_ : A -> Z;
+  spec : P cost_;
+  cost_nonneg_ : forall x, 0 <= cost_ x;
+  cost_dominated : dominated A cost_ g
+}.
+
+Lemma loop2_spec_1' :
+  specO
+    Z_filterType
+    (fun cost =>
+       forall n,
+         0 <= n ->
+         app loop2 [n]
+             PRE (\$ cost n \* \[])
+             POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Admitted.
+
 Lemma loop2_spec_1 :
   exists (cost : Z -> Z),
   (forall (n: Z),
@@ -1235,7 +1254,10 @@ Proof.
   intro; xlocal.
   simpl. rewrite cumulP. rewrite big_const_Z.
 
-  ring_simplify'. (* xx *) apply Hb.
+  ring_simplify'. (* xx *)
+  (* goal a <= ?x. lemma H: forall x y, x <= y -> x <= y. apply (H e) ~> a <= e *)
+
+  apply Hb.
 
   hsimpl.
 
