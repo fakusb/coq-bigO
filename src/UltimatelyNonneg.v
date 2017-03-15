@@ -77,6 +77,7 @@ Ltac ultimately_nonneg :=
     | apply ultimately_nonneg_max
     | apply ultimately_nonneg_mul
     | ultimately_nonneg_cumul
+    | apply filter_universe_alt; auto with zarith; (intros; omega)
   ].
 
 (* -----------------------------------------------------------------*)
