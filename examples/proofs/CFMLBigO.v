@@ -1,7 +1,7 @@
 Set Implicit Arguments.
-Require Import LibTactics.
+Require Import TLC.LibTactics.
 (* Load the CFML library, with time credits. *)
-Require Import CFLibCredits.
+Require Import CFML.CFLibCredits.
 (* Load the BigO library. *)
 Require Import Dominated.
 Require Import BigEnough.

@@ -7,30 +7,8 @@
 
 -include settings.sh
 
-##############################################################################
-# We assume that TLC and CFML have been installed via [make install].
-# If desired, these variables can be overridden in settings.sh.
-
-ifndef TLC
-  TLC  := $(shell $(COQBIN)coqc -where)/user-contrib/TLC
-endif
-
-ifndef CFML
-  CFML := $(shell $(COQBIN)coqc -where)/user-contrib/CFML
-endif
-
-##############################################################################
-# Check that TLC and CFML can be found.
-
-ifeq ($(wildcard $(TLC)),)
-  $(error $(TLC) does not exist. \
-          Please install TLC first)
-endif
-
-ifeq ($(wildcard $(CFML)),)
-  $(error $(CFML) does not exist. \
-          Please install CFML first)
-endif
+TLC  := $(shell $(COQBIN)coqc -where)/user-contrib/TLC
+CFML := $(shell $(COQBIN)coqc -where)/user-contrib/CFML
 
 ##############################################################################
 # Define SRC.
@@ -45,11 +23,9 @@ PWD := $(shell pwd)
 BIGO := $(shell cd ../../src && pwd)
 
 COQINCLUDE := \
-  -R $(TLC) TLC                \
-  -R $(CFML)/lib/coq CFML      \
-  -R $(CFML)/lib/stdlib STDLIB \
-  -R $(PWD) EXAMPLES           \
-	-R $(BIGO) BigO              \
+  -R $(CFML)/Stdlib CFML.Stdlib \
+  -R $(PWD) EXAMPLES            \
+	-R $(BIGO) BigO               \
 
 ##############################################################################
 # Instrument the produced CF to enable reasoning about time credits
@@ -70,7 +46,6 @@ CF := $(PWD)/_cf
 ML := $(patsubst %,$(CF)/%,$(SOURCES))
 
 OCAML_INCLUDE := \
-  -I $(CFML)/lib/stdlib \
   -I $(CF) \
 
 ##############################################################################
@@ -111,7 +86,7 @@ prepare:
 	@ mkdir -p $(CF)
 	@ cd $(SRC) && cp -fa $(SOURCES) $(CF)
 	@ chmod a-w $(ML)
-	@ $(MAKE) --no-print-directory -f $(CFML)/lib/make/Makefile.cfml all
+	@ $(MAKE) --no-print-directory -f $(shell cfmlc -where)/make/Makefile.cfml all
 
 finish: prepare
 	@ echo "------------------------------------------------------------------------------"
