@@ -675,10 +675,11 @@ Qed.
 
 (* Dissymetric products do not imply symmetric product.
    Symmetric product is strictly stronger than dissymetric products. *)
-Goal
+
+Lemma product_counter_example_1 :
   (forall (A1 A2 : filterType) P,
-   ultimately A1 (fun x => ultimately A2 (fun y => P (x, y))) ->
-   ultimately A2 (fun y => ultimately A1 (fun x => P (x, y))) ->
+   (forall x, ultimately A2 (fun y => P (x, y))) ->
+   (forall y, ultimately A1 (fun x => P (x, y))) ->
    ultimately (product_filterType A1 A2) P) ->
   False.
 Proof.
@@ -687,16 +688,27 @@ Proof.
     (fun '(x, y) => x < y \/ y < x).
   simpl in H.
   specializes H ___.
-  { rewrite natP. exists 0. intros.
-    rewrite natP. exists (n+1). intros. lia. }
-  { rewrite natP. exists 0. intros.
-    rewrite natP. exists (n+1). intros. lia. }
+  { intro x. rewrite natP. exists (x+1). intros. lia. }
+  { intro y. rewrite natP. exists (y+1). intros. lia. }
   rewrite productP in H. destruct H as (P1 & P2 & UP1 & UP2 & HP).
   rewrite natP in UP1, UP2. destruct UP1 as (x0 & HP1). destruct UP2 as (y0 & HP2).
 
   destruct (Nat.le_gt_cases x0 y0).
   { specializes HP y0 y0 ___. lia. }
   { specializes HP x0 x0 ___. apply HP2. lia. lia. }
+Qed.
+
+Lemma product_counter_example_2 :
+  (forall (A1 A2 : filterType) P,
+   ultimately A1 (fun x => ultimately A2 (fun y => P (x, y))) ->
+   ultimately A2 (fun y => ultimately A1 (fun x => P (x, y))) ->
+   ultimately (product_filterType A1 A2) P) ->
+  False.
+Proof.
+  intro H.
+  apply product_counter_example_1.
+  introv H1 H2.
+  apply H; apply filter_universe_alt; auto.
 Qed.
 
 (* Similarly, one cannot prove a property on a product filter by proving it
