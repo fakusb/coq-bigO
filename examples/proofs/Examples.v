@@ -21,7 +21,7 @@ Lemma tick_spec :
   app tick [tt]
     PRE (\$1)
     POST (fun (tt:unit) => \[]).
-Proof. xcf. admit. (* xx *) Qed.
+Proof. xcf. xpay. xret. hsimpl. Qed.
 
 Hint Extern 1 (RegisterSpec tick) => Provide tick_spec.
 
@@ -29,11 +29,11 @@ Lemma rand_spec :
   forall (n:Z),
   0 <= n ->
   app rand [n]
-    PRE (\$ 1 \* \[])
+    PRE (\$1)
     POST (fun m => \[0 <= m <= n]).
 Proof.
   intros n N.
-  xcf. admit. (* xx *)
+  xcf. xpay. xret. hsimpl. math.
 Qed.
 
 Hint Extern 1 (RegisterSpec rand) => Provide rand_spec.
@@ -43,22 +43,16 @@ Lemma tick3_spec :
     unit_filterType
     (fun cost =>
        app tick3 [tt]
-           PRE (\$ cost tt \* \[])
+           PRE (\$ cost tt)
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
   xspecO.
   xcf.
   xpay.
-
-(*
+  xseq. xapp. hsimpl.
   xapp. hsimpl.
-  (* xx *) rewrite star_neutral_l. apply refine_cost_setup_intro_emp.
   xapp. hsimpl.
-  (* xx *) rewrite star_neutral_l. apply refine_cost_setup_intro_emp.
-  xapp. hsimpl.
- *)
-  xseq. xapp. hsimpl. xseq. xapp. hsimpl. xapp. hsimpl.
 
   cleanup_cost.
   apply dominated_cst. math.
@@ -71,13 +65,12 @@ Lemma loop1_spec :
        forall (n: Z),
        0 <= n ->
        app loop1 [n]
-           PRE (\$ cost n \* \[])
+           PRE (\$ cost n)
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
   xspecO.
   intros n N.
-
   xcf.
   xpay.
   xfor_ensure_evar_post ltac:(fun _ => idtac).
@@ -119,7 +112,7 @@ Lemma let1_spec :
        forall n,
        0 <= n ->
        app let1 [n]
-         PRE (\$ cost n \* \[])
+         PRE (\$ cost n)
          POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
@@ -158,7 +151,7 @@ Lemma loop2_spec :
        forall n,
          0 <= n ->
          app loop2 [n]
-             PRE (\$ cost n \* \[])
+             PRE (\$ cost n)
              POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.

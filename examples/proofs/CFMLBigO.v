@@ -115,7 +115,6 @@ Tactic Notation "xspecO" :=
   let cost := fresh "cost" in
   xspecO_base cost.
 
-
 Ltac dominated_cleanup_cost :=
   first [
       apply dominated_ceil; dominated_cleanup_cost
@@ -163,11 +162,11 @@ Qed.
 
 Ltac is_refine_cost_goal :=
   match goal with
-    |- _ (\$ ceil ?cost) _ => is_evar cost; apply refine_cost_setup_intro_emp
-  | |- _ (\$ ceil ?cost \* _) _ => is_evar cost
+    |- _ (\$ ceil _) _ => apply refine_cost_setup_intro_emp
+  | |- _ (\$ ceil _ \* _) _ => idtac
   end.
 
-(* hpull ******************************)
+(* hpull & hclean *********************)
 
 Ltac is_credits H :=
   match H with
@@ -218,6 +217,12 @@ Ltac hpull_main tt ::=
   bring_credits_to_head_of_pre tt;
   hpull_cleanup tt.
 
+Ltac hclean_main tt ::=
+  hclean_setup tt;
+  (repeat (hclean_step tt));
+  bring_credits_to_head_of_pre tt;
+  hclean_cleanup tt.
+
 (* hsimpl *****************************)
 
 Lemma inst_credits_cost :
@@ -267,11 +272,18 @@ Ltac hsimpl_setup process_credits ::=
   hsimpl_left_empty tt;
   hsimpl_inst_credits_cost ltac:(fun _ => apply hsimpl_start).
 
+(* xcf ******************************************)
+
+(* This is to ensure that credits are put at the head of the precondition. *)
+
+Ltac xcf_post tt ::=
+  cbv beta;
+  remove_head_unit tt;
+  hclean.
+
 (* xpay *****************************************)
 
-(* TODO: plug properly into the existing tactics *)
-
-Lemma xpay_refine_nat :
+Lemma xpay_refine :
   forall A (cost cost' : Z)
          (F: hprop -> (A -> hprop) -> Prop) H Q,
   (cost = 1 + ceil cost') ->
@@ -288,15 +300,15 @@ Proof.
   xapply HH. hsimpl_credits. hsimpl.
 Qed.
 
-(* tmp *)
 Ltac xpay_core tt ::=
-  eapply xpay_refine_nat; [ reflexivity | xlocal | ].
+  tryif is_refine_cost_goal then
+    (eapply xpay_refine; [ reflexivity | xlocal | ])
+  else
+    (xpay_start tt; [ unfold pay_one; hsimpl | ]).
 
 (* xret *******************************)
 
-(* TODO: plug properly into the existing tactics *)
-
-Lemma xret_refine_nat : forall cost A (x : A) H (Q : A -> hprop),
+Lemma xret_refine : forall cost A (x : A) H (Q : A -> hprop),
   (cost = 0) ->
   local (fun H' Q' => H' ==> Q' x) H Q ->
   local (fun H' Q' => H' ==> Q' x) (\$ ceil cost \* H) Q.
@@ -307,20 +319,21 @@ Proof.
 Qed.
 
 Ltac xret_inst_credits_zero :=
-  apply xret_refine_nat; [ reflexivity | ].
+  apply xret_refine; [ reflexivity | ].
 
-Ltac xret_pre cont1 cont2 ::=
-  xpull_check_not_needed tt;
-  match cfml_get_tag tt with
-  | tag_ret => xret_inst_credits_zero; cont1 tt
-  | tag_let => xlet; [ xret_inst_credits_zero; cont1 tt | instantiate; cont2 tt ]
-  end.
+Ltac xret_apply_lemma tt ::=
+  (tryif is_refine_cost_goal then xret_inst_credits_zero else idtac);
+  first [ apply xret_lemma_unify
+        | apply xret_lemma ].
+
+Ltac xret_no_gc_core tt ::=
+  (tryif is_refine_cost_goal then xret_inst_credits_zero else idtac);
+  first [ apply xret_lemma_unify
+        | eapply xret_no_gc_lemma ].
 
 (* xseq *******************************)
 
-(* TODO: plug properly into the existing tactics *)
-
-Lemma xseq_refine_nat :
+Lemma xseq_refine :
   forall (A : Type) cost cost1 cost2 F1 F2 H (Q : A -> hprop),
   (cost = ceil cost1 + ceil cost2) ->
   is_local F1 ->
@@ -339,13 +352,16 @@ Proof.
   { xapply H2. hsimpl. hsimpl. }
 Qed.
 
-(* tmp *)
-Ltac xseq_noarg_core tt ::=
-  eapply xseq_refine_nat; [ reflexivity | xlocal | xlocal | eexists; split ].
+Ltac xseq_core cont0 cont1 ::=
+  (tryif is_refine_cost_goal then
+     eapply xseq_refine; [ reflexivity | xlocal | xlocal | ]
+   else
+     apply local_erase);
+  cont0 tt;
+  split; [ | cont1 tt ];
+  xtag_pre_post.
 
 (* xlet *****************************************)
-
-(* TODO: plug properly into the existing tactics *)
 
 Lemma xlet_refine :
   forall
@@ -359,11 +375,11 @@ Lemma xlet_refine :
   (exists (Q' : A -> hprop),
     F1 (\$ ceil cost1 \* H) Q' /\
     (forall r, F2 r (\$ ceil cost2 \* Q' r) Q)) ->
-  (Let r := F1 in F2 r) (\$ ceil cost \* H) Q.
+  cf_let F1 F2 (\$ ceil cost \* H) Q.
 Proof.
   introv E L1 L2 (Q' & H1 & H2).
   rewrite E.
-  unfold cf_let. xuntag tag_let. apply local_erase.
+  unfold cf_let.
   eexists. split.
   { xapply H1. rewrite ceil_add_eq; try apply ceil_pos. repeat rewrite ceil_ceil.
     forwards: ceil_pos cost1. forwards: ceil_pos cost2.
@@ -371,16 +387,16 @@ Proof.
   { intro r. specializes L2 r. xapply H2; hsimpl. }
 Qed.
 
-Ltac xlet_pre tt ::=
-  xpull_check_not_needed tt.
-
 Ltac xlet_core cont0 cont1 cont2 ::=
-  match goal with |- (tag tag_let (local (cf_let ?F1 (fun x => _)))) ?H ?Q =>
-    eapply xlet_refine;
-    [ reflexivity | xlocal | intro; xlocal
-      | cont0 tt;
-        split; [ | cont1 x; cont2 tt ];
-        (* xtag_pre_post *) (* ??? *) idtac ]
+  apply local_erase;
+  match goal with |- cf_let ?F1 (fun x => _) ?H ?Q =>
+    tryif is_refine_cost_goal then (
+      eapply xlet_refine;
+      [ reflexivity | xlocal | intro; xlocal | ]
+    ) else idtac;
+    cont0 tt;
+    split; [ | cont1 x; cont2 tt ];
+    xtag_pre_post
   end.
 
 (* xfor *****************************************)
