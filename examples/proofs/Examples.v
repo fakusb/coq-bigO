@@ -144,6 +144,11 @@ Proof.
     admit. }
 Qed.
 
+Lemma le_than (b: Z): forall a, a <= b -> a <= b.
+Proof. auto with zarith. Qed.
+
+Arguments le_than : clear implicits.
+
 Lemma loop2_spec :
   specO
     Z_filterType
@@ -173,10 +178,9 @@ Proof.
   intro; xlocal.
   simpl. rewrite cumulP. rewrite big_const_Z.
 
-  hide_evars_then ltac:(fun _ => ring_simplify). (* xx *)
-
-  (* goal a <= ?x. lemma H: forall x y, x <= y -> x <= y. apply (H e) ~> a <= e *)
-  apply Hb. (* xx *)
+  apply (le_than n).
+  (* hide_evars_then ltac:(fun _ => ring_simplify). *)
+  math.
 
   hsimpl.
 
