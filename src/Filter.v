@@ -343,22 +343,19 @@ Variable f : A -> B.
 Definition limit :=
   finer (ultimately (image_filterType A f)) (ultimately B).
 
-Lemma limitP:
-  forall (A: filterType) (B: Type) (f: A -> B) P,
-  ultimately (@image_filterType A B f) P =
-  ultimately A (fun x => P (f x)).
-Proof. reflexivity. Qed.
-
 End Limit.
 Arguments limit : clear implicits.
+
+Lemma limitP :
+  forall (A B: filterType) (f: A -> B),
+  limit A B f =
+  forall P, ultimately B P -> ultimately A (fun x => P (f x)).
+Proof. reflexivity. Qed.
 
 Lemma limit_id:
   forall A : filterType,
   limit A A (fun a : A => a).
-Proof.
-  intros. unfold limit. unfold finer.
-  intros. rewrite limitP. eauto.
-Qed.
+Proof. intros. rewrite limitP. auto. Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -519,7 +516,7 @@ Qed.
 Lemma Zshift_limit (x0 : Z) :
   limit Z_filterType Z_filterType (Zshift x0).
 Proof.
-  intros. unfold limit, finer. introv H. rewrite limitP.
+  intros. rewrite limitP. introv H.
   rewrite ZP in H. destruct H as [x1 H1].
   rewrite ZP. exists (x1 - x0)%Z. intros. apply H1.
   unfold Zshift. lia.

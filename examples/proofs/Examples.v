@@ -101,7 +101,7 @@ Proof.
       apply filter_universe_alt. math.
       apply filter_universe_alt. intros. (* monotonic_cst *) admit.
     }
-    { admit. }
+    { apply dominated_cst_id. }
   }
 Qed.
 
@@ -140,8 +140,8 @@ Proof.
         simpl. reflexivity.
       - apply dominated_sum_distr.
         apply dominated_reflexive.
-        admit. }
-    admit. }
+        apply dominated_cst_id. }
+    apply dominated_cst_id. }
 Qed.
 
 Lemma le_than (b: Z): forall a, a <= b -> a <= b.
@@ -188,5 +188,5 @@ Proof.
 
   apply dominated_sum_distr.
   { apply dominated_reflexive. }
-  { admit. }
+  { apply dominated_cst_id. }
 Qed.

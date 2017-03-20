@@ -169,6 +169,24 @@ Proof.
   apply filter_universe_alt. intros. nia.
 Qed.
 
+(* A constant is dominated by any function going to infinity. *)
+
+Lemma dominated_cst_limit c g :
+  limit A Z_filterType g ->
+  dominated A (fun _ => c) g.
+Proof.
+  introv L. rewrite limitP in L.
+  forwards Ugbig: L (fun x => Z.abs c <= x). { apply ultimately_ge_Z. }
+  exists 1. revert Ugbig. filter_closed_under_intersection.
+  intros; lia.
+Qed.
+
+Lemma dominated_cst_id c :
+  dominated Z_filterType (fun _ => c) (fun x => x).
+Proof.
+  exists 1. exists (Z.abs c). intros; lia.
+Qed.
+
 (* Domination is compatible with mul. *)
 
 Lemma dominated_mul f1 f2 g1 g2 :
