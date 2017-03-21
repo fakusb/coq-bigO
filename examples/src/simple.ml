@@ -24,3 +24,7 @@ let loop2 n =
   for i = a to (a + b) - 1 do
     tick ()
   done
+
+let let2 n =
+  let a = rand n in
+  loop1 a

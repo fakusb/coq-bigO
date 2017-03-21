@@ -190,3 +190,28 @@ Proof.
   { apply dominated_reflexive. }
   { apply dominated_cst_id. }
 Qed.
+
+Lemma let2_spec :
+  specO
+    Z_filterType
+    (fun cost => forall n,
+         0 <= n ->
+         app let2 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  destruct loop1_spec as [loop1_cost L LP LD].
+
+  xspecO.
+  intros n N.
+  xcf. xpay.
+  xapp. auto. hsimpl.
+  intro Ha.
+  xapp. math. hsimpl. apply (le_than (loop1_cost n)). admit. (* monotonic cost functions *)
+
+  cleanup_cost.
+  apply dominated_sum_distr.
+  { apply LD. }
+  { apply dominated_cst_id. }
+Qed.

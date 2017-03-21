@@ -226,20 +226,32 @@ Ltac hclean_main tt ::=
 (* hsimpl *****************************)
 
 Lemma inst_credits_cost :
-  forall (cost : int) (credits : int) H H' H'',
-  (cost = credits) ->
+  forall (credits : int) H H' H'',
   (0 <= credits) ->
   H ==> H' \* H'' ->
-  \$ ceil cost \* H ==> H' \* \$ credits \* H''.
+  \$ ceil credits \* H ==> H' \* \$ credits \* H''.
 Proof.
-  introv E P HH.
-  rewrite E. rewrite ceil_eq; auto.
+  introv P HH.
+  rewrite ceil_eq; auto.
   xchange HH. hsimpl_credits.
 Qed.
 
+Lemma cancel_credits_cost :
+  forall (cost credits : int) H H' H'',
+  (credits <= cost) ->
+  (0 <= credits) ->
+  \$ (cost - credits) \* H ==> H' \* H'' ->
+  \$ ceil cost \* H ==> H' \* \$ credits \* H''.
+Proof.
+  intros cost_ credits. intros ? ? ? I N H.
+  rewrite ceil_eq; [| math].
+  applys~ hsimpl_cancel_credits_int_1.
+Qed.
+
 Ltac inst_credits_cost_core credits cont :=
-  eapply inst_credits_cost;
-  [ try reflexivity | auto with zarith | cont tt ].
+  first [ eapply inst_credits_cost; [ auto with zarith | cont tt ]
+        | eapply cancel_credits_cost; [ | auto with zarith | cont tt ]
+        ].
 
 Ltac inst_credits_cost cont :=
   match goal with
