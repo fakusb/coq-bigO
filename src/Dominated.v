@@ -8,6 +8,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Require Import Psatz. (* nia *)
 Require Export Filter.
+Require Export Limit.
 Require Import Big.
 Require Export LibFunOrd.
 Require Import BigEnough.

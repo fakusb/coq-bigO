@@ -325,40 +325,6 @@ Proof. reflexivity. Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
-(* A notion of limit, or convergence, or divergence -- it all depends on which
-   filters one uses. The assertion [limit f] states that any property [P] that
-   is ultimately true of [y] is ultimately true of [f x]. If [f] is a function
-   from [nat] to [nat], equipped with its standard filter, this means that [f x]
-   tends to infinity as [x] tends to infinity. *)
-
-(* [limit] could take two arguments of type [filter A] and [filter B]. Instead,
-   we take two arguments of type [filterType]. *)
-
-Section Limit.
-
-Variables A B : filterType.
-
-Variable f : A -> B.
-
-Definition limit :=
-  finer (ultimately (image_filterType A f)) (ultimately B).
-
-End Limit.
-Arguments limit : clear implicits.
-
-Lemma limitP :
-  forall (A B: filterType) (f: A -> B),
-  limit A B f =
-  forall P, ultimately B P -> ultimately A (fun x => P (f x)).
-Proof. reflexivity. Qed.
-
-Lemma limit_id:
-  forall A : filterType,
-  limit A A (fun a : A => a).
-Proof. intros. rewrite limitP. auto. Qed.
-
-(* ---------------------------------------------------------------------------- *)
-
 (* If the type A is inhabited, then the singleton set that contains just the set
    [A] is a filter. We call this modality [everywhere]. *)
 
@@ -513,15 +479,6 @@ Proof.
   unfold Zshift. intros. omega.
 Qed.
 
-Lemma Zshift_limit (x0 : Z) :
-  limit Z_filterType Z_filterType (Zshift x0).
-Proof.
-  intros. rewrite limitP. introv H.
-  rewrite ZP in H. destruct H as [x1 H1].
-  rewrite ZP. exists (x1 - x0)%Z. intros. apply H1.
-  unfold Zshift. lia.
-Qed.
-
 Lemma ZshiftP (x0 : Z) :
   forall P,
   ultimately Z_filterType (fun x => P (Zshift x0 x)) =
@@ -615,34 +572,6 @@ Definition liftl (A1 A2 B : Type) (f: A1 -> B) : A1 * A2 -> B * A2 :=
 
 Definition liftr (A1 A2 B : Type) (f: A2 -> B) : A1 * A2 -> A1 * B :=
   fun '(x, y) => (x, f y).
-
-Lemma limit_liftl :
-  forall (A1 A2 B : filterType) f,
-  limit A1 B f ->
-  limit (product_filterType A1 A2) (product_filterType B A2) (liftl f).
-Proof.
-  unfold limit, finer. introv Lf UP. simpl in *.
-  rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
-  rewrite imageP. rewrite productP. unfold liftl.
-  specializes Lf UP1. rewrite imageP in Lf.
-  do 2 eexists. splits~.
-  exact Lf. exact UP2.
-  simpl. intros. eauto.
-Qed.
-
-Lemma limit_liftr :
-  forall (A1 A2 B : filterType) f,
-  limit A2 B f ->
-  limit (product_filterType A1 A2) (product_filterType A1 B) (liftr f).
-Proof.
-  unfold limit, finer. introv Lf UP. simpl in *.
-  rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HP).
-  rewrite imageP. rewrite productP. unfold liftr.
-  specializes Lf UP2. rewrite imageP in Lf.
-  do 2 eexists. splits~.
-  exact UP1. exact Lf.
-  simpl. intros. eauto.
-Qed.
 
 (* Symmetric product implies both dissymetric products. *)
 
