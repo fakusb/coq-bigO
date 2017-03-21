@@ -136,7 +136,7 @@ Proof.
           (I := Z_filterType) (J := Z_filterType)
           (f := loop1_cost).
         apply LD. Focus 2. reflexivity.
-        admit.
+        limit.
         simpl. reflexivity.
       - apply dominated_sum_distr.
         apply dominated_reflexive.

@@ -58,6 +58,8 @@ Lemma limit_id:
   limit A A (fun a : A => a).
 Proof. intros. rewrite limitP. auto. Qed.
 
+Hint Resolve limit_id : limit.
+
 Lemma limit_comp :
   forall (A B C : filterType) (f : A -> B) (g : B -> C),
   limit A B f ->
@@ -148,6 +150,32 @@ Proof.
   intros. lia.
 Qed.
 
+Hint Resolve limit_sum : limit.
+
+Lemma limit_sum_cst_l c f :
+  limit A Z_filterType f ->
+  limit A Z_filterType (fun x => c + (f x)).
+Proof.
+  rewrite !limitPZ.
+  intros L y.
+  generalize (L (y - c)); filter_closed_under_intersection.
+  intros. lia.
+Qed.
+
+Hint Resolve limit_sum_cst_l : limit.
+
+Lemma limit_sum_cst_r c f :
+  limit A Z_filterType f ->
+  limit A Z_filterType (fun x => (f x) + c).
+Proof.
+  rewrite !limitPZ.
+  intros L y.
+  generalize (L (y - c)); filter_closed_under_intersection.
+  intros. lia.
+Qed.
+
+Hint Resolve limit_sum_cst_r : limit.
+
 Lemma limit_mul f g :
   limit A Z_filterType f ->
   limit A Z_filterType g ->
@@ -158,6 +186,8 @@ Proof.
   generalize (LF y Y) (LG y Y); filter_closed_under_intersection.
   intros. assert (y * y <= f a * g a) by nia. nia.
 Qed.
+
+Hint Resolve limit_mul : limit.
 
 Lemma limit_mul_cst_l c f :
   0 < c ->
@@ -170,6 +200,8 @@ Proof.
   intros; nia.
 Qed.
 
+Hint Resolve limit_mul_cst_l : limit.
+
 Lemma limit_mul_cst_r c f :
   0 < c ->
   limit A Z_filterType f ->
@@ -178,6 +210,8 @@ Proof.
   intros. eapply limit_eq. applys~ limit_mul_cst_l c. eassumption.
   intros; lia.
 Qed.
+
+Hint Resolve limit_mul_cst_r : limit.
 
 Lemma limit_max f g :
   limit A Z_filterType f ->
@@ -188,6 +222,8 @@ Proof.
   intros y. generalize (LF y) (LG y); filter_closed_under_intersection.
   intros. lia.
 Qed.
+
+Hint Resolve limit_max : limit.
 
 End LimitToZ.
 
@@ -229,3 +265,55 @@ Proof.
   exact UP1. exact Lf.
   simpl. intros. eauto.
 Qed.
+
+(******************************************************************************)
+
+Ltac limit :=
+  repeat first [
+      apply limit_id
+    | apply limit_sum_cst_l
+    | apply limit_sum_cst_r
+    | apply limit_sum
+    | apply limit_mul_cst_l; [ auto with zarith | ]
+    | apply limit_mul_cst_r; [ auto with zarith | ]
+    | apply limit_mul
+    | apply limit_max
+    | apply Zshift_limit
+    | apply limit_liftl
+    | apply limit_liftr
+  ].
+
+(* We could try to use [auto] with a custom database of lemmas. However, this
+   does not seem to work, for strange reasons.
+
+   See the test-cases below:
+*)
+
+(*
+Goal limit Z_filterType Z_filterType (fun x => 3 * x).
+  auto 59 with limit zarith. (* nothing *)
+
+  apply limit_mul_cst_l.
+  - auto with zarith.
+  - apply limit_id.
+Qed.
+
+Goal limit Z_filterType Z_filterType (fun x => x + x).
+  auto 59 with limit. (* nothing *)
+
+  apply limit_sum. apply limit_id. apply limit_id.
+Qed.
+
+Lemma limit_sum_ f g :
+  limit Z_filterType Z_filterType f ->
+  limit Z_filterType Z_filterType g ->
+  limit Z_filterType Z_filterType (fun x => (f x) + (g x)).
+Proof.
+Admitted.
+
+Hint Resolve limit_sum_ : limit.
+
+Goal limit Z_filterType Z_filterType (fun x => x + x).
+  auto 59 with limit. (* works *)
+Qed.
+*)
