@@ -30,6 +30,8 @@ Qed.
 Lemma ceil_pos : forall x, 0 <= ceil x.
 Proof. intros. rewrite ceil_max_0. math_lia. Qed.
 
+Hint Resolve ceil_pos : zarith.
+
 Lemma ceil_eq : forall x, 0 <= x -> ceil x = x.
 Proof. intros. rewrite ceil_max_0. math_lia. Qed.
 
