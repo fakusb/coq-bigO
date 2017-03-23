@@ -282,16 +282,25 @@ Qed.
 
 (******************************************************************************)
 
+Ltac limit_to_Z :=
+  match goal with
+    |- limit _ Z_filterType _ =>
+    repeat first [
+        apply limit_id
+      | apply limit_sum_cst_l
+      | apply limit_sum_cst_r
+      | apply limit_sum
+      | apply limit_mul_cst_l; [ auto with zarith | ]
+      | apply limit_mul_cst_r; [ auto with zarith | ]
+      | apply limit_mul
+      | apply limit_max
+    ]
+  end.
+
 Ltac limit :=
   repeat first [
       apply limit_id
-    | apply limit_sum_cst_l
-    | apply limit_sum_cst_r
-    | apply limit_sum
-    | apply limit_mul_cst_l; [ auto with zarith | ]
-    | apply limit_mul_cst_r; [ auto with zarith | ]
-    | apply limit_mul
-    | apply limit_max
+    | limit_to_Z
     | apply limit_product
     | apply Zshift_limit
     | apply limit_liftl
