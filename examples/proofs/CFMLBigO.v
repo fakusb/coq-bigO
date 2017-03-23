@@ -426,29 +426,29 @@ Lemma xfor_inv_lemma_pred_refine :
   (forall i, a <= i < b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul (fun i => cost_body i) a b <= cost) ->
+  (cumul (fun i => ceil (cost_body i)) a b <= cost) ->
   (For i = a To (b - 1) Do F i Done_) (\$ ceil cost \* H) (# I b \* H').
 Proof.
-(*
-  introv E a_le_b HI HH Flocal E'.
-  assert (0 <= cost_int). admit. (* ok *)
+  introv a_le_b HI HH Flocal Icost.
+  assert (cost_nonneg : 0 <= cost0). {
+    rewrite cumulP in Icost. rewrite big_nonneg_Z. apply Icost.
+    intros. simpl. apply ceil_pos.
+  }
   applys xfor_inv_case_lemma
-    (fun (i: int) => \$ cumul (fun i => Z.of_nat (cost_body i)) i b \* I i);
+    (fun (i: int) => \$ cumul (fun i => ceil (cost_body i)) i b \* I i);
   intros C.
-  { exists H'. splits~.
-    - hchange HH. rewrite E. hsimpl.
-      rewrite Z2Nat.id; [| auto].
-      hsimpl_credits; admit.
+  { eexists. splits~.
+    - hchange HH. hsimpl.
+      rewrite~ ceil_eq. hsimpl_credits. math. admit. (* ok *)
     - intros i Hi.
       (* xframe (\$cumul f (i + 1) n). auto. *) (* ?? *)
-      xframe_but (\$Z.of_nat (cost_body i) \* I i). auto.
+      xframe_but (\$ceil (cost_body i) \* I i). auto.
       assert (forall f, cumul f i b = f i + cumul f (i + 1) b) as cumul_lemma by admit.
       rewrite cumul_lemma; clear cumul_lemma.
-      credits_split. hsimpl. math.
-      admit. (* cumul cost' >= 0 *)
+      credits_split. hsimpl. admit. (* ok *)
+      admit. (* ok *)
       applys HI. math.
       xsimpl_credits.
     - math_rewrite ((b - 1) + 1 = b). hsimpl. }
   { xchange HH. math_rewrite (a = b). xsimpl. }
-*)
-Admitted.
+Qed.

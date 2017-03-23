@@ -98,7 +98,7 @@ Proof.
         eapply dominated_mul_cst_l.
         apply dominated_reflexive.
         eauto with zarith. }
-      apply filter_universe_alt. math.
+      apply filter_universe_alt. intros _. rewrite ceil_eq; auto with zarith.
       apply filter_universe_alt. intros. (* monotonic_cst *) admit.
     }
     { apply dominated_cst_id. }
