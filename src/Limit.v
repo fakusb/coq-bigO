@@ -227,6 +227,20 @@ Hint Resolve limit_max : limit.
 
 End LimitToZ.
 
+Lemma limit_product :
+  forall (A B C : filterType) (f : A -> B) (g : A -> C),
+  limit A B f ->
+  limit A C g ->
+  limit A (product_filterType B C) (fun i => (f i, g i)).
+Proof.
+  introv Lf Lg. rewrite limitP in *.
+  simpl. intros Pp UPp. rewrite productP in UPp.
+  destruct UPp as (P1 & P2 & UP1 & UP2 & HPp).
+  specializes Lf UP1. specializes Lg UP2.
+  revert Lf Lg; filter_closed_under_intersection.
+  intros. apply HPp; tauto.
+Qed.
+
 (******************************************************************************)
 
 Lemma Zshift_limit (x0 : Z) :
@@ -278,6 +292,7 @@ Ltac limit :=
     | apply limit_mul_cst_r; [ auto with zarith | ]
     | apply limit_mul
     | apply limit_max
+    | apply limit_product
     | apply Zshift_limit
     | apply limit_liftl
     | apply limit_liftr
