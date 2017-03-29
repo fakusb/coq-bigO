@@ -191,6 +191,35 @@ Proof.
   { apply dominated_cst_id. }
 Qed.
 
+Lemma if1_spec :
+  specO
+    Z_filterType
+    (fun cost => forall n (cond: bool),
+         0 <= n ->
+         app if1 [n cond]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  destruct loop1_spec as [loop1_cost L LP LD].
+
+  xspecO.
+  intros n cond N.
+  xcf. xpay.
+  xapp. auto. hsimpl. intro Ha.
+  xapp. auto. hsimpl. intro Hb.
+
+  xif.
+  xapp. math. hsimpl. apply (le_than (loop1_cost n)). admit.
+  xapp. math. hsimpl. apply (le_than (loop1_cost n)). admit.
+
+  cleanup_cost.
+
+  apply dominated_sum_distr.
+  - apply~ dominated_max_distr.
+  - apply dominated_cst_id.
+Qed.
+
 Lemma let2_spec :
   specO
     Z_filterType

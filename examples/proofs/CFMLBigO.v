@@ -45,6 +45,10 @@ Lemma ceil_add_le : forall x y,
   ceil (x + y) <= ceil x + ceil y.
 Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
 
+Lemma ceil_max : forall x y,
+  ceil (Z.max x y) = Z.max (ceil x) (ceil y).
+Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+
 Lemma ceil_ceil : forall x, ceil (ceil x) = ceil x.
 Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
 
@@ -121,6 +125,10 @@ Ltac dominated_cleanup_cost :=
   first [
       apply dominated_ceil; dominated_cleanup_cost
     | apply dominated_sum;
+      [ | | dominated_cleanup_cost | dominated_cleanup_cost];
+      simpl;
+      ultimately_nonneg
+    | apply dominated_max;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
       ultimately_nonneg
@@ -411,6 +419,43 @@ Ltac xlet_core cont0 cont1 cont2 ::=
     cont0 tt;
     split; [ | cont1 x; cont2 tt ];
     xtag_pre_post
+  end.
+
+(* xif ********************************)
+
+Lemma xif_refine : forall (A: Type) cost cost1 cost2 cond (F1 F2: ~~A) H Q,
+  (cost = Z.max (ceil cost1) (ceil cost2)) ->
+  is_local F1 ->
+  is_local F2 ->
+  ((cond = true -> F1 (\$ ceil cost1 \* H) Q) /\
+   (cond = false -> F2 (\$ ceil cost2 \* H) Q)) ->
+  (If_ cond Then F1 Else F2) (\$ ceil cost \* H) Q.
+Proof.
+  introv costE L1 L2 (H1 & H2).
+  apply local_erase. rewrite costE.
+  forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+  split; intro; [xapply~ H1 | xapply~ H2];
+  hsimpl_credits; try math; rewrite ceil_max; rewrite !ceil_ceil;
+  math_lia.
+Qed.
+
+Ltac xif_base cont1 cont2 ::=
+  xpull_check_not_needed tt;
+  xif_check_post_instantiated tt;
+  let cont tt :=
+    tryif is_refine_cost_goal then (
+      eapply xif_refine;
+      [ reflexivity | xlocal | xlocal | ]
+    ) else (
+      xuntag tag_if;
+      apply local_erase
+    );
+    split; [ cont1 tt | cont2 tt ];
+    xtag_pre_post
+  in
+  match cfml_get_tag tt with
+  | tag_if => cont tt
+  | tag_let => xlet; [ cont tt | instantiate ]
   end.
 
 (* xfor *****************************************)

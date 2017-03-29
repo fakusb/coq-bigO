@@ -28,3 +28,8 @@ let loop2 n =
 let let2 n =
   let a = rand n in
   loop1 a
+
+let if1 n cond =
+  let a = rand n in
+  let b = rand n in
+  if cond then loop1 a else loop1 b
