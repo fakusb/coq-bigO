@@ -481,8 +481,9 @@ Ltac xif_base cont1 cont2 ::=
 
 (* xfor *****************************************)
 
-(* TODO: variants of the lemma; tactics & proper integration *)
+(* TODO: tactics & proper integration *)
 
+(* TODO: prove using xfor_inv_case_lemma_refine instead of directly *)
 Lemma xfor_inv_lemma_pred_refine :
   forall
     (I : int -> hprop) (cost : int)
@@ -517,4 +518,73 @@ Proof.
       xsimpl_credits.
     - math_rewrite ((b - 1) + 1 = b). hsimpl. }
   { xchange HH. math_rewrite (a = b). xsimpl. }
+Qed.
+
+Lemma xfor_inv_case_lemma_refine : forall (I:int->hprop),
+   forall (cost : int) (cost_body : int -> int),
+   forall (a:int) (b:int) (F:int->~~unit) H (Q:unit->hprop),
+   ((a <= b) -> exists H',
+          (H ==> I a \* H')
+       /\ (forall i, is_local (F i))
+       /\ (forall i, a <= i <= b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1)))
+       /\ (cumul (fun i => ceil (cost_body i)) a b <= cost)
+       /\ (I (b+1) \* H' ==> Q tt \* \GC)) ->
+   ((a > b) ->
+          (0 <= cost)
+       /\ (H ==> Q tt \* \GC)) ->
+   (For i = a To b Do F i Done_) (\$ ceil cost \* H) Q.
+Proof.
+  introv Ha_le_b Ha_gt_b.
+  assert (cost_nonneg : 0 <= cost0). {
+    destruct (Z.le_gt_cases a b) as [a_le_b | a_gt_b].
+    - specializes~ Ha_le_b ___. destruct Ha_le_b as (? & H').
+      rewrite cumulP in H'. rewrite big_nonneg_Z. apply H'.
+      intros. simpl. apply ceil_pos.
+    - specializes~ Ha_gt_b ___. math.
+  }
+  applys xfor_inv_case_lemma
+    (fun (i:int) => \$ cumul (fun i => ceil (cost_body i)) i b \* I i).
+  - intro a_le_b. specializes~ Ha_le_b.
+    destruct Ha_le_b as (H' & H1 & Hl & H2 & Hcumul & H3).
+    eexists. splits.
+    + hchange H1. hsimpl.
+      rewrite~ ceil_eq. hsimpl_credits. math. admit. (* ok *)
+    + intros i Hi.
+      xframe_but (\$ ceil (cost_body i) \* I i). auto.
+      assert (forall f, cumul f i b = f i + cumul f (i + 1) b) as cumul_lemma by admit.
+      rewrite cumul_lemma; clear cumul_lemma.
+      credits_split. hsimpl. admit. (* ok *)
+      admit. (* ok *)
+      applys H2. math. xsimpl_credits.
+    + xchange H3. admit. (* todo *)
+  - intro a_gt_b. specializes~ Ha_gt_b. math. destruct Ha_gt_b as (? & HH).
+    (* todo *) admit.
+Qed.
+
+Lemma xfor_inv_lemma_refine : forall (I:int->hprop),
+  forall (cost : int) (cost_body : int -> int),
+  forall (a:int) (b:int) (F:int->~~unit) H H',
+  (a <= b+1) ->
+  (forall i, a <= i <= b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
+  (H ==> I a \* H') ->
+  (forall i, is_local (F i)) ->
+  (cumul (fun i => ceil (cost_body i)) a (b+1) <= cost) ->
+  (For i = a To b Do F i Done_) (\$ ceil cost \* H) (# I (b+1) \* H').
+Proof using.
+  introv ML MI MH Mloc HI. applys xfor_inv_case_lemma_refine I; intros C.
+  { exists H'. splits~. admit. (* ok *) hsimpl. }
+  { splits. admit. (* ok *) xchange MH. math_rewrite (a = b + 1). xsimpl. }
+Qed.
+
+Lemma xfor_inv_void_lemma_refine :
+  forall (a:int) (b:int) (F:int->~~unit) H (cost : int),
+  (a > b) ->
+  (0 <= cost) ->
+  (For i = a To b Do F i Done_) (\$ ceil cost \* H) (# H).
+Proof using.
+  introv ML MC.
+  applys xfor_inv_case_lemma_refine (fun (i:int) => \[]); intros C.
+  { false. }
+  { splits~. xsimpl. }
+  Unshelve. exact (fun _ => 0).
 Qed.
