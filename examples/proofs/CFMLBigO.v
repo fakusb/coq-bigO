@@ -7,7 +7,7 @@ Require Import Dominated.
 Require Import BigEnough.
 Require Import LibEvars.
 Require Import EvarsFacts.
-Require Import UltimatelyNonneg.
+Require Import UltimatelyGreater.
 
 (********************************************************************)
 
@@ -58,6 +58,23 @@ Proof.
   rewrite ceil_add_eq; try apply ceil_pos.
   rewrite !ceil_ceil. reflexivity.
 Qed.
+
+Lemma ceil_ge_nonpos :
+  forall x y, x <= 0 -> x <= ceil y.
+Proof.
+  intros x y.
+  rewrite !ceil_max_0. math_lia.
+Qed.
+
+Hint Resolve ceil_ge_nonpos : zarith.
+
+Lemma ceil_ge :
+  forall x y, x <= y -> x <= ceil y.
+Proof.
+  intros. rewrite !ceil_max_0. math_lia.
+Qed.
+
+Hint Resolve ceil_ge : zarith.
 
 Lemma dominated_ceil : forall A f g,
     dominated A f g ->
@@ -127,11 +144,15 @@ Ltac dominated_cleanup_cost :=
     | apply dominated_sum;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
-      ultimately_nonneg
+      ultimately_greater
     | apply dominated_max;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
-      ultimately_nonneg
+      ultimately_greater
+    | apply dominated_big_sum;
+      [ | | dominated_cleanup_cost ];
+      simpl;
+      ultimately_greater
     | apply dominated_reflexive
     ].
 

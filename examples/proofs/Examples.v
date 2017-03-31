@@ -16,6 +16,7 @@ Require Import Max_subsequence_sum_ml.
 Require Import Simple_ml.
 
 Require Import CFMLBigO.
+Require Import UltimatelyGreater.
 
 Lemma tick_spec :
   app tick [tt]
@@ -98,7 +99,7 @@ Proof.
         eapply dominated_mul_cst_l.
         apply dominated_reflexive.
         eauto with zarith. }
-      apply filter_universe_alt. intros _. rewrite ceil_eq; auto with zarith.
+      ultimately_greater.
       apply filter_universe_alt. intros. (* monotonic_cst *) admit.
     }
     { apply dominated_cst_id. }
