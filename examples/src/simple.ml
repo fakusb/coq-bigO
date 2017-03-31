@@ -29,6 +29,10 @@ let let2 n =
   let a = rand n in
   loop1 a
 
+let rec rec1 n =
+  if n <= 0 then ()
+  else rec1 (n-1)
+
 let if1 n cond =
   let a = rand n in
   let b = rand n in

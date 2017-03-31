@@ -229,3 +229,28 @@ Proof.
   { apply LD. }
   { apply dominated_cst_id. }
 Qed.
+
+Lemma rec1_spec :
+  specO
+    Z_filterType
+    (fun cost => forall n,
+         app rec1 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  apply SpecO with (cost := (fun (n:int) => Z.max 0 n + 1)).
+  intro n.
+  (* xspecO. intro n. *)
+  induction_wf: (int_downto_wf 0) n.
+
+  xcf. xpay. credits_split. hsimpl. math_lia. math.
+  xif. xret. hsimpl. xapp. math. hsimpl_credits. math_lia. math_lia.
+  math_lia.
+
+  apply dominated_sum_distr.
+  { apply dominated_max_distr.
+    apply dominated_cst_id.
+    apply dominated_reflexive. }
+  { apply dominated_cst_id. }
+Qed.
