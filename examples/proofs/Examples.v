@@ -74,22 +74,12 @@ Proof.
   intros n N.
   xcf.
   xpay.
-  xfor_ensure_evar_post ltac:(fun _ => idtac).
-  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]).
 
-  auto.
+  xfor_inv (fun (i:int) => \[]). math.
   { intros i Hi.
     xseq.
     xapp. hsimpl. xapp. hsimpl. }
-  hsimpl.
-  intro; xlocal.
-
-  simpl.
-(*
-  rewrite cumulP. rewrite big_const_Z.
-  match goal with |- _ <= ?rhs => set (toto := rhs) end. ring_simplify. subst toto. reflexivity.*)
-  reflexivity.
-  hsimpl.
+  hsimpl. hsimpl.
 
   { cleanup_cost. }
 
@@ -167,20 +157,14 @@ Proof.
   xpay.
   xlet. { xapp. auto. hsimpl. }
   xpull. intros Ha.
-  apply refine_cost_setup_intro_emp.
   xlet. { xapp. math. hsimpl. }
   xpull. intros Hb.
-  apply refine_cost_setup_intro_emp.
-  xfor_ensure_evar_post ltac:(fun _ => idtac).
-  eapply xfor_inv_lemma_pred_refine with (I := fun i => \[]).
-  math.
+
+  xfor_inv (fun (i:int) => \[]). math.
   { intros i Hi. xapp. hsimpl. }
   hsimpl.
-  intro; xlocal.
   simpl. rewrite cumulP. rewrite big_const_Z.
-
   apply (le_than n).
-  (* hide_evars_then ltac:(fun _ => ring_simplify). *)
   math.
 
   hsimpl.

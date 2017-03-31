@@ -481,8 +481,6 @@ Ltac xif_base cont1 cont2 ::=
 
 (* xfor *****************************************)
 
-(* TODO: tactics & proper integration *)
-
 (* TODO: prove using xfor_inv_case_lemma_refine instead of directly *)
 Lemma xfor_inv_lemma_pred_refine :
   forall
@@ -588,3 +586,24 @@ Proof using.
   { splits~. xsimpl. }
   Unshelve. exact (fun _ => 0).
 Qed.
+
+Ltac xfor_inv_core I ::=
+  xfor_pre_ensure_evar_post ltac:(fun _ =>
+    tryif is_refine_cost_goal then (
+      first [ eapply (@xfor_inv_lemma_pred_refine I)
+            | eapply (@xfor_inv_lemma_refine I) ];
+      [ | xtag_pre_post | | intro; xlocal | try reflexivity ]
+   ) else (
+     first [ apply (@xfor_inv_lemma_pred I)
+           | apply (@xfor_inv_lemma I) ];
+     [ | | xtag_pre_post ]
+   )).
+
+Ltac xfor_inv_void_core tt ::=
+  xfor_pre_ensure_evar_post ltac:(fun _ =>
+    tryif is_refine_cost_goal then
+      eapply (@xfor_inv_void_lemma_refine)
+    else
+      apply (@xfor_inv_void_lemma)).
+
+(* TODO: xfor_inv_case *)
