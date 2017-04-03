@@ -479,6 +479,55 @@ Ltac xif_base cont1 cont2 ::=
   | tag_let => xlet; [ cont tt | instantiate ]
   end.
 
+(* xif_guard: prototype *)
+
+Lemma xif_guard_refine : forall (A: Type) cost cost1 cost2 (cond cond': bool) (F1 F2: ~~A) H Q,
+  (cond = cond') ->
+  (cost = If cond' then cost1 else cost2) ->
+  is_local F1 ->
+  is_local F2 ->
+  ((cond = true -> F1 (\$ ceil cost1 \* H) Q) /\
+   (cond = false -> F2 (\$ ceil cost2 \* H) Q)) ->
+  (If_ cond Then F1 Else F2) (\$ ceil cost \* H) Q.
+Proof.
+  introv condEq costE L1 L2 (H1 & H2).
+  apply local_erase. rewrite <-condEq in costE. rewrite costE.
+  forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+  split; intro C; rewrite C; cases_if; [xapply~ H1 | xapply~ H2];
+  hsimpl_credits; try math; rewrite !ceil_ceil; math.
+Qed.
+
+Ltac xif_guard_base cont :=
+  is_refine_cost_goal;
+  eapply xif_guard_refine;
+  [ try reflexivity | reflexivity | xlocal | xlocal | ];
+  split; cont tt; xtag_pre_post.
+
+Ltac xif_guard_core H :=
+  xif_guard_base ltac:(fun _ => intro H; xif_post H).
+
+Tactic Notation "xif_guard" "as" ident(H) :=
+  xif_guard_core H.
+Tactic Notation "xif_guard" :=
+  let H := fresh "C" in xif_guard as C.
+
+(* xguard ***************************************)
+
+Lemma xguard_refine :
+  forall A (cost cost' : int) (F: ~~A) (G: Prop) H Q,
+  G ->
+  (cost = If G then cost' else 0) ->
+  F (\$ ceil cost' \* H) Q ->
+  F (\$ ceil cost \* H) Q.
+Proof.
+  introv HG E HH. rewrite E. cases_if. trivial.
+Qed.
+
+Ltac xguard G :=
+  is_refine_cost_goal;
+  eapply xguard_refine;
+  [ eexact G | reflexivity | ].
+
 (* xfor *****************************************)
 
 (* TODO: prove using xfor_inv_case_lemma_refine instead of directly *)

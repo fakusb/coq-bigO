@@ -230,6 +230,52 @@ Proof.
   { apply dominated_cst_id. }
 Qed.
 
+Lemma refine_credits :
+  forall A (cost_refined cost : int) (F: ~~A) H Q,
+  F (\$ ceil cost_refined \* H) Q ->
+  (ceil cost_refined <= cost) ->
+  is_local F ->
+  F (\$ cost \* H) Q.
+Proof.
+  introv HH Hcost L.
+  xapply HH.
+  { hsimpl_credits. math. forwards: ceil_pos cost_refined. math. }
+  { hsimpl. }
+Qed.
+
+(* zify fails to process e.g. Z.max 0 0; as a workaround, add a [unmaxify]
+   that postprocess those.
+
+   See https://coq.inria.fr/bugs/show_bug.cgi?id=5439
+*)
+
+Ltac unmaxify_core a b :=
+  pose proof (Z.max_spec a b);
+  let z := fresh "z" in
+  set (z := Z.max a b) in *;
+  clearbody z.
+
+Ltac unmaxify_step :=
+  match goal with
+  | |- context [ Z.max ?a ?b ] => unmaxify_core a b
+  | H : context [ Z.max ?a ?b ] |- _ => unmaxify_core a b
+  end.
+
+Ltac unmaxify := repeat unmaxify_step.
+Ltac zify_op ::= repeat zify_op_1; unmaxify.
+
+
+Ltac clean_ceil_math :=
+  try cases_if; auto with zarith; try math_lia; math_nia.
+
+(* Simple tactic to eliminate occurences of [ceil x] when x is proved
+   nonnegative by [clean_ceil_math].
+*)
+Ltac clean_ceil :=
+   repeat match goal with
+   | |- context[ ceil ?x ] => rewrite (@ceil_eq x) by clean_ceil_math
+   end.
+
 Lemma rec1_spec :
   specO
     Z_filterType
@@ -244,8 +290,12 @@ Proof.
   (* xspecO. intro n. *)
   induction_wf: (int_downto_wf 0) n.
 
-  xcf. xpay. credits_split. hsimpl. math_lia. math.
-  xif. xret. hsimpl. xapp. math. hsimpl_credits. math_lia. math_lia.
+  xcf.
+  apply refine_cost_setup_intro_emp. eapply refine_credits; [ | | xlocal ].
+  xpay. xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. hsimpl. math_lia.
+
+  simpl. clean_ceil. cases_if; math_lia.
+
   math_lia.
 
   apply dominated_sum_distr.
