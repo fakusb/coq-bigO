@@ -304,3 +304,38 @@ Proof.
     apply dominated_reflexive. }
   { apply dominated_cst_id. }
 Qed.
+
+Lemma rec1_spec2 :
+  specO
+    Z_filterType
+    (fun cost => forall n,
+         app rec1 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  evar (a : int). evar (b : int).
+  cut (0 <= a /\ 0 <= b). intros (a_nonneg & b_nonneg).
+  apply SpecO with (cost := (fun (n:int) => a * Z.max 0 n + b)).
+  intro n.
+  (* xspecO. intro n. *)
+  induction_wf: (int_downto_wf 0) n.
+
+  xcf.
+  apply refine_cost_setup_intro_emp. eapply refine_credits; [ | | xlocal ].
+  xpay. xif. xret. hsimpl. xguard C. xapp. math. hsimpl. math_nia.
+
+  clean_ceil. cases_if.
+  (* Focus 2. rewrite !Z.max_l by math_lia. ring_simplify. *)
+  { rewrite !Z.max_r by math_nia. ring_simplify.
+    instantiate (1 := 1) in (Value of a).
+    instantiate (1 := 1) in (Value of b).
+    subst a b. math_nia. }
+  { subst a b. math_nia. }
+
+  math_nia.
+
+  subst a b. admit.
+
+  subst a b. math.
+Qed.
