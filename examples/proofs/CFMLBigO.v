@@ -197,6 +197,34 @@ Ltac is_refine_cost_goal :=
   | |- _ (\$ ceil _ \* _) _ => idtac
   end.
 
+(* refine_credits
+
+   Applies to a goal with some credit cost, and turns it into a goal where the
+number of credits is an evar (so that the _refine tactics can apply). Produces a
+side-condition requiring that the evar cost is less than the original cost.
+*)
+
+Lemma refine_credits :
+  forall A (cost_refined cost : int) (F: ~~A) H Q,
+  F (\$ ceil cost_refined \* H) Q ->
+  (ceil cost_refined <= cost) ->
+  is_local F ->
+  F (\$ cost \* H) Q.
+Proof.
+  introv HH Hcost L.
+  xapply HH.
+  { hsimpl_credits. math. forwards: ceil_pos cost_refined. math. }
+  { hsimpl. }
+Qed.
+
+Ltac refine_credits :=
+  match goal with
+    |- _ (\$ _) _ => apply refine_cost_setup_intro_emp
+  | |- _ (\$ _ \* _) _ => idtac
+  end;
+  eapply refine_credits;
+  [ | | xlocal ].
+
 (* hpull & hclean *********************)
 
 Ltac is_credits H :=
