@@ -5,8 +5,6 @@ Require Import CFML.CFLibCredits.
 (* Load the BigO library. *)
 Require Import Dominated.
 Require Import BigEnough.
-Require Import LibEvars.
-Require Import EvarsFacts.
 Require Import UltimatelyGreater.
 
 (********************************************************************)
