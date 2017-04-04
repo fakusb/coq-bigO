@@ -41,7 +41,7 @@ Hint Extern 1 (RegisterSpec rand) => Provide rand_spec.
 
 Lemma tick3_spec :
   specO
-    unit_filterType
+    unit_filterType (fun _ _ => True)
     (fun cost =>
        app tick3 [tt]
            PRE (\$ cost tt)
@@ -56,12 +56,13 @@ Proof.
   xapp. hsimpl.
 
   cleanup_cost.
+  admit. (* monotonic *)
   apply dominated_cst. math.
 Qed.
 
 Lemma loop1_spec :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost =>
        forall (n: Z),
        0 <= n ->
@@ -83,6 +84,8 @@ Proof.
 
   { cleanup_cost. }
 
+  { admit. (* monotonic *) }
+
   { apply dominated_sum_distr.
     { rewrite dominated_big_sum_bound.
       { eapply dominated_eq_l.
@@ -98,7 +101,7 @@ Qed.
 
 Lemma let1_spec :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost =>
        forall n,
        0 <= n ->
@@ -107,7 +110,7 @@ Lemma let1_spec :
          POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  destruct loop1_spec as [loop1_cost L LP LD].
+  destruct loop1_spec as [loop1_cost L LP LM LD].
 
   xspecO.
   intros n N.
@@ -121,6 +124,7 @@ Proof.
     hsimpl. subst m. reflexivity. }
 
   cleanup_cost.
+  admit. (* monotonic *)
   { apply dominated_sum_distr.
     { apply dominated_transitive with (fun x => x + 1).
       - eapply dominated_comp_eq with
@@ -142,7 +146,7 @@ Arguments le_than : clear implicits.
 
 Lemma loop2_spec :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost =>
        forall n,
          0 <= n ->
@@ -170,6 +174,7 @@ Proof.
   hsimpl.
 
   cleanup_cost.
+  admit. (* monotonic *)
 
   apply dominated_sum_distr.
   { apply dominated_reflexive. }
@@ -178,7 +183,7 @@ Qed.
 
 Lemma if1_spec :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost => forall n (cond: bool),
          0 <= n ->
          app if1 [n cond]
@@ -186,7 +191,7 @@ Lemma if1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  destruct loop1_spec as [loop1_cost L LP LD].
+  destruct loop1_spec as [loop1_cost L LP LM LD].
 
   xspecO.
   intros n cond N.
@@ -195,10 +200,11 @@ Proof.
   xapp. auto. hsimpl. intro Hb.
 
   xif.
-  xapp. math. hsimpl. apply (le_than (loop1_cost n)). admit.
-  xapp. math. hsimpl. apply (le_than (loop1_cost n)). admit.
+  xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
+  xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
 
   cleanup_cost.
+  admit. (* monotonic *)
 
   apply dominated_sum_distr.
   - apply~ dominated_max_distr.
@@ -207,7 +213,7 @@ Qed.
 
 Lemma let2_spec :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost => forall n,
          0 <= n ->
          app let2 [n]
@@ -215,16 +221,17 @@ Lemma let2_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  destruct loop1_spec as [loop1_cost L LP LD].
+  destruct loop1_spec as [loop1_cost L LP LM LD].
 
   xspecO.
   intros n N.
   xcf. xpay.
   xapp. auto. hsimpl.
   intro Ha.
-  xapp. math. hsimpl. apply (le_than (loop1_cost n)). admit. (* monotonic cost functions *)
+  xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
 
   cleanup_cost.
+  admit. (* monotonic *)
   apply dominated_sum_distr.
   { apply LD. }
   { apply dominated_cst_id. }
@@ -265,7 +272,7 @@ Ltac clean_ceil :=
 
 Lemma rec1_spec :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost => forall n,
          app rec1 [n]
            PRE (\$ cost n)
@@ -283,6 +290,7 @@ Proof.
   simpl. clean_ceil. cases_if; math_lia.
 
   math_lia.
+  admit. (* monotonic *)
 
   apply dominated_sum_distr.
   { apply dominated_max_distr.
@@ -293,7 +301,7 @@ Qed.
 
 Lemma rec1_spec2 :
   specO
-    Z_filterType
+    Z_filterType Z.le
     (fun cost => forall n,
          app rec1 [n]
            PRE (\$ cost n)
@@ -319,6 +327,7 @@ Proof.
   { subst a b. math_nia. }
 
   math_nia.
+  admit. (* monotonic *)
 
   subst a b. admit.
 

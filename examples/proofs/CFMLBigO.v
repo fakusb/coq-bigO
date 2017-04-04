@@ -4,6 +4,7 @@ Require Import TLC.LibTactics.
 Require Import CFML.CFLibCredits.
 (* Load the BigO library. *)
 Require Import Dominated.
+Require Import LibFunOrd.
 Require Import BigEnough.
 Require Import UltimatelyGreater.
 
@@ -90,13 +91,14 @@ Qed.
 (********************************************************************)
 
 Record specO
-       (A : filterType)
+       (A : filterType) (le : A -> A -> Prop)
        (spec : (A -> Z) -> Prop)
        (bound : A -> Z) :=
   SpecO {
       cost : A -> Z;
       spec : spec cost;
       cost_nonneg : forall x, 0 <= cost x;
+      cost_mon : monotonic le Z.le cost;
       cost_dominated : dominated A cost bound
     }.
 
@@ -104,29 +106,31 @@ Definition cleanup_cost (A : filterType) (cost cost_clean : A -> Z) :=
   dominated A cost cost_clean.
 
 Lemma specO_prove :
-  forall (A : filterType) (cost cost_clean bound : A -> Z)
+  forall (A : filterType) (le : A -> A -> Prop)
+         (cost cost_clean bound : A -> Z)
          (spec : (A -> Z) -> Prop),
     spec cost ->
     cleanup_cost A cost cost_clean ->
     (forall x, 0 <= cost x) ->
+    monotonic le Z.le cost ->
     dominated A cost_clean bound ->
-    specO A spec bound.
+    specO A le spec bound.
 Proof.
-  intros ? cost cost_clean bound.
-  introv S D1 N D2.
+  intros ? le cost cost_clean bound.
+  introv S D1 N M D2.
   econstructor; eauto.
   rewrite D1. assumption.
 Qed.
 
 Ltac xspecO_base cost :=
   match goal with
-    |- specO ?A _ _ =>
+    |- specO ?A ?le _ _ =>
     let cost_clean := fresh "cost_clean" in
     refine (let cost := (fun (x : A) => ceil _ ) : A -> Z in _);
     evar (cost_clean : A -> Z);
-    eapply (@specO_prove A cost cost_clean);
+    eapply (@specO_prove A le cost cost_clean);
     subst cost_clean;
-    [ unfold cost | | intro; apply ceil_pos | subst cost ]
+    [ unfold cost | | intro; apply ceil_pos | subst cost | subst cost ]
   end.
 
 Tactic Notation "xspecO" constr(cost) :=
