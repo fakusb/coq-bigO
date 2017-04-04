@@ -50,6 +50,15 @@ Definition pointwise A B (okA : A -> Prop) (leB : B -> B -> Prop) (f g : A -> B)
   okA a ->
   leB (f a) (g a).
 
+(* [le_after a leA] is a relation on [A].
+
+   It holds for elements [x] and [y] iff [leA x y] and [x] and [y] are after
+   [a], i.e. [leA a x] and [leA a y].
+*)
+
+Definition le_after A (a : A) (leA : A -> A -> Prop) :=
+  fun (x y : A) => leA a x /\ leA a y /\ leA x y.
+
 (* -------------------------------------------------------------------------- *)
 
 (* If [f] is monotonic, then rewriting in the argument of [f] is permitted. *)
