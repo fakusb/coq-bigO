@@ -117,17 +117,41 @@ Proof.
   intros; auto with zarith.
 Qed.
 
-Ltac ultimately_greater :=
-  repeat first [
-      apply ultimately_gt_ge; simpl
-    | apply ultimately_ge_id
-    | apply ultimately_ge_cst; auto with zarith; omega
-    | apply ultimately_ge_sum; [ auto with zarith; omega | .. ]
-    | apply ultimately_ge_max
-    | apply ultimately_ge_mul; [ auto with zarith; omega | .. ]
-    | apply ultimately_ge_0_cumul_nonneg_Z; intro; auto with zarith; omega
-    | apply ultimately_ge_cumul_Z
-    | apply filter_universe_alt; auto with zarith; (intros; omega)
-  ].
+(******************************************************************************)
+(* Put lemmas into a base of hints [ultimately_greater] *)
 
-(* FIXME: not extensible (?) *)
+(* For some lemmas, simply adding them as a [Hint Resolve] does not seem to
+   work. As a workaround we manually add them using [Hint Extern].
+*)
+Hint Extern 0 (ultimately _ (fun _ => _ < _)) =>
+  apply ultimately_gt_ge : ultimately_greater.
+Hint Resolve ultimately_ge_id : ultimately_greater.
+Hint Resolve ultimately_ge_cst : ultimately_greater.
+Hint Extern 3 (ultimately _ (fun _ => _ <= _ + _)) =>
+  simple apply ultimately_ge_sum : ultimately_greater.
+Hint Extern 2 (ultimately _ (fun _ => _ <= Z.max _ _)) =>
+  simple apply ultimately_ge_max : ultimately_greater.
+Hint Extern 3 (ultimately _ (fun _ => _ <= _ + _)) =>
+  simple apply ultimately_ge_mul : ultimately_greater.
+Hint Extern 1 (ultimately Z_filterType (fun _ => 0 <= cumul _ _ _)) =>
+  simple apply ultimately_ge_0_cumul_nonneg_Z : ultimately_greater.
+Hint Extern 2 (ultimately Z_filterType (fun _ => _ <= cumul _ _ _)) =>
+  simple apply ultimately_ge_cumul_Z.
+Hint Resolve filter_universe_alt | 50 : ultimately_greater.
+
+Hint Extern 100 => try (intros; omega) : ultimately_greater.
+
+Hint Extern 999 (ultimately _ (fun _ => _ <= _)) => shelve : ultimately_greater_fallback.
+
+(******************************************************************************)
+
+(* Contrary to the standard behavior of [auto], this tactic tries to do some
+   progress by applying the lemmas, and returning the side-goals it could not
+   prove to the user. *)
+Ltac ultimately_greater :=
+  unshelve (auto with zarith ultimately_greater ultimately_greater_fallback).
+
+(* This variant follows [auto]'s standard behavior. It does not modifies the
+   goal if it could not prove it entirely. *)
+Ltac ultimately_greater_trysolve :=
+  auto with zarith ultimately_greater.

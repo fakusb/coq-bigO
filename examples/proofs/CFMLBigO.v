@@ -146,15 +146,15 @@ Ltac dominated_cleanup_cost :=
     | apply dominated_sum;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
-      ultimately_greater
+      solve [ ultimately_greater_trysolve ]
     | apply dominated_max;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
-      ultimately_greater
+      solve [ ultimately_greater_trysolve ]
     | apply dominated_big_sum;
       [ | | dominated_cleanup_cost ];
       simpl;
-      ultimately_greater
+      solve [ ultimately_greater_trysolve ]
     | apply dominated_reflexive
     ].
 
