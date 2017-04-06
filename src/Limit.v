@@ -286,9 +286,12 @@ Hint Resolve limit_liftr : limit.
    Therefore this [Hint] should catch the leftover goals, and give them to the
    user.
 *)
-Hint Extern 999 => shelve : limit.
+Hint Extern 999 (limit _ _ _) => shelve : limit_fallback.
 
 (******************************************************************************)
 
 Ltac limit :=
-  unshelve (auto with zarith limit).
+  unshelve (auto with zarith limit limit_fallback).
+
+Ltac limit_trysolve :=
+  auto with zarith limit.

@@ -145,6 +145,9 @@ Hint Extern 999 (ultimately _ (fun _ => _ <= _)) => shelve : ultimately_greater_
 
 (******************************************************************************)
 
+(* The order of the hints bases given to auto seems to matter: things break if
+   [zarith] is put after [ultimately_greater]... *)
+
 (* Contrary to the standard behavior of [auto], this tactic tries to do some
    progress by applying the lemmas, and returning the side-goals it could not
    prove to the user. *)
