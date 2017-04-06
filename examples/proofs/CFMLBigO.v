@@ -75,6 +75,23 @@ Qed.
 
 Hint Resolve ceil_ge : zarith.
 
+Lemma monotonic_ceil : monotonic Z.le Z.le ceil.
+Proof.
+  intros x1 x2 H. rewrite !ceil_max_0. math_lia.
+Qed.
+
+Lemma monotonic_ceil_comp : forall (f : Z -> Z),
+  monotonic Z.le Z.le f ->
+  monotonic Z.le Z.le (fun x => ceil (f x)).
+Proof.
+  introv M. intros x1 x2 H.
+  forwards: M x1 x2 H.
+  rewrite !ceil_max_0. math_lia.
+Qed.
+
+Hint Resolve monotonic_ceil : monotonic.
+Hint Resolve monotonic_ceil_comp : monotonic.
+
 Lemma dominated_ceil : forall A f g,
     dominated A f g ->
     dominated A (fun x => ceil (f x)) g.

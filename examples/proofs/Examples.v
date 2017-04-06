@@ -17,6 +17,7 @@ Require Import Simple_ml.
 
 Require Import CFMLBigO.
 Require Import UltimatelyGreater.
+Require Import Monotonic.
 
 Lemma tick_spec :
   app tick [tt]
@@ -56,7 +57,8 @@ Proof.
   xapp. hsimpl.
 
   cleanup_cost.
-  admit. (* monotonic *)
+
+  monotonic.
   apply dominated_cst. math.
 Qed.
 
@@ -84,7 +86,7 @@ Proof.
 
   { cleanup_cost. }
 
-  { admit. (* monotonic *) }
+  { monotonic. admit. (* monotonic *) }
 
   { apply dominated_sum_distr.
     { rewrite dominated_big_sum_bound.
@@ -93,7 +95,7 @@ Proof.
         apply dominated_reflexive.
         eauto with zarith. }
       ultimately_greater.
-      apply filter_universe_alt. intros. (* monotonic_cst *) admit.
+      apply filter_universe_alt. monotonic.
     }
     { apply dominated_cst_id. }
   }
@@ -124,7 +126,8 @@ Proof.
     hsimpl. subst m. reflexivity. }
 
   cleanup_cost.
-  admit. (* monotonic *)
+  monotonic.
+
   { apply dominated_sum_distr.
     { apply dominated_transitive with (fun x => x + 1).
       - eapply dominated_comp_eq with
@@ -174,7 +177,8 @@ Proof.
   hsimpl.
 
   cleanup_cost.
-  admit. (* monotonic *)
+
+  monotonic.
 
   apply dominated_sum_distr.
   { apply dominated_reflexive. }
@@ -204,7 +208,7 @@ Proof.
   xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
 
   cleanup_cost.
-  admit. (* monotonic *)
+  monotonic.
 
   apply dominated_sum_distr.
   - apply~ dominated_max_distr.
@@ -231,7 +235,7 @@ Proof.
   xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
 
   cleanup_cost.
-  admit. (* monotonic *)
+  monotonic.
   apply dominated_sum_distr.
   { apply LD. }
   { apply dominated_cst_id. }
@@ -290,7 +294,7 @@ Proof.
   simpl. clean_ceil. cases_if; math_lia.
 
   math_lia.
-  admit. (* monotonic *)
+  monotonic.
 
   apply dominated_sum_distr.
   { apply dominated_max_distr.
@@ -327,7 +331,7 @@ Proof.
   { subst a b. math_nia. }
 
   math_nia.
-  admit. (* monotonic *)
+  monotonic.
 
   subst a b. admit.
 
