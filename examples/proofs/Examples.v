@@ -86,7 +86,7 @@ Proof.
 
   { cleanup_cost. }
 
-  { monotonic. admit. (* monotonic *) }
+  { monotonic. }
 
   { apply dominated_sum_distr.
     { rewrite dominated_big_sum_bound.

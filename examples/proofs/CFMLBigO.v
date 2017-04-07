@@ -105,6 +105,15 @@ Proof.
   rewrite I. assumption.
 Qed.
 
+(* TODO: prove & move *)
+
+Lemma monotonic_cumul_Z : forall (f : Z -> Z) (lo : Z),
+  (forall x, lo <= x -> 0 <= f x) ->
+  monotonic Z.le Z.le (cumul f lo).
+Proof. admit. Qed.
+
+Hint Resolve monotonic_cumul_Z : monotonic.
+
 (********************************************************************)
 
 Record specO
