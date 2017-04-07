@@ -52,9 +52,8 @@ Proof.
   xspecO.
   xcf.
   xpay.
-  xseq. xapp. hsimpl.
-  xapp. hsimpl.
-  xapp. hsimpl.
+  xseq. xapp.
+  xapp. xapp.
 
   cleanup_cost.
 
@@ -81,7 +80,7 @@ Proof.
   xfor_inv (fun (i:int) => \[]). math.
   { intros i Hi.
     xseq.
-    xapp. hsimpl. xapp. hsimpl. }
+    xapp. xapp. }
   hsimpl. hsimpl.
 
   { cleanup_cost. }
@@ -121,9 +120,9 @@ Proof.
   xpay.
 
   xlet.
-  { xseq. xapp. hsimpl. xret. }
+  { xseq. xapp. xret. }
   { xpull. intro Hm. xapp. math.
-    hsimpl. subst m. reflexivity. }
+    subst m. reflexivity. }
 
   cleanup_cost.
   monotonic.
@@ -162,13 +161,13 @@ Proof.
   intros n N.
   xcf.
   xpay.
-  xlet. { xapp. auto. hsimpl. }
+  xlet. { xapp. auto. }
   xpull. intros Ha.
-  xlet. { xapp. math. hsimpl. }
+  xlet. { xapp. math. }
   xpull. intros Hb.
 
   xfor_inv (fun (i:int) => \[]). math.
-  { intros i Hi. xapp. hsimpl. }
+  { intros i Hi. xapp. }
   hsimpl.
   simpl. rewrite cumulP. rewrite big_const_Z.
   apply (le_than n).
@@ -200,12 +199,12 @@ Proof.
   xspecO.
   intros n cond N.
   xcf. xpay.
-  xapp. auto. hsimpl. intro Ha.
-  xapp. auto. hsimpl. intro Hb.
+  xapp. auto. intro Ha.
+  xapp. auto. intro Hb.
 
   xif.
-  xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
-  xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
+  xapp. math. apply (le_than (loop1_cost n)). apply LM. math.
+  xapp. math. apply (le_than (loop1_cost n)). apply LM. math.
 
   cleanup_cost.
   monotonic.
@@ -230,9 +229,8 @@ Proof.
   xspecO.
   intros n N.
   xcf. xpay.
-  xapp. auto. hsimpl.
-  intro Ha.
-  xapp. math. hsimpl. apply (le_than (loop1_cost n)). apply LM. math.
+  xapp. auto. intro Ha.
+  xapp. math. apply (le_than (loop1_cost n)). apply LM. math.
 
   cleanup_cost.
   monotonic.
@@ -289,7 +287,7 @@ Proof.
   induction_wf: (int_downto_wf 0) n.
 
   xcf. refine_credits.
-  xpay. xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. hsimpl. math_lia.
+  xpay. xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. math_lia.
 
   simpl. clean_ceil. cases_if; math_lia.
 
@@ -320,7 +318,7 @@ Proof.
   induction_wf: (int_downto_wf 0) n.
 
   xcf. refine_credits.
-  xpay. xif. xret. hsimpl. xguard C. xapp. math. hsimpl. math_nia.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math. math_nia.
 
   clean_ceil. cases_if.
   (* Focus 2. rewrite !Z.max_l by math_lia. ring_simplify. *)

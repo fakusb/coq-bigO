@@ -335,16 +335,26 @@ Proof.
   applys~ hsimpl_cancel_credits_int_1.
 Qed.
 
-Ltac inst_credits_cost_core credits cont :=
+Ltac inst_credits_cost cont :=
   first [ eapply inst_credits_cost; [ auto with zarith | cont tt ]
         | eapply cancel_credits_cost; [ | auto with zarith | cont tt ]
         ].
 
-Ltac inst_credits_cost cont :=
-  match goal with
-    |- _ ==> _ \* \$ ?credits \* _ =>
-    inst_credits_cost_core credits cont
-  end.
+Lemma intro_zero_credits_right : forall H H' H'',
+  H ==> H' \* \$ 0 \* H'' ->
+  H ==> H' \* H''.
+Proof.
+  introv.
+  rewrite credits_int_zero_eq. rewrite star_neutral_l.
+  auto.
+Qed.
+
+Lemma hsimpl_starify_left : forall H H' H'',
+  H ==> \[] \* H' \* H'' ->
+  H ==> H' \* H''.
+Proof.
+  introv. rewrite star_neutral_l. auto.
+Qed.
 
 (* \$_nat ? *)
 Ltac hsimpl_inst_credits_cost_setup tt :=
@@ -356,7 +366,9 @@ Ltac hsimpl_inst_credits_cost_setup tt :=
   end;
   match goal with
   | |- _ ==> _ \* \$ _ => apply hsimpl_starify
+  | |- _ ==> \$ _ \* _ => apply hsimpl_starify_left
   | |- _ ==> _ \* \$ _ \* _ => idtac
+  | |- _ ==> _ \* _ => apply intro_zero_credits_right
   end.
 
 Ltac hsimpl_inst_credits_cost cont :=
