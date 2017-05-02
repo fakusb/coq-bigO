@@ -84,8 +84,8 @@ Qed.
 
 Lemma ultimately_ge_cumul_Z :
   forall (k : Z) (f : Z -> Z) (lo : Z),
-  ultimately Z_filterType (fun x => 0 < f x) ->
-  ultimately Z_filterType (fun x => k <= cumul f lo x).
+  ultimately Z_filterType (fun n => 0 < f n) ->
+  ultimately Z_filterType (fun n => k <= cumul lo n f).
 Proof.
   introv.
   generalize (ultimately_ge_Z lo). filter_intersect.
@@ -97,19 +97,19 @@ Proof.
   Focus 2. apply H. auto with zarith.
   Focus 2. rewrite <-N. auto.
 
-  assert (cumul_part_2: n - n0 <= cumul f n0 n).
+  assert (cumul_part_2: n - n0 <= cumul n0 n f).
   { admit. (* cf dominated.v *) }
 
   rewrite <-cumul_part_2.
-  cut (k + n0 - cumul f lo n0 <= n). omega.
+  cut (k + n0 - cumul lo n0 f <= n). omega.
   rewrite <-N. big.
   close.
 Qed.
 
 Lemma ultimately_ge_0_cumul_nonneg_Z :
-  forall (f : Z -> Z) (lo : Z),
-  (forall x, 0 <= f x) ->
-  ultimately Z_filterType (fun x => 0 <= cumul f lo x).
+  forall (f : Z -> Z -> Z) (lo : Z),
+  (forall hi x, lo <= x < hi -> 0 <= f hi x) ->
+  ultimately Z_filterType (fun n => 0 <= cumul lo n (f n)).
 Proof.
   introv H.
   apply filter_universe_alt. intros.

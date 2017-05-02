@@ -109,7 +109,7 @@ Qed.
 
 Lemma monotonic_cumul_Z : forall (f : Z -> Z) (lo : Z),
   (forall x, lo <= x -> 0 <= f x) ->
-  monotonic Z.le Z.le (cumul f lo).
+  monotonic Z.le Z.le (fun n => cumul lo n f).
 Proof. admit. Qed.
 
 Hint Resolve monotonic_cumul_Z : monotonic.
@@ -608,7 +608,7 @@ Lemma xfor_inv_lemma_pred_refine :
   (forall i, a <= i < b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul (fun i => ceil (cost_body i)) a b <= cost) ->
+  (cumul a b (fun i => ceil (cost_body i)) <= cost) ->
   (For i = a To (b - 1) Do F i Done_) (\$ ceil cost \* H) (# I b \* H').
 Proof.
   introv a_le_b HI HH Flocal Icost.
@@ -617,7 +617,7 @@ Proof.
     intros. simpl. apply ceil_pos.
   }
   applys xfor_inv_case_lemma
-    (fun (i: int) => \$ cumul (fun i => ceil (cost_body i)) i b \* I i);
+    (fun (i: int) => \$ cumul i b (fun i => ceil (cost_body i)) \* I i);
   intros C.
   { eexists. splits~.
     - hchange HH. hsimpl.
@@ -625,7 +625,7 @@ Proof.
     - intros i Hi.
       (* xframe (\$cumul f (i + 1) n). auto. *) (* ?? *)
       xframe_but (\$ceil (cost_body i) \* I i). auto.
-      assert (forall f, cumul f i b = f i + cumul f (i + 1) b) as cumul_lemma by admit.
+      assert (forall f, cumul i b f = f i + cumul (i + 1) b f) as cumul_lemma by admit.
       rewrite cumul_lemma; clear cumul_lemma.
       credits_split. hsimpl. admit. (* ok *)
       admit. (* ok *)
@@ -642,7 +642,7 @@ Lemma xfor_inv_case_lemma_refine : forall (I:int->hprop),
           (H ==> I a \* H')
        /\ (forall i, is_local (F i))
        /\ (forall i, a <= i <= b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1)))
-       /\ (cumul (fun i => ceil (cost_body i)) a b <= cost)
+       /\ (cumul a b (fun i => ceil (cost_body i)) <= cost)
        /\ (I (b+1) \* H' ==> Q tt \* \GC)) ->
    ((a > b) ->
           (0 <= cost)
@@ -658,7 +658,7 @@ Proof.
     - specializes~ Ha_gt_b ___. math.
   }
   applys xfor_inv_case_lemma
-    (fun (i:int) => \$ cumul (fun i => ceil (cost_body i)) i b \* I i).
+    (fun (i:int) => \$ cumul i b (fun i => ceil (cost_body i)) \* I i).
   - intro a_le_b. specializes~ Ha_le_b.
     destruct Ha_le_b as (H' & H1 & Hl & H2 & Hcumul & H3).
     eexists. splits.
@@ -666,7 +666,7 @@ Proof.
       rewrite~ ceil_eq. hsimpl_credits. math. admit. (* ok *)
     + intros i Hi.
       xframe_but (\$ ceil (cost_body i) \* I i). auto.
-      assert (forall f, cumul f i b = f i + cumul f (i + 1) b) as cumul_lemma by admit.
+      assert (forall f, cumul i b f = f i + cumul (i + 1) b f) as cumul_lemma by admit.
       rewrite cumul_lemma; clear cumul_lemma.
       credits_split. hsimpl. admit. (* ok *)
       admit. (* ok *)
@@ -683,7 +683,7 @@ Lemma xfor_inv_lemma_refine : forall (I:int->hprop),
   (forall i, a <= i <= b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul (fun i => ceil (cost_body i)) a (b+1) <= cost) ->
+  (cumul a (b + 1) (fun i => ceil (cost_body i)) <= cost) ->
   (For i = a To b Do F i Done_) (\$ ceil cost \* H) (# I (b+1) \* H').
 Proof using.
   introv ML MI MH Mloc HI. applys xfor_inv_case_lemma_refine I; intros C.
