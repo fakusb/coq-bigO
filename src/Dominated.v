@@ -661,6 +661,36 @@ Proof.
   - intros [? ?]. reflexivity.
 Qed.
 
+(* Even more general corollary of [dominated_big_sum]: the body of the big sum
+   can now depend on the sum upper bound.
+*)
+
+Lemma dominated_big_sum' :
+  forall (A: filterType) (f g : A * Z * Z -> Z) (h : Z -> Z) (lo : Z),
+  ultimately (product_filterType A Z_filterType) (fun p => forall i, lo <= i -> 0 <= f (p, i)) ->
+  ultimately (product_filterType A Z_filterType) (fun p => forall i, lo <= i -> 0 <= g (p, i)) ->
+  dominated (product_filterType (product_filterType A Z_filterType) Z_filterType) f g ->
+  (forall p, monotonic (le_after lo Z.le) Z.le (fun i : Z => f (p, i))) ->
+  limit Z_filterType Z_filterType h ->
+  dominated (product_filterType A Z_filterType)
+    (fun '(a, n) => cumul lo (h n) (fun i => f (a, n, i)))
+    (fun '(a, n) => cumul lo (h n) (fun i => g (a, n, i))).
+Proof.
+  introv ? ? D ? ?.
+  forwards~ Dcumul: dominated_big_sum_with h (product_filterType A Z_filterType) f g lo.
+  eapply dominated_comp_eq with
+    (J := product_filterType (product_filterType A Z_filterType) Z_filterType)
+    (p := fun '(a, i) => (a, i, i)).
+  apply Dcumul.
+
+  { eapply limit_eq.
+    apply limit_product with (f := fun p => p) (g := fun '(a, x) => x). (* ehh *)
+    limit. limit. intros [? ?]. reflexivity. }
+
+  intros [? ?]. reflexivity.
+  intros [? ?]. reflexivity.
+Qed.
+
 (* The iterated sum of [f] is dominated by [f] times the number of
    iterations. *)
 
@@ -917,6 +947,27 @@ Proof.
   - apply h_lim.
   - reflexivity.
   - reflexivity.
+Qed.
+
+Lemma dominated_big_sum' :
+  forall (f g : Z * Z -> Z) (h : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun a => forall i, lo <= i -> 0 <= f (a, i)) ->
+  ultimately Z_filterType (fun a => forall i, lo <= i -> 0 <= g (a, i)) ->
+  dominated (product_filterType Z_filterType Z_filterType) f g ->
+  (forall a, monotonic (le_after lo Z.le) Z.le (fun i : Z => f (a, i))) ->
+  limit Z_filterType Z_filterType h ->
+  dominated Z_filterType
+    (fun n => cumul lo (h n) (fun i => f (n, i)))
+    (fun n => cumul lo (h n) (fun i => g (n, i))).
+Proof.
+  introv ? ? D ? ?.
+  forwards~ Dcumul: Product.dominated_big_sum_with h Z_filterType f g lo.
+  eapply dominated_comp_eq with
+    (J := product_filterType Z_filterType Z_filterType)
+    (p := fun (i:Z) => (i, i)).
+  apply Dcumul.
+  limit.
+  reflexivity. reflexivity.
 Qed.
 
 Lemma dominated_big_sum_bound :
