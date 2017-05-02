@@ -225,6 +225,34 @@ Proof.
   intros. apply HPp; tauto.
 Qed.
 
+Lemma limit_lift1 :
+  forall (A B C : filterType) (f : A -> C),
+  limit A C f ->
+  limit (product_filterType A B) C (fun '(a, _) => f a).
+Proof.
+  introv L.
+  rewrite limitP in *. introv U. rewrite productP.
+  forwards~ UA: L U.
+  eexists. eexists. splits.
+  - apply UA.
+  - apply filter_universe.
+  - auto.
+Qed.
+
+Lemma limit_lift2 :
+  forall (A B C : filterType) (f : B -> C),
+  limit B C f ->
+  limit (product_filterType A B) C (fun '(_, b) => f b).
+Proof.
+  introv L.
+  rewrite limitP in *. introv U. rewrite productP.
+  forwards~ UB: L U.
+  eexists. eexists. splits.
+  - apply filter_universe.
+  - apply UB.
+  - auto.
+Qed.
+
 (******************************************************************************)
 
 Lemma Zshift_limit (x0 : Z) :
@@ -278,6 +306,12 @@ Hint Resolve limit_max : limit.
 Hint Resolve Zshift_limit : limit.
 Hint Resolve limit_liftl : limit.
 Hint Resolve limit_liftr : limit.
+Hint Extern 2 (limit (product_filterType _ _) _ (fun '(a, _) => @?f a)) =>
+  apply limit_lift1 : limit.
+Hint Extern 2 (limit (product_filterType _ _) _ (fun '(_, b) => @?f b)) =>
+  apply limit_lift2 : limit.
+Hint Extern 2 (limit _ (product_filterType _ _) (fun _ => (_, _))) =>
+  apply limit_product : limit.
 
 (* By default [auto] does not do anything if it cannot prove the goal
    completely. Here, if we would like it to still do progress even if it cannot
