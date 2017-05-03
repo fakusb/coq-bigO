@@ -9,8 +9,6 @@ Require Import Array_proof.
 (* Load the BigO library. *)
 Require Import Dominated.
 Require Import BigEnough.
-Require Import LibEvars.
-Require Import EvarsFacts.
 (* Load the examples CF definitions. *)
 Require Import Simple_ml.
 
