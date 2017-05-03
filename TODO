@@ -1,0 +1,22 @@
+- Filter.v:
+
+  rename filter_universe_alt into something more easy to remember, as I use this
+  lemma all the time, and it is quite natural, so I think it deserves a better
+  name.
+
+- Dominated.v:
+
+  get rid of the duplication of "foo" and "foo_with" lemmas, where "foo" is a
+  special case of "foo_with", with (h := fun x => x). I think it is reasonable
+  to rename "foo_with" to "foo", and for the user to always use the more general
+  version of the two.
+
+  Of course, in the case where the proof of "foo" is complicated, and "foo_with"
+  proved using "foo", we don't want to prove "foo_with" upfront as that would
+  only complicate the proof further. But we could rename "foo" to "foo_base" or
+  something similar, and "foo_with" to "foo", and only expect the user to use
+  "foo". (maybe "foo_base" could be then declared as a "local lemma"?)
+
+- CFMLBigO.v:
+
+  rename cost_mon into cost_monotonic
