@@ -21,6 +21,15 @@ Context {A} (leA : A -> A -> Prop) {OA : preorder leA}.
 Context {B} (leB : B -> B -> Prop) {OB : preorder leB}.
 Context {C} (leC : C -> C -> Prop) {OC : preorder leC}.
 
+Lemma monotonic_eq : forall f g,
+  monotonic leA leB f ->
+  (forall a, f a = g a) ->
+  monotonic leA leB g.
+Proof.
+  introv M E.
+  intros a1 a2 H. rewrite <-!E. apply M. auto.
+Qed.
+
 Lemma monotonic_id :
   monotonic leA leA (fun (x: A) => x).
 Proof. intros a1 a2. auto. Qed.
