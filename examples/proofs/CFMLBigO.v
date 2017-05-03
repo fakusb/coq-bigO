@@ -253,6 +253,16 @@ Ltac refine_credits :=
   eapply refine_credits;
   [ | | xlocal ].
 
+(* cutO *)
+
+Lemma cutO_refine :
+  forall (A : filterType) le B (bound : A -> Z) (F: ~~B) H Q (a: A),
+  forall S : specO A le (fun cost => forall a, F (\$ cost a \* H) Q) bound,
+  F (\$ (cost S) a \* H) Q.
+Proof.
+  introv. destruct S. simpl. auto.
+Qed.
+
 (* hpull & hclean *********************)
 
 Ltac is_credits H :=

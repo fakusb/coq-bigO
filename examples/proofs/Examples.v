@@ -238,6 +238,123 @@ Proof.
   { apply dominated_cst_id. }
 Qed.
 
+
+
+Lemma cutO_refine :
+  forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),
+  forall S : specO A le (fun mycost => forall a, F a (\$ ceil (mycost a) \* H)) bound,
+  F a (\$ ceil ((cost S) a) \* H).
+Proof.
+  admit.
+Qed.
+
+Lemma xfor_inv_lemma_pred_refine :
+  forall
+    (I : int -> hprop) (loop_cost : int)
+    (bound : int -> int)
+    (a : int) (b : int) (F : int-> ~~unit) H H',
+  (a <= b) ->
+  forall S :
+  specO Z_filterType Z.le (fun mycost =>
+    forall i, a <= i < b -> F i (\$ ceil (mycost i) \* I i) (# I(i+1))) bound,
+  (H ==> I a \* H') ->
+  (forall i, is_local (F i)) ->
+  (cumul a b (fun i => ceil (cost S i)) <= loop_cost) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ ceil loop_cost \* H) (# I b \* H').
+Proof.
+  admit.
+Qed.
+
+(*
+Lemma looploop_spec :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+       0 <= n ->
+       app looploop [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  xspecO.
+  intros n N.
+  xcf. xpay.
+
+  xfor_inv (fun (i:int) => \[]).
+  math. intros i Hi.
+  Set Printing Existential Instances.
+
+
+  unshelve eapply cutO_refine with (A := Z_filterType) (a := i) (le := Z.le)
+  (bound := fun (i:int) => n). simpl.
+
+  admit. hsimpl. hsimpl.
+  cleanup_cost.
+  admit.
+*)
+
+(* XXX *)
+Lemma dominated_ceil_product : forall A B f g,
+  dominated (product_filterType A B) (fun '(a, b) => f a b) g ->
+  dominated (product_filterType A B) (fun '(a, b) => ceil (f a b)) g.
+Proof. admit. Qed.
+
+(*
+Lemma looploop_spec :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+       0 <= n ->
+       app looploop [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  xspecO.
+  intros n N.
+  xcf. xpay.
+
+  xfor_pre_ensure_evar_post ltac:(fun _ => idtac).
+  unshelve eapply xfor_inv_lemma_pred_refine
+  with (bound := fun _ => n)
+       (I := fun i => \[]).
+  shelve.
+  - admit.
+  - auto.
+  - hsimpl.
+  - intro. xlocal.
+  - reflexivity.
+  - hsimpl.
+  - subst cost.
+    unfold cleanup_cost.
+    apply dominated_ceil.
+    eapply dominated_sum. Focus 3. apply dominated_reflexive. ultimately_greater.
+    Focus 2.
+    apply dominated_ceil.
+    apply dominated_big_sum'.
+    Focus 3.
+    (* apply dominated_ceil. *) (* ehhh *)
+    apply dominated_ceil_product.
+    apply dominated_reflexive.
+
+    ultimately_greater.
+    apply filter_universe_alt. auto using cost_nonneg.
+    intros. apply monotonic_after_of_monotonic. monotonic. applys cost_mon Z_filterType. (* xx *)
+    limit.
+
+    simpl.
+    apply ultimately_ge_0_cumul_nonneg_Z. auto using cost_nonneg.
+
+  - admit.
+  - simpl.
+    apply dominated_sum_distr. apply dominated_cst_id.
+    eapply dominated_transitive.
+    { apply dominated_big_sum'.
+      { apply filter_universe_alt. auto using cost_nonneg. }
+      Focus 2.
+      {
+*)
+
 (* zify fails to process e.g. Z.max 0 0; as a workaround, add a [unmaxify]
    that postprocess those.
 
