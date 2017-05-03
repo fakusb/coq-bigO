@@ -12,7 +12,6 @@ Require Import BigEnough.
 Require Import LibEvars.
 Require Import EvarsFacts.
 (* Load the examples CF definitions. *)
-Require Import Max_subsequence_sum_ml.
 Require Import Simple_ml.
 
 Require Import CFMLBigO.
@@ -128,7 +127,7 @@ Proof.
   monotonic.
 
   { apply dominated_sum_distr.
-    { apply dominated_transitive with (fun x => x + 1).
+    { eapply dominated_transitive.
       - eapply dominated_comp_eq with
           (I := Z_filterType) (J := Z_filterType)
           (f := loop1_cost).
@@ -142,7 +141,7 @@ Proof.
 Qed.
 
 Lemma le_than (b: Z): forall a, a <= b -> a <= b.
-Proof. auto with zarith. Qed.
+Proof. auto. Qed.
 
 Arguments le_than : clear implicits.
 
@@ -284,10 +283,11 @@ Proof.
   apply SpecO with (cost := (fun (n:int) => Z.max 0 n + 1)).
   intro n.
   (* xspecO. intro n. *)
-  induction_wf: (int_downto_wf 0) n.
+  induction_wf: (downto 0) n.
 
   xcf. refine_credits.
-  xpay. xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. math_lia.
+  xpay.
+  xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. math_lia.
 
   simpl. clean_ceil. cases_if; math_lia.
 
