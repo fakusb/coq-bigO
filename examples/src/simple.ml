@@ -37,3 +37,18 @@ let if1 n cond =
   let a = rand n in
   let b = rand n in
   if cond then loop1 a else loop1 b
+
+let rec quick n =
+  if n = 0 then ()
+  else (
+    loop1 n;
+    let2 n;
+    quick (n - 1)
+  )
+
+let looploop n =
+  for i = 0 to n - 1 do
+    for j = 0 to i - 1 do
+      tick ()
+    done
+  done
