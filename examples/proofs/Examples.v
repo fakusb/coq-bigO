@@ -48,7 +48,28 @@ Lemma tick3_spec :
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
-  xspecO.
+  xspecO (fun (_:unit_filterType) => 4).
+
+  { xcf.
+    xpay. hsimpl_credits; math.
+    xseq. xapp. hsimpl_credits; math.
+    xapp. hsimpl_credits; math.
+    xapp. hsimpl_credits; math. }
+  { math. }
+  { monotonic. }
+  { apply dominated_cst. math. }
+Qed.
+
+Lemma tick3_spec2 :
+  specO
+    unit_filterType (fun _ _ => True)
+    (fun cost =>
+       app tick3 [tt]
+           PRE (\$ cost tt)
+           POST (fun (tt:unit) => \[]))
+    (fun tt => 1).
+Proof.
+  xspecO_refine.
   xcf.
   xpay.
   xseq. xapp.
@@ -71,7 +92,7 @@ Lemma loop1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine.
   intros n N.
   xcf.
   xpay.
@@ -112,7 +133,7 @@ Lemma let1_spec :
 Proof.
   destruct loop1_spec as [loop1_cost L LP LM LD].
 
-  xspecO.
+  xspecO_refine.
   intros n N.
 
   xcf.
@@ -156,7 +177,7 @@ Lemma loop2_spec :
              POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine.
   intros n N.
   xcf.
   xpay.
@@ -195,7 +216,7 @@ Lemma if1_spec :
 Proof.
   destruct loop1_spec as [loop1_cost L LP LM LD].
 
-  xspecO.
+  xspecO_refine.
   intros n cond N.
   xcf. xpay.
   xapp. auto. intro Ha.
@@ -225,7 +246,7 @@ Lemma let2_spec :
 Proof.
   destruct loop1_spec as [loop1_cost L LP LM LD].
 
-  xspecO.
+  xspecO_refine.
   intros n N.
   xcf. xpay.
   xapp. auto. intro Ha.
@@ -276,7 +297,7 @@ Lemma looploop_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine.
   intros n N.
   xcf. xpay.
 
@@ -310,7 +331,7 @@ Lemma looploop_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine.
   intros n N.
   xcf. xpay.
 
@@ -399,7 +420,7 @@ Lemma rec1_spec :
 Proof.
   apply SpecO with (cost := (fun (n:int) => Z.max 0 n + 1)).
   intro n.
-  (* xspecO. intro n. *)
+  (* xspecO_refine. intro n. *)
   induction_wf: (downto 0) n.
 
   xcf. refine_credits.
@@ -431,7 +452,7 @@ Proof.
   cut (0 <= a /\ 0 <= b). intros (a_nonneg & b_nonneg).
   apply SpecO with (cost := (fun (n:int) => a * Z.max 0 n + b)).
   intro n.
-  (* xspecO. intro n. *)
+  (* xspecO_refine. intro n. *)
   induction_wf: (int_downto_wf 0) n.
 
   xcf. refine_credits.

@@ -131,7 +131,7 @@ Record specO
 Definition cleanup_cost (A : filterType) (cost cost_clean : A -> Z) :=
   dominated A cost cost_clean.
 
-Lemma specO_prove :
+Lemma specO_refine_prove :
   forall (A : filterType) (le : A -> A -> Prop)
          (cost cost_clean bound : A -> Z)
          (spec : (A -> Z) -> Prop),
@@ -148,23 +148,27 @@ Proof.
   rewrite D1. assumption.
 Qed.
 
-Ltac xspecO_base cost :=
+Ltac xspecO_refine_base cost_name :=
   match goal with
     |- specO ?A ?le _ _ =>
     let cost_clean := fresh "cost_clean" in
-    refine (let cost := (fun (x : A) => ceil _ ) : A -> Z in _);
+    refine (let cost_name := (fun (x : A) => ceil _ ) : A -> Z in _);
     evar (cost_clean : A -> Z);
-    eapply (@specO_prove A le cost cost_clean);
+    eapply (@specO_refine_prove A le cost_name cost_clean);
     subst cost_clean;
-    [ unfold cost | | intro; apply ceil_pos | subst cost | subst cost ]
+    [ unfold cost_name | | intro; apply ceil_pos
+      | subst cost_name | subst cost_name ]
   end.
 
-Tactic Notation "xspecO" constr(cost) :=
-  xspecO_base cost.
+Tactic Notation "xspecO_refine" constr(cost_name) :=
+  xspecO_refine_base cost_name.
 
-Tactic Notation "xspecO" :=
-  let cost := fresh "cost" in
-  xspecO_base cost.
+Tactic Notation "xspecO_refine" :=
+  let cost_name := fresh "cost" in
+  xspecO_refine_base cost_name.
+
+Ltac xspecO cost_fun :=
+  apply (@SpecO _ _ _ _ cost_fun).
 
 Ltac dominated_cleanup_cost :=
   first [
