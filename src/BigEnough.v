@@ -54,7 +54,7 @@ Lemma context P (c : class) (i j : c) :
   leq i j ->
   P True ->
   P (leq i j).
-Proof. intros le PT. rewrite (is_True le). assumption. Qed.
+Proof. intros le PT. rewrite (prop_eq_True le). assumption. Qed.
 
 (* In order to ensure that all meta-variables are properly instantiated,
    we create a subgoal of the form [closed i], where [i] is a term that

@@ -373,8 +373,8 @@ Lemma dominated_comp_eq :
   dominated I fp gp.
 Proof.
   introv domfg limitp fp_eq gp_eq.
-  forwards: func_ext_dep fp_eq.
-  forwards: func_ext_dep gp_eq.
+  forwards: fun_ext_dep fp_eq.
+  forwards: fun_ext_dep gp_eq.
   subst. apply dominated_comp; eauto.
 Qed.
 

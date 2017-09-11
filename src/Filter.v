@@ -360,7 +360,7 @@ Proof. reflexivity. Qed.
 (* A filter on [unit], as an instance of [everywhere]. *)
 
 Instance Inhab_unit : Inhab unit.
-Proof. apply (prove_Inhab tt). Qed.
+Proof. apply (Inhab_of_val tt). Qed.
 
 Definition unit_filterMixin : Filter.mixin_of unit.
 Proof. eapply everywhere_filterMixin. typeclass. Defined.

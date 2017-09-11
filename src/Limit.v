@@ -77,7 +77,7 @@ Lemma limit_comp_eq :
   limit A C h.
 Proof.
   introv LF LG E.
-  forwards E': func_ext_dep E.
+  forwards E': fun_ext_dep E.
   rewrite E'. applys~ limit_comp.
 Qed.
 
