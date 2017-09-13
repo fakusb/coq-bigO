@@ -1,6 +1,9 @@
 let tick () =
   ()
 
+let rand n =
+  0
+
 let tick3 () =
   tick ();
   tick ();
@@ -15,8 +18,9 @@ let let1 n =
   let m = tick (); n + 1 in
   loop1 m
 
-let rand n =
-  0
+let let2 n =
+  let m = rand n in
+  loop1 m
 
 let loop2 n =
   let a = rand n in
@@ -25,18 +29,14 @@ let loop2 n =
     tick ()
   done
 
-let let2 n =
-  let a = rand n in
-  loop1 a
-
-let rec rec1 n =
-  if n <= 0 then ()
-  else rec1 (n-1)
-
 let if1 n cond =
   let a = rand n in
   let b = rand n in
   if cond then loop1 a else loop1 b
+
+let rec rec1 n =
+  if n <= 0 then ()
+  else rec1 (n-1)
 
 let rec quick n =
   if n = 0 then ()

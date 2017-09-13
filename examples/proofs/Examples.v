@@ -6,15 +6,25 @@ Require Pervasives_ml.
 Require Array_ml.
 Require Import Pervasives_proof.
 Require Import Array_proof.
-(* Load the BigO library. *)
+(* Load the big-O library. *)
 Require Import Dominated.
 Require Import BigEnough.
+Require Import UltimatelyGreater.
+Require Import Monotonic.
+(* Load the custom CFML tactics with support for big-Os *)
+Require Import CFMLBigO.
 (* Load the examples CF definitions. *)
 Require Import Simple_ml.
 
-Require Import CFMLBigO.
-Require Import UltimatelyGreater.
-Require Import Monotonic.
+(* Prove specifications for auxiliary functions [tick] and [rand].
+
+   - [tick ()] just does one step of computation and consumes one credit
+
+   - [rand n] returns an integer between 0 and n.
+
+     It is used to account for the case where a function specification only
+     relates the arguments and the result value with an inequality.
+*)
 
 Lemma tick_spec :
   app tick [tt]
@@ -37,6 +47,20 @@ Qed.
 
 Hint Extern 1 (RegisterSpec rand) => Provide rand_spec.
 
+
+(* [tick3 ()]: calls [tick ()] three times.
+
+   First, prove a big-O specification by providing the exact cost function
+   upfront (here, λ(). 4).
+
+   The specification is stated using [specO], which takes several arguments:
+
+   - a filter; here [unit_filterType] as [tick3] is "O(1)"
+   - a (pre-order) relation on the domain (the cost function must be monotonic
+     wrt this relation)
+   - the specification, as a function [abstract cost function -> Prop]
+   - the big-O bound for the cost function
+*)
 Lemma tick3_spec :
   specO
     unit_filterType (fun _ _ => True)
@@ -46,18 +70,40 @@ Lemma tick3_spec :
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
+  (* TODO: it would be nice if the type annotation for "_:unit_filterType"
+     wasn't needed. If we unfold the definition of the tactic (which simply
+     applies the [SpecO] lemma), it is not needed. Defining [xspecO] as a tactic
+     or a tactic notation apparently makes it necessary. *)
   xspecO (fun (_:unit_filterType) => 4).
 
   { xcf.
-    xpay. hsimpl_credits; math.
-    xseq. xapp. hsimpl_credits; math.
+    xpay.
+    (* after a [pay] or a [xapp], one needs to justify that one has enough
+       credits in the precondition to pay for the operation. *)
+    hsimpl_credits; math.
+    xseq.
+    xapp. hsimpl_credits; math.
     xapp. hsimpl_credits; math.
     xapp. hsimpl_credits; math. }
+
+  (* Justify that the cost function is nonnegative, monotonic and dominated by
+     the bound given in the specification ([fun tt => 1]). *)
   { math. }
   { monotonic. }
   { apply dominated_cst. math. }
 Qed.
 
+(* [tick3 ()]: prove the same specification, this time using the mechanism to
+   refine cost functions semi-automatically.
+
+   In simple cases like this one, [cleanup_cost] is able to completely clean up
+   the refined cost function. [monotonic] is also able to automatically prove
+   monotonicity of the refined cost function *before* cleanup.
+
+   The monotonicity goal is (at the moment) about the "uncleaned" cost function,
+   because the "cleaning" process produces a cost function that is not equal to the
+   uncleaned one, and only dominates it.
+*)
 Lemma tick3_spec2 :
   specO
     unit_filterType (fun _ _ => True)
@@ -79,6 +125,10 @@ Proof.
   apply dominated_cst. math.
 Qed.
 
+(* [loop1 n]: loops from 1 to n, calls [tick (); tick ()] at each iteration.
+
+   The custom rule [xfor_inv] refines the cost function to a [cumul] of the cost
+   of the loop's body.  *)
 Lemma loop1_spec :
   specO
     Z_filterType Z.le
@@ -118,6 +168,12 @@ Proof.
   }
 Qed.
 
+(* [let1]: a program of the form [let m = ... in ...] where the cost of the body
+of the [let] depends on [m].
+
+   As [m] is a locally-bound variable, one needs to come up with a cost for the
+   body that is independent from [m]. In this simple example, it suffices to
+   inline the definition of [m]. *)
 Lemma let1_spec :
   specO
     Z_filterType Z.le
@@ -129,6 +185,10 @@ Lemma let1_spec :
          POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
+  (* At the moment, we have no tooling for automatically using
+     specifications-with-bigO for auxiliary functions. As a workaround, we
+     import the specs into the environment beforehand.
+  *)
   destruct loop1_spec as [loop1_cost L LP LM LD].
 
   xspecO_refine.
@@ -140,7 +200,14 @@ Proof.
   xlet.
   { xseq. xapp. xret. }
   { xpull. intro Hm. xapp. math.
-    subst m. reflexivity. }
+    (* This sub-goal is produced by our custom [xlet], and requires the user to
+    come up with a cost-function (hence the meta-variable) which only depends on
+    [n]. *)
+    (* Here, it suffices to inline the definition of [m]. *)
+    subst m.
+    (* [reflexivity] then unifies both sides, instantiating the meta-variable
+    and solving the goal. *)
+    reflexivity. }
 
   cleanup_cost.
   monotonic.
@@ -159,11 +226,59 @@ Proof.
     apply dominated_cst_id. }
 Qed.
 
+(* In the previous example, we got away with using [reflexivity] to instantiate
+the evar in [... <= ?Goal{x:=n}].
+
+   In more general cases, we want to manually give an instantiation for the
+evar. One way of doing that is by applying the following (trivial) lemma, giving
+an instantiation for [b].
+*)
 Lemma le_than (b: Z): forall a, a <= b -> a <= b.
 Proof. auto. Qed.
 
 Arguments le_than : clear implicits.
 
+(* [let2]: of the form [let m = ... in ...], where the cost of the body depends
+on [m]. This time however, [m] is only related to [n] by an inequality (we know
+[m <= n]). We cannot simply [subst] the definition of [m]. Instead we use
+monotonicity of cost functions and [le_than].
+*)
+Lemma let2_spec :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+         0 <= n ->
+         app let2 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  destruct loop1_spec as [loop1_cost L LP LM LD].
+
+  xspecO_refine.
+  intros n N.
+
+  xcf.
+  xpay.
+
+  xlet.
+  { xapp~. }
+  { xpull. intro Hm. xapp. math.
+    apply (le_than (loop1_cost n)). apply LM. math.
+  }
+
+  cleanup_cost.
+  monotonic.
+
+  apply dominated_sum_distr.
+  { apply LD. }
+  { apply dominated_cst_id. }
+Qed.
+
+
+(* [loop2]: Similarly, we can have a for-loop where the value of the starting
+and finishing indices is not precisely known, but one can bound their
+difference. *)
 Lemma loop2_spec :
   specO
     Z_filterType Z.le
@@ -177,19 +292,26 @@ Lemma loop2_spec :
 Proof.
   xspecO_refine.
   intros n N.
-  xcf.
-  xpay.
-  xlet. { xapp. auto. }
+
+  xcf. xpay.
+
+  xlet. { xapp~. }
   xpull. intros Ha.
-  xlet. { xapp. math. }
+  xlet. { xapp~. }
   xpull. intros Hb.
 
   xfor_inv (fun (i:int) => \[]). math.
   { intros i Hi. xapp. }
-  hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z.
-  apply (le_than n).
-  math.
+  { hsimpl. }
+  { simpl.
+    (* At this point, we can simply reduce [cumul] of a constant to a product.
+    *)
+    rewrite cumulP. rewrite big_const_Z.
+    (* Do some cleanup, and work around the fact that [ring_simplify] chokes on
+    evars... *)
+    hide_evars_then ltac:(fun _ => ring_simplify).
+    apply (le_than n).
+    math. }
 
   hsimpl.
 
@@ -202,6 +324,10 @@ Proof.
   { apply dominated_cst_id. }
 Qed.
 
+(* [if1]: Similarly, a program of the form [if cond then ... else ...], where
+the cost of branches can only be related to the input parameter by an
+inequality.
+*)
 Lemma if1_spec :
   specO
     Z_filterType Z.le
@@ -217,12 +343,15 @@ Proof.
   xspecO_refine.
   intros n cond N.
   xcf. xpay.
-  xapp. auto. intro Ha.
-  xapp. auto. intro Hb.
+  xapp~. intro Ha.
+  xapp~. intro Hb.
 
   xif.
-  xapp. math. apply (le_than (loop1_cost n)). apply LM. math.
-  xapp. math. apply (le_than (loop1_cost n)). apply LM. math.
+  { xapp. math.
+    (* Bound the cost of the branch by something that only depends on [n], using
+    the fact that [loop1_cost] is monotonic. *)
+    apply (le_than (loop1_cost n)). apply LM. math. }
+  { xapp. math. apply (le_than (loop1_cost n)). apply LM. math. }
 
   cleanup_cost.
   monotonic.
@@ -231,32 +360,6 @@ Proof.
   - apply~ dominated_max_distr.
   - apply dominated_cst_id.
 Qed.
-
-Lemma let2_spec :
-  specO
-    Z_filterType Z.le
-    (fun cost => forall n,
-         0 <= n ->
-         app let2 [n]
-           PRE (\$ cost n)
-           POST (fun (tt:unit) => \[]))
-    (fun n => n).
-Proof.
-  destruct loop1_spec as [loop1_cost L LP LM LD].
-
-  xspecO_refine.
-  intros n N.
-  xcf. xpay.
-  xapp. auto. intro Ha.
-  xapp. math. apply (le_than (loop1_cost n)). apply LM. math.
-
-  cleanup_cost.
-  monotonic.
-  apply dominated_sum_distr.
-  { apply LD. }
-  { apply dominated_cst_id. }
-Qed.
-
 
 
 Lemma cutO_refine :
@@ -327,7 +430,7 @@ Lemma looploop_spec :
        app looploop [n]
            PRE (\$ cost n)
            POST (fun (tt:unit) => \[]))
-    (fun n => n).
+    (fun n => n ^ 2).
 Proof.
   xspecO_refine.
   intros n N.
@@ -350,10 +453,13 @@ Proof.
     eapply dominated_sum. Focus 3. apply dominated_reflexive. ultimately_greater.
     Focus 2.
     apply dominated_ceil.
-    apply dominated_big_sum'.
+    apply dominated_big_sum' with (g := fun n i => n).
     Focus 3.
     (* apply dominated_ceil. *) (* ehhh *)
     apply dominated_ceil_product.
+
+    Check cost_dominated.
+
     apply dominated_reflexive.
 
     ultimately_greater.
@@ -423,6 +529,8 @@ Proof.
 
   xcf. refine_credits.
   xpay.
+  (* when the sub-cost functions for the branches of the if need to talk about of/depend on
+  the condition... *)
   xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. math_lia.
 
   simpl. clean_ceil. cases_if; math_lia.
