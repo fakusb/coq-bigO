@@ -92,6 +92,17 @@ Qed.
 Hint Resolve monotonic_ceil : monotonic.
 Hint Resolve monotonic_ceil_comp : monotonic.
 
+Lemma ultimately_ge_ceil :
+  forall k f,
+  ultimately Z_filterType (fun x => k <= f x) ->
+  ultimately Z_filterType (fun x => k <= ceil (f x)).
+Proof.
+  introv. filter_closed_under_intersection.
+  auto with zarith.
+Qed.
+
+Hint Resolve ultimately_ge_ceil : ultimately_greater.
+
 Lemma dominated_ceil : forall A f g,
     dominated A f g ->
     dominated A (fun x => ceil (f x)) g.
