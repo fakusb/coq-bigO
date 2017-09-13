@@ -361,6 +361,53 @@ Proof.
   - apply dominated_cst_id.
 Qed.
 
+(* [looploop]: nested for-loops *)
+Lemma looploop_spec :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+       0 <= n ->
+       app looploop [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n ^ 2).
+Proof.
+  xspecO_refine.
+  intros n N.
+  xcf. xpay.
+
+  xfor_inv (fun (i:int) => \[]). auto.
+  { intros i I.
+    xfor_inv (fun (j:int) => \[]). math.
+    { intros j J. xapp. }
+    { hsimpl. }
+    { simpl.
+      (* reflexivity. *) (* fixme? *)
+      apply Z.le_refl. }
+    { hsimpl. }
+  }
+  { hsimpl. }
+  { hsimpl. }
+
+  cleanup_cost.
+  monotonic.
+
+  apply dominated_sum_distr.
+  { rewrite dominated_big_sum_bound.
+    { apply dominated_mul. reflexivity.
+      rewrite dominated_big_sum_bound. reflexivity.
+      ultimately_greater.
+      (* todo: improve *)
+      eapply ultimately_monotonic_of_monotonic.
+      monotonic. }
+    ultimately_greater.
+    (* todo: improve *)
+    eapply ultimately_monotonic_of_monotonic.
+    monotonic.
+  }
+  { apply dominated_cst_limit. (* limit. *) (* TODO *) admit. }
+Qed.
+
 
 Lemma cutO_refine :
   forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),
@@ -388,7 +435,7 @@ Proof.
 Qed.
 
 (*
-Lemma looploop_spec :
+Lemma looploop_spec' :
   specO
     Z_filterType Z.le
     (fun cost => forall n,
@@ -396,7 +443,7 @@ Lemma looploop_spec :
        app looploop [n]
            PRE (\$ cost n)
            POST (fun (tt:unit) => \[]))
-    (fun n => n).
+    (fun n => n ^ 2).
 Proof.
   xspecO_refine.
   intros n N.
@@ -501,6 +548,9 @@ Ltac unmaxify_step :=
 Ltac unmaxify := repeat unmaxify_step.
 Ltac zify_op ::= repeat zify_op_1; unmaxify.
 
+(* FIXME *)
+Ltac clean_ceil_math ::=
+  try cases_if; auto with zarith; try math_lia; math_nia.
 
 Lemma rec1_spec :
   specO
