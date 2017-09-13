@@ -128,34 +128,39 @@ Record specO
       cost_dominated : dominated A cost bound
     }.
 
-Definition cleanup_cost (A : filterType) (cost cost_clean : A -> Z) :=
-  dominated A cost cost_clean.
+Definition cleanup_cost (A : filterType) (cost cost_clean_eq cost_clean : A -> Z) :=
+  (forall (x : A), cost x = cost_clean_eq x) /\
+  dominated A cost_clean_eq cost_clean.
 
 Lemma specO_refine_prove :
   forall (A : filterType) (le : A -> A -> Prop)
-         (cost cost_clean bound : A -> Z)
+         (cost cost_clean_eq cost_clean bound : A -> Z)
          (spec : (A -> Z) -> Prop),
     spec cost ->
-    cleanup_cost A cost cost_clean ->
+    cleanup_cost A cost cost_clean_eq cost_clean ->
     (forall x, 0 <= cost x) ->
-    monotonic le Z.le cost ->
+    monotonic le Z.le cost_clean_eq ->
     dominated A cost_clean bound ->
     specO A le spec bound.
 Proof.
-  intros ? le cost cost_clean bound.
+  intros ? le cost cost_clean_eq cost_clean bound.
   introv S D1 N M D2.
   econstructor; eauto.
-  rewrite D1. assumption.
+  - apply Monotonic.monotonic_eq with cost_clean_eq; auto.
+    intro. rewrite~ (proj1 D1).
+  - apply dominated_eq_l with cost_clean_eq.
+    rewrite~ (proj2 D1). intro. rewrite~ (proj1 D1).
 Qed.
 
 Ltac xspecO_refine_base cost_name :=
   match goal with
     |- specO ?A ?le _ _ =>
+    let cost_clean_eq := fresh "cost_clean_eq" in
     let cost_clean := fresh "cost_clean" in
     refine (let cost_name := (fun (x : A) => ceil _ ) : A -> Z in _);
-    evar (cost_clean : A -> Z);
-    eapply (@specO_refine_prove A le cost_name cost_clean);
-    subst cost_clean;
+    evar (cost_clean : A -> Z); evar (cost_clean_eq : A -> Z);
+    eapply (@specO_refine_prove A le cost_name cost_clean_eq cost_clean);
+    subst cost_clean cost_clean_eq;
     [ unfold cost_name | | intro; apply ceil_pos
       | subst cost_name | subst cost_name ]
   end.
@@ -202,15 +207,40 @@ Ltac hide_evars_then cont :=
     cont tt
   end.
 
+Ltac clean_ceil_math :=
+  try cases_if; auto with zarith.
+
+(* Simple tactic to eliminate occurences of [ceil x] when x is proved
+   nonnegative by [clean_ceil_math].
+*)
+Ltac clean_ceil :=
+   repeat match goal with
+   | |- context[ ceil ?x ] => rewrite (@ceil_eq x) by clean_ceil_math
+   end.
+
 Ltac simple_cleanup_cost :=
-  intro; simpl; hide_evars_then ltac:(fun _ => ring_simplify).
+  simpl; hide_evars_then ltac:(fun _ => ring_simplify).
+
+Ltac simple_cleanup_cost_eq :=
+  simpl; clean_ceil; simple_cleanup_cost.
+
+Ltac unfold_cost_lhs :=
+  match goal with
+  | |- ?cost ?x = ?rhs => unfold cost
+  end.
 
 Ltac cleanup_cost :=
   unfold cleanup_cost;
-  eapply dominated_eq_r;
-  [ dominated_cleanup_cost |];
-  simple_cleanup_cost;
-  reflexivity.
+  split; [
+    intro; unfold_cost_lhs;
+    simple_cleanup_cost_eq;
+    reflexivity
+  | eapply dominated_eq_r;
+    [ dominated_cleanup_cost |];
+    intro;
+    simple_cleanup_cost;
+    reflexivity
+  ].
 
 
 (* Custom CF rules and tactics ************************************************)

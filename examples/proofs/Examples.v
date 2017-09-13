@@ -502,17 +502,6 @@ Ltac unmaxify := repeat unmaxify_step.
 Ltac zify_op ::= repeat zify_op_1; unmaxify.
 
 
-Ltac clean_ceil_math :=
-  try cases_if; auto with zarith; try math_lia; math_nia.
-
-(* Simple tactic to eliminate occurences of [ceil x] when x is proved
-   nonnegative by [clean_ceil_math].
-*)
-Ltac clean_ceil :=
-   repeat match goal with
-   | |- context[ ceil ?x ] => rewrite (@ceil_eq x) by clean_ceil_math
-   end.
-
 Lemma rec1_spec :
   specO
     Z_filterType Z.le
