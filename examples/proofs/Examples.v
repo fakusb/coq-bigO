@@ -93,6 +93,8 @@ Proof.
   { apply dominated_cst. math. }
 Qed.
 
+Hint Extern 1 (RegisterSpec tick3) => Provide tick3_spec.
+
 (* [tick3 ()]: prove the same specification, this time using the mechanism to
    refine cost functions semi-automatically.
 
@@ -408,6 +410,31 @@ Proof.
   { apply dominated_cst_limit. (* limit. *) (* TODO *) admit. }
 Qed.
 
+(* [tick31]: Using a big-O spec for an auxiliary function.
+   WIP
+*)
+Lemma tick31_spec :
+  specO
+    unit_filterType (fun _ _ => True)
+    (fun cost =>
+       app tick31 [tt]
+           PRE (\$ cost tt)
+           POST (fun (tt:unit) => \[]))
+    (fun _ => 1).
+Proof.
+  xspecO_refine.
+  xcf. xpay.
+  xapp.
+
+  xapp_spec (spec tick3_spec).
+
+  cleanup_cost.
+  monotonic.
+
+  apply dominated_sum_distr.
+  - apply cost_dominated.
+  - apply dominated_cst. math.
+Qed.
 
 Lemma cutO_refine :
   forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),

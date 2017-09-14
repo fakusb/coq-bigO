@@ -80,9 +80,9 @@ Proof.
   intros x1 x2 H. rewrite !ceil_max_0. math_lia.
 Qed.
 
-Lemma monotonic_ceil_comp : forall (f : Z -> Z),
-  monotonic Z.le Z.le f ->
-  monotonic Z.le Z.le (fun x => ceil (f x)).
+Lemma monotonic_ceil_comp : forall A leA (f : A -> Z),
+  monotonic leA Z.le f ->
+  monotonic leA Z.le (fun x => ceil (f x)).
 Proof.
   introv M. intros x1 x2 H.
   forwards: M x1 x2 H.
@@ -138,6 +138,28 @@ Record specO
       cost_mon : monotonic le Z.le cost;
       cost_dominated : dominated A cost bound
     }.
+
+(** *)
+
+Lemma monotonic_specO_cost :
+  forall A le spec bound (S : @specO A le spec bound),
+  monotonic le Z.le (cost S).
+Proof.
+  intros. apply cost_mon.
+Qed.
+
+Hint Resolve monotonic_specO_cost : monotonic.
+
+Lemma monotonic_specO_nonneg :
+  forall A le spec bound (S : @specO A le spec bound) x,
+  0 <= cost S x.
+Proof.
+  intros. apply cost_nonneg.
+Qed.
+
+Hint Resolve monotonic_specO_nonneg : zarith.
+
+(** *)
 
 Definition cleanup_cost (A : filterType) (cost cost_clean_eq cost_clean : A -> Z) :=
   (forall (x : A), cost x = cost_clean_eq x) /\

@@ -41,6 +41,10 @@ let looploop n =
     done
   done
 
+let tick31 () =
+  tick ();
+  tick3 ()
+
 let rec rec1 n =
   if n <= 0 then ()
   else rec1 (n-1)
