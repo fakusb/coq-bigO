@@ -148,7 +148,17 @@ Proof.
   intros. apply cost_monotonic.
 Qed.
 
-Hint Resolve monotonic_specO_cost : monotonic.
+Hint Extern 1 (monotonic _ _ (fun _ => cost ?S _)) =>
+  match type of S with
+  | @specO _ ?leS _ _ =>
+     apply Monotonic.monotonic_comp with (leB := leS)
+  end : monotonic.
+
+Hint Extern 1 (monotonic _ _ (cost ?S)) =>
+  match type of S with
+  | @specO ?AS _ _ _ =>
+    apply monotonic_specO_cost with (A := AS)
+  end : monotonic.
 
 Lemma monotonic_specO_nonneg :
   forall A le spec bound (S : @specO A le spec bound) x,
