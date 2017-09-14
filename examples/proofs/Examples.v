@@ -538,7 +538,7 @@ Proof.
 
     ultimately_greater.
     apply filter_universe_alt. auto using cost_nonneg.
-    intros. apply monotonic_after_of_monotonic. monotonic. applys cost_mon Z_filterType. (* xx *)
+    intros. apply monotonic_after_of_monotonic. monotonic. applys cost_monotonic Z_filterType. (* xx *)
     limit.
 
     simpl.

@@ -135,7 +135,7 @@ Record specO
       cost : A -> Z;
       spec : spec cost;
       cost_nonneg : forall x, 0 <= cost x;
-      cost_mon : monotonic le Z.le cost;
+      cost_monotonic : monotonic le Z.le cost;
       cost_dominated : dominated A cost bound
     }.
 
@@ -145,7 +145,7 @@ Lemma monotonic_specO_cost :
   forall A le spec bound (S : @specO A le spec bound),
   monotonic le Z.le (cost S).
 Proof.
-  intros. apply cost_mon.
+  intros. apply cost_monotonic.
 Qed.
 
 Hint Resolve monotonic_specO_cost : monotonic.
