@@ -171,6 +171,11 @@ Hint Resolve monotonic_specO_nonneg : zarith.
 
 (** *)
 
+Inductive pack_provide_specO (A:Type) (V:A) : Prop :=
+  | provide_specO : pack_provide_specO V.
+
+(** *)
+
 Definition cleanup_cost (A : filterType) (cost cost_clean_eq cost_clean : A -> Z) :=
   (forall (x : A), cost x = cost_clean_eq x) /\
   dominated A cost_clean_eq cost_clean.
@@ -290,6 +295,28 @@ Ltac cleanup_cost :=
 
 
 (* Custom CF rules and tactics ************************************************)
+
+(* Custom xspec to fetch specO specifications *)
+
+(* FIXME: copy-pasted from CFML *)
+Ltac xspec_core_base f :=
+  first [ xspec_for_record f
+        | xspec_in_hyps_core f
+        (* FUTURE: | xspec_in database_spec_credits f *)
+        | xspec_in_core database_spec f
+        | xspec_app_in_hyps f
+        | fail 1 "xspec cannot find specification" ].
+
+Ltac spec_of_specO :=
+  match goal with
+  | |- pack_provide_specO ?S -> _ =>
+    intros _; generalize (spec S)
+  end.
+
+Ltac xspec_core f ::=
+  xspec_core_base f; try spec_of_specO.
+
+(** *)
 
 Lemma refine_cost_setup_intro_emp :
   forall A (F: ~~A) cost Q,

@@ -93,7 +93,7 @@ Proof.
   { apply dominated_cst. math. }
 Qed.
 
-Hint Extern 1 (RegisterSpec tick3) => Provide tick3_spec.
+Hint Extern 1 (RegisterSpec tick3) => Provide (provide_specO tick3_spec).
 
 (* [tick3 ()]: prove the same specification, this time using the mechanism to
    refine cost functions semi-automatically.
@@ -124,6 +124,27 @@ Proof.
   cleanup_cost.
 
   monotonic.
+  apply dominated_cst. math.
+Qed.
+
+(* [tick31]: Using a big-O spec for an auxiliary function. *)
+Lemma tick31_spec :
+  specO
+    unit_filterType (fun _ _ => True)
+    (fun cost =>
+       app tick31 [tt]
+           PRE (\$ cost tt)
+           POST (fun (tt:unit) => \[]))
+    (fun _ => 1).
+Proof.
+  xspecO_refine.
+  xcf. xpay.
+  xapp. (* usual spec *)
+  xapp. (* big-O spec *)
+
+  cleanup_cost.
+  monotonic.
+
   apply dominated_cst. math.
 Qed.
 
@@ -170,6 +191,8 @@ Proof.
   }
 Qed.
 
+Hint Extern 1 (RegisterSpec loop1) => Provide (provide_specO loop1_spec).
+
 (* [let1]: a program of the form [let m = ... in ...] where the cost of the body
 of the [let] depends on [m].
 
@@ -195,7 +218,7 @@ Proof.
 
   xlet.
   { xseq. xapp. xret. }
-  { xpull. intro Hm. xapp_spec (spec loop1_spec). math.
+  { xpull. intro Hm. xapp. math.
     (* This sub-goal is produced by our custom [xlet], and requires the user to
     come up with a cost-function (hence the meta-variable) which only depends on
     [n]. *)
@@ -248,7 +271,7 @@ Proof.
 
   xlet.
   { xapp~. }
-  { xpull. intro Hm. xapp_spec (spec loop1_spec). math.
+  { xpull. intro Hm. xapp. math.
     apply (le_than (cost loop1_spec n)). apply cost_monotonic. math.
   }
 
@@ -330,11 +353,11 @@ Proof.
   xapp~. intro Hb.
 
   xif.
-  { xapp_spec (spec loop1_spec). math.
+  { xapp. math.
     (* Bound the cost of the branch by something that only depends on [n], using
     the fact that [loop1_cost] is monotonic. *)
     apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
-  { xapp_spec (spec loop1_spec). math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
+  { xapp. math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
 
   cleanup_cost.
   monotonic.
@@ -391,29 +414,6 @@ Proof.
   { apply dominated_cst_limit. (* limit. *) (* TODO *) admit. }
 Qed.
 
-(* [tick31]: Using a big-O spec for an auxiliary function.
-   WIP
-*)
-Lemma tick31_spec :
-  specO
-    unit_filterType (fun _ _ => True)
-    (fun cost =>
-       app tick31 [tt]
-           PRE (\$ cost tt)
-           POST (fun (tt:unit) => \[]))
-    (fun _ => 1).
-Proof.
-  xspecO_refine.
-  xcf. xpay.
-  xapp.
-
-  xapp_spec (spec tick3_spec).
-
-  cleanup_cost.
-  monotonic.
-
-  apply dominated_cst. math.
-Qed.
 
 Lemma cutO_refine :
   forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),

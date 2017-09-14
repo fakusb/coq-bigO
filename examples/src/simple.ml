@@ -9,6 +9,10 @@ let tick3 () =
   tick ();
   tick ()
 
+let tick31 () =
+  tick ();
+  tick3 ()
+
 let loop1 n =
   for i = 0 to n - 1 do
     tick (); tick ()
@@ -40,10 +44,6 @@ let looploop n =
       tick ()
     done
   done
-
-let tick31 () =
-  tick ();
-  tick3 ()
 
 let rec rec1 n =
   if n <= 0 then ()
