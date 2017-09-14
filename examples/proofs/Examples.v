@@ -187,12 +187,6 @@ Lemma let1_spec :
          POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  (* At the moment, we have no tooling for automatically using
-     specifications-with-bigO for auxiliary functions. As a workaround, we
-     import the specs into the environment beforehand.
-  *)
-  destruct loop1_spec as [loop1_cost L LP LM LD].
-
   xspecO_refine.
   intros n N.
 
@@ -201,7 +195,7 @@ Proof.
 
   xlet.
   { xseq. xapp. xret. }
-  { xpull. intro Hm. xapp. math.
+  { xpull. intro Hm. xapp_spec (spec loop1_spec). math.
     (* This sub-goal is produced by our custom [xlet], and requires the user to
     come up with a cost-function (hence the meta-variable) which only depends on
     [n]. *)
@@ -215,17 +209,8 @@ Proof.
   monotonic.
 
   { apply dominated_sum_distr.
-    { eapply dominated_transitive.
-      - eapply dominated_comp_eq with
-          (I := Z_filterType) (J := Z_filterType)
-          (f := loop1_cost).
-        apply LD. Focus 2. reflexivity.
-        limit.
-        simpl. reflexivity.
-      - apply dominated_sum_distr.
-        apply dominated_reflexive.
-        apply dominated_cst_id. }
-    apply dominated_cst_id. }
+    - reflexivity.
+    - apply dominated_cst_id. }
 Qed.
 
 (* In the previous example, we got away with using [reflexivity] to instantiate
@@ -255,8 +240,6 @@ Lemma let2_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  destruct loop1_spec as [loop1_cost L LP LM LD].
-
   xspecO_refine.
   intros n N.
 
@@ -265,16 +248,16 @@ Proof.
 
   xlet.
   { xapp~. }
-  { xpull. intro Hm. xapp. math.
-    apply (le_than (loop1_cost n)). apply LM. math.
+  { xpull. intro Hm. xapp_spec (spec loop1_spec). math.
+    apply (le_than (cost loop1_spec n)). apply cost_monotonic. math.
   }
 
   cleanup_cost.
   monotonic.
 
   apply dominated_sum_distr.
-  { apply LD. }
-  { apply dominated_cst_id. }
+  - reflexivity.
+  - apply dominated_cst_id.
 Qed.
 
 
@@ -340,8 +323,6 @@ Lemma if1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  destruct loop1_spec as [loop1_cost L LP LM LD].
-
   xspecO_refine.
   intros n cond N.
   xcf. xpay.
@@ -349,17 +330,17 @@ Proof.
   xapp~. intro Hb.
 
   xif.
-  { xapp. math.
+  { xapp_spec (spec loop1_spec). math.
     (* Bound the cost of the branch by something that only depends on [n], using
     the fact that [loop1_cost] is monotonic. *)
-    apply (le_than (loop1_cost n)). apply LM. math. }
-  { xapp. math. apply (le_than (loop1_cost n)). apply LM. math. }
+    apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
+  { xapp_spec (spec loop1_spec). math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
 
   cleanup_cost.
   monotonic.
 
   apply dominated_sum_distr.
-  - apply~ dominated_max_distr.
+  - apply~ dominated_max_distr; reflexivity.
   - apply dominated_cst_id.
 Qed.
 
