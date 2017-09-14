@@ -431,9 +431,7 @@ Proof.
   cleanup_cost.
   monotonic.
 
-  apply dominated_sum_distr.
-  - apply cost_dominated.
-  - apply dominated_cst. math.
+  apply dominated_cst. math.
 Qed.
 
 Lemma cutO_refine :

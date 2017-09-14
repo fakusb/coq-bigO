@@ -233,6 +233,9 @@ Ltac dominated_cleanup_cost :=
       [ | | dominated_cleanup_cost ];
       simpl;
       solve [ ultimately_greater_trysolve ]
+    | apply cost_dominated; dominated_cleanup_cost
+    | eapply dominated_comp;
+      [ apply cost_dominated | limit ]
     | apply dominated_reflexive
     ].
 
