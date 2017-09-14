@@ -202,7 +202,7 @@ Tactic Notation "xspecO_refine" constr(cost_name) :=
   xspecO_refine_base cost_name.
 
 Tactic Notation "xspecO_refine" :=
-  let cost_name := fresh "cost" in
+  let cost_name := fresh "costf" in
   xspecO_refine_base cost_name.
 
 Ltac xspecO cost_fun :=
