@@ -152,6 +152,7 @@ Qed.
 
    The custom rule [xfor_inv] refines the cost function to a [cumul] of the cost
    of the loop's body.  *)
+
 Lemma loop1_spec :
   specO
     Z_filterType Z.le
@@ -414,6 +415,10 @@ Proof.
   { apply dominated_cst_limit. (* limit. *) (* TODO *) admit. }
 Qed.
 
+(**
+   WIP: attempts at abstracting the big-O cost of the inner loop, in the middle
+   of the proof.
+ *)
 
 Lemma cutO_refine :
   forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),
@@ -533,6 +538,10 @@ Proof.
       {
 *)
 
+(**
+   WIP: attempts at semi-manually handling recursive functions.
+*)
+
 (* zify fails to process e.g. Z.max 0 0; as a workaround, add a [unmaxify]
    that postprocess those.
 
@@ -567,9 +576,8 @@ Lemma rec1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  apply SpecO with (cost := (fun (n:int) => Z.max 0 n + 1)).
+  xspecO (fun (n:Z_filterType) => Z.max 0 n + 1).
   intro n.
-  (* xspecO_refine. intro n. *)
   induction_wf: (downto 0) n.
 
   xcf. refine_credits.
@@ -601,9 +609,8 @@ Lemma rec1_spec2 :
 Proof.
   evar (a : int). evar (b : int).
   cut (0 <= a /\ 0 <= b). intros (a_nonneg & b_nonneg).
-  apply SpecO with (cost := (fun (n:int) => a * Z.max 0 n + b)).
+  xspecO (fun (n:Z_filterType) => a * Z.max 0 n + b).
   intro n.
-  (* xspecO_refine. intro n. *)
   induction_wf: (int_downto_wf 0) n.
 
   xcf. refine_credits.
