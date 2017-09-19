@@ -8,7 +8,6 @@ Require Import Pervasives_proof.
 Require Import Array_proof.
 (* Load the big-O library. *)
 Require Import Dominated.
-Require Import BigEnough.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 (* Load the custom CFML tactics with support for big-Os *)

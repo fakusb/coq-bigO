@@ -5,7 +5,6 @@ Require Import CFML.CFLibCredits.
 (* Load the BigO library. *)
 Require Import Dominated.
 Require Import LibFunOrd.
-Require Import BigEnough.
 Require Import UltimatelyGreater.
 
 (********************************************************************)
