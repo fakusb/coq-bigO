@@ -566,6 +566,11 @@ Ltac zify_op ::= repeat zify_op_1; unmaxify.
 Ltac clean_ceil_math ::=
   try cases_if; auto with zarith; try math_lia; math_nia.
 
+(* NB: Adding the precondition [0 <= n] to the specification doesn't help
+   simplifying the cost functions and getting rid of the Z.max. Indeed, [specO]
+   requires that the provided cost function is always nonnegative — which is not
+   the case of e.g. [fun n => n + 1].
+*)
 Lemma rec1_spec :
   specO
     Z_filterType Z.le
