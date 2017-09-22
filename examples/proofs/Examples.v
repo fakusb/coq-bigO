@@ -420,8 +420,8 @@ Qed.
 
 Lemma cutO_refine :
   forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),
-  forall S : specO A le (fun mycost => forall a, F a (\$ ceil (mycost a) \* H)) bound,
-  F a (\$ ceil ((cost S) a) \* H).
+  forall S : specO A le (fun mycost => forall a, F a (\$ max0 (mycost a) \* H)) bound,
+  F a (\$ max0 ((cost S) a) \* H).
 Proof.
   admit.
 Qed.
@@ -434,11 +434,11 @@ Lemma xfor_inv_lemma_pred_refine :
   (a <= b) ->
   forall S :
   specO Z_filterType Z.le (fun mycost =>
-    forall i, a <= i < b -> F i (\$ ceil (mycost i) \* I i) (# I(i+1))) bound,
+    forall i, a <= i < b -> F i (\$ max0 (mycost i) \* I i) (# I(i+1))) bound,
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul a b (fun i => ceil (cost S i)) <= loop_cost) ->
-  (For i = a To (b - 1) Do F i Done_) (\$ ceil loop_cost \* H) (# I b \* H').
+  (cumul a b (fun i => max0 (cost S i)) <= loop_cost) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ max0 loop_cost \* H) (# I b \* H').
 Proof.
   admit.
 Qed.
@@ -472,9 +472,9 @@ Proof.
 *)
 
 (* XXX *)
-Lemma dominated_ceil_product : forall A B f g,
+Lemma dominated_max0_product : forall A B f g,
   dominated (product_filterType A B) (fun '(a, b) => f a b) g ->
-  dominated (product_filterType A B) (fun '(a, b) => ceil (f a b)) g.
+  dominated (product_filterType A B) (fun '(a, b) => max0 (f a b)) g.
 Proof. admit. Qed.
 
 (*
@@ -505,14 +505,14 @@ Proof.
   - hsimpl.
   - subst cost.
     unfold cleanup_cost.
-    apply dominated_ceil.
+    apply dominated_max0.
     eapply dominated_sum. Focus 3. apply dominated_reflexive. ultimately_greater.
     Focus 2.
-    apply dominated_ceil.
+    apply dominated_max0.
     apply dominated_big_sum' with (g := fun n i => n).
     Focus 3.
-    (* apply dominated_ceil. *) (* ehhh *)
-    apply dominated_ceil_product.
+    (* apply dominated_max0. *) (* ehhh *)
+    apply dominated_max0_product.
 
     Check cost_dominated.
 
@@ -562,7 +562,7 @@ Ltac unmaxify := repeat unmaxify_step.
 Ltac zify_op ::= repeat zify_op_1; unmaxify.
 
 (* FIXME *)
-Ltac clean_ceil_math ::=
+Ltac clean_max0_math ::=
   try cases_if; auto with zarith; try math_lia; math_nia.
 
 (* NB: Adding the precondition [0 <= n] to the specification doesn't help
@@ -589,7 +589,7 @@ Proof.
   the condition... *)
   xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. math_lia.
 
-  simpl. clean_ceil. cases_if; math_lia.
+  simpl. clean_max0. cases_if; math_lia.
 
   math_lia.
   monotonic.
@@ -619,7 +619,7 @@ Proof.
   xcf. refine_credits.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math_nia.
 
-  clean_ceil. cases_if.
+  clean_max0. cases_if.
   (* Focus 2. rewrite !Z.max_l by math_lia. ring_simplify. *)
   { rewrite !Z.max_r by math_nia. ring_simplify.
     instantiate (1 := 1) in (Value of a).

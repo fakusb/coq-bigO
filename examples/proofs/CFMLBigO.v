@@ -9,7 +9,7 @@ Require Import UltimatelyGreater.
 
 (********************************************************************)
 
-Definition ceil (x : Z) : Z :=
+Definition max0 (x : Z) : Z :=
   match x with
   | Z0 => Z0
   | Zpos p => Zpos p
@@ -17,7 +17,7 @@ Definition ceil (x : Z) : Z :=
   end.
   (* Z.max 0 x. *)
 
-Lemma ceil_max_0 : forall x, ceil x = Z.max 0 x.
+Lemma max0_max_0 : forall x, max0 x = Z.max 0 x.
 Proof.
   intro x. destruct x.
   - reflexivity.
@@ -25,92 +25,92 @@ Proof.
   - simpl. auto with zarith.
 Qed.
 
-Lemma ceil_pos : forall x, 0 <= ceil x.
-Proof. intros. rewrite ceil_max_0. math_lia. Qed.
+Lemma max0_pos : forall x, 0 <= max0 x.
+Proof. intros. rewrite max0_max_0. math_lia. Qed.
 
-Hint Resolve ceil_pos : zarith.
+Hint Resolve max0_pos : zarith.
 
-Lemma ceil_eq : forall x, 0 <= x -> ceil x = x.
-Proof. intros. rewrite ceil_max_0. math_lia. Qed.
+Lemma max0_eq : forall x, 0 <= x -> max0 x = x.
+Proof. intros. rewrite max0_max_0. math_lia. Qed.
 
-Lemma ceil_add_eq : forall x y,
+Lemma max0_add_eq : forall x y,
     0 <= x ->
     0 <= y ->
-    ceil (x + y) = ceil x + ceil y.
-Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+    max0 (x + y) = max0 x + max0 y.
+Proof. intros. rewrite !max0_max_0. math_lia. Qed.
 
-Lemma ceil_add_le : forall x y,
-  ceil (x + y) <= ceil x + ceil y.
-Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+Lemma max0_add_le : forall x y,
+  max0 (x + y) <= max0 x + max0 y.
+Proof. intros. rewrite !max0_max_0. math_lia. Qed.
 
-Lemma ceil_max : forall x y,
-  ceil (Z.max x y) = Z.max (ceil x) (ceil y).
-Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+Lemma max0_max : forall x y,
+  max0 (Z.max x y) = Z.max (max0 x) (max0 y).
+Proof. intros. rewrite !max0_max_0. math_lia. Qed.
 
-Lemma ceil_ceil : forall x, ceil (ceil x) = ceil x.
-Proof. intros. rewrite !ceil_max_0. math_lia. Qed.
+Lemma max0_max0 : forall x, max0 (max0 x) = max0 x.
+Proof. intros. rewrite !max0_max_0. math_lia. Qed.
 
-Lemma ceil_ceil_add : forall x y, ceil (ceil x + ceil y) = ceil x + ceil y.
+Lemma max0_max0_add : forall x y, max0 (max0 x + max0 y) = max0 x + max0 y.
 Proof.
   intros x y.
-  rewrite ceil_add_eq; try apply ceil_pos.
-  rewrite !ceil_ceil. reflexivity.
+  rewrite max0_add_eq; try apply max0_pos.
+  rewrite !max0_max0. reflexivity.
 Qed.
 
-Lemma ceil_ge_nonpos :
-  forall x y, x <= 0 -> x <= ceil y.
+Lemma max0_ge_nonpos :
+  forall x y, x <= 0 -> x <= max0 y.
 Proof.
   intros x y.
-  rewrite !ceil_max_0. math_lia.
+  rewrite !max0_max_0. math_lia.
 Qed.
 
-Hint Resolve ceil_ge_nonpos : zarith.
+Hint Resolve max0_ge_nonpos : zarith.
 
-Lemma ceil_ge :
-  forall x y, x <= y -> x <= ceil y.
+Lemma max0_ge :
+  forall x y, x <= y -> x <= max0 y.
 Proof.
-  intros. rewrite !ceil_max_0. math_lia.
+  intros. rewrite !max0_max_0. math_lia.
 Qed.
 
-Hint Resolve ceil_ge : zarith.
+Hint Resolve max0_ge : zarith.
 
-Lemma monotonic_ceil : monotonic Z.le Z.le ceil.
+Lemma monotonic_max0 : monotonic Z.le Z.le max0.
 Proof.
-  intros x1 x2 H. rewrite !ceil_max_0. math_lia.
+  intros x1 x2 H. rewrite !max0_max_0. math_lia.
 Qed.
 
-Lemma monotonic_ceil_comp : forall A leA (f : A -> Z),
+Lemma monotonic_max0_comp : forall A leA (f : A -> Z),
   monotonic leA Z.le f ->
-  monotonic leA Z.le (fun x => ceil (f x)).
+  monotonic leA Z.le (fun x => max0 (f x)).
 Proof.
   introv M. intros x1 x2 H.
   forwards: M x1 x2 H.
-  rewrite !ceil_max_0. math_lia.
+  rewrite !max0_max_0. math_lia.
 Qed.
 
-Hint Resolve monotonic_ceil : monotonic.
-Hint Resolve monotonic_ceil_comp : monotonic.
+Hint Resolve monotonic_max0 : monotonic.
+Hint Resolve monotonic_max0_comp : monotonic.
 
-Lemma ultimately_ge_ceil :
+Lemma ultimately_ge_max0 :
   forall k f,
   ultimately Z_filterType (fun x => k <= f x) ->
-  ultimately Z_filterType (fun x => k <= ceil (f x)).
+  ultimately Z_filterType (fun x => k <= max0 (f x)).
 Proof.
   introv. filter_closed_under_intersection.
   auto with zarith.
 Qed.
 
-Hint Resolve ultimately_ge_ceil : ultimately_greater.
+Hint Resolve ultimately_ge_max0 : ultimately_greater.
 
-Lemma dominated_ceil : forall A f g,
+Lemma dominated_max0 : forall A f g,
     dominated A f g ->
-    dominated A (fun x => ceil (f x)) g.
+    dominated A (fun x => max0 (f x)) g.
 Proof.
   introv (c & U). exists c.
   revert U; filter_closed_under_intersection.
   intros.
-  assert (I: Z.abs (ceil (f a)) <= Z.abs (f a)). {
-    rewrite ceil_max_0. math_lia.
+  assert (I: Z.abs (max0 (f a)) <= Z.abs (f a)). {
+    rewrite max0_max_0. math_lia.
   }
   rewrite I. assumption.
 Qed.
@@ -204,11 +204,11 @@ Ltac xspecO_refine_base cost_name :=
     |- specO ?A ?le _ _ =>
     let cost_clean_eq := fresh "cost_clean_eq" in
     let cost_clean := fresh "cost_clean" in
-    refine (let cost_name := (fun (x : A) => ceil _ ) : A -> Z in _);
+    refine (let cost_name := (fun (x : A) => max0 _ ) : A -> Z in _);
     evar (cost_clean : A -> Z); evar (cost_clean_eq : A -> Z);
     eapply (@specO_refine_prove A le cost_name cost_clean_eq cost_clean);
     subst cost_clean cost_clean_eq;
-    [ unfold cost_name | | intro; apply ceil_pos
+    [ unfold cost_name | | intro; apply max0_pos
       | subst cost_name | subst cost_name ]
   end.
 
@@ -224,7 +224,7 @@ Ltac xspecO_cost cost_fun :=
 
 Ltac dominated_cleanup_cost :=
   first [
-      apply dominated_ceil; dominated_cleanup_cost
+      apply dominated_max0; dominated_cleanup_cost
     | apply dominated_sum;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
@@ -257,22 +257,22 @@ Ltac hide_evars_then cont :=
     cont tt
   end.
 
-Ltac clean_ceil_math :=
+Ltac clean_max0_math :=
   try cases_if; auto with zarith.
 
-(* Simple tactic to eliminate occurences of [ceil x] when x is proved
-   nonnegative by [clean_ceil_math].
+(* Simple tactic to eliminate occurences of [max0 x] when x is proved
+   nonnegative by [clean_max0_math].
 *)
-Ltac clean_ceil :=
+Ltac clean_max0 :=
    repeat match goal with
-   | |- context[ ceil ?x ] => rewrite (@ceil_eq x) by clean_ceil_math
+   | |- context[ max0 ?x ] => rewrite (@max0_eq x) by clean_max0_math
    end.
 
 Ltac simple_cleanup_cost :=
   simpl; hide_evars_then ltac:(fun _ => ring_simplify).
 
 Ltac simple_cleanup_cost_eq :=
-  simpl; clean_ceil; simple_cleanup_cost.
+  simpl; clean_max0; simple_cleanup_cost.
 
 Ltac unfold_cost_lhs :=
   match goal with
@@ -333,8 +333,8 @@ Qed.
 
 Ltac is_refine_cost_goal :=
   match goal with
-    |- _ (\$ ceil _) _ => apply refine_cost_setup_intro_emp
-  | |- _ (\$ ceil _ \* _) _ => idtac
+    |- _ (\$ max0 _) _ => apply refine_cost_setup_intro_emp
+  | |- _ (\$ max0 _ \* _) _ => idtac
   end.
 
 (* refine_credits
@@ -346,14 +346,14 @@ side-condition requiring that the evar cost is less than the original cost.
 
 Lemma refine_credits :
   forall A (cost_refined cost : int) (F: ~~A) H Q,
-  F (\$ ceil cost_refined \* H) Q ->
-  (ceil cost_refined <= cost) ->
+  F (\$ max0 cost_refined \* H) Q ->
+  (max0 cost_refined <= cost) ->
   is_local F ->
   F (\$ cost \* H) Q.
 Proof.
   introv HH Hcost L.
   xapply HH.
-  { hsimpl_credits. math. forwards: ceil_pos cost_refined. math. }
+  { hsimpl_credits. math. forwards: max0_pos cost_refined. math. }
   { hsimpl. }
 Qed.
 
@@ -438,10 +438,10 @@ Lemma inst_credits_cost :
   forall (credits : int) H H' H'',
   (0 <= credits) ->
   H ==> H' \* H'' ->
-  \$ ceil credits \* H ==> H' \* \$ credits \* H''.
+  \$ max0 credits \* H ==> H' \* \$ credits \* H''.
 Proof.
   introv P HH.
-  rewrite ceil_eq; auto.
+  rewrite max0_eq; auto.
   xchange HH. hsimpl_credits.
 Qed.
 
@@ -450,10 +450,10 @@ Lemma cancel_credits_cost :
   (credits <= cost) ->
   (0 <= credits) ->
   \$ (cost - credits) \* H ==> H' \* H'' ->
-  \$ ceil cost \* H ==> H' \* \$ credits \* H''.
+  \$ max0 cost \* H ==> H' \* \$ credits \* H''.
 Proof.
   intros cost_ credits. intros ? ? ? I N H.
-  rewrite ceil_eq; [| math].
+  rewrite max0_eq; [| math].
   applys~ hsimpl_cancel_credits_int_1.
 Qed.
 
@@ -481,10 +481,10 @@ Qed.
 (* \$_nat ? *)
 Ltac hsimpl_inst_credits_cost_setup tt :=
   match goal with
-  | |- \$ ceil ?cost ==> _ => is_evar cost; apply hsimpl_start_1
-  | |- \$ ceil ?cost \* _ ==> _ => is_evar cost
-  | |- \$ ceil (?cost _) ==> _ => is_evar cost; apply hsimpl_start_1
-  | |- \$ ceil (?cost _) \* _ ==> _ => is_evar cost
+  | |- \$ max0 ?cost ==> _ => is_evar cost; apply hsimpl_start_1
+  | |- \$ max0 ?cost \* _ ==> _ => is_evar cost
+  | |- \$ max0 (?cost _) ==> _ => is_evar cost; apply hsimpl_start_1
+  | |- \$ max0 (?cost _) \* _ ==> _ => is_evar cost
   end;
   match goal with
   | |- _ ==> _ \* \$ _ => apply hsimpl_starify
@@ -519,17 +519,17 @@ Ltac xcf_post tt ::=
 Lemma xpay_refine :
   forall A (cost cost' : Z)
          (F: hprop -> (A -> hprop) -> Prop) H Q,
-  (cost = 1 + ceil cost') ->
+  (cost = 1 + max0 cost') ->
   is_local F ->
-  F (\$ ceil cost' \* H) Q ->
-  (Pay_ ;; F) (\$ ceil cost \* H) Q.
+  F (\$ max0 cost' \* H) Q ->
+  (Pay_ ;; F) (\$ max0 cost \* H) Q.
 Proof.
   introv E L HH. rewrite E.
   xpay_start tt.
   { unfold pay_one.
-    rewrite ceil_eq; [| forwards: ceil_pos cost'; math_lia ].
+    rewrite max0_eq; [| forwards: max0_pos cost'; math_lia ].
     credits_split.
-    hsimpl_credits. math. forwards~: ceil_pos cost'. }
+    hsimpl_credits. math. forwards~: max0_pos cost'. }
   xapply HH. hsimpl_credits. hsimpl.
 Qed.
 
@@ -544,10 +544,10 @@ Ltac xpay_core tt ::=
 Lemma xret_refine : forall cost A (x : A) H (Q : A -> hprop),
   (cost = 0) ->
   local (fun H' Q' => H' ==> Q' x) H Q ->
-  local (fun H' Q' => H' ==> Q' x) (\$ ceil cost \* H) Q.
+  local (fun H' Q' => H' ==> Q' x) (\$ max0 cost \* H) Q.
 Proof.
   introv E HH.
-  rewrite E. rewrite ceil_eq; [| math]. rewrite credits_int_zero_eq. rewrite star_neutral_l.
+  rewrite E. rewrite max0_eq; [| math]. rewrite credits_int_zero_eq. rewrite star_neutral_l.
   assumption.
 Qed.
 
@@ -568,19 +568,19 @@ Ltac xret_no_gc_core tt ::=
 
 Lemma xseq_refine :
   forall (A : Type) cost cost1 cost2 F1 F2 H (Q : A -> hprop),
-  (cost = ceil cost1 + ceil cost2) ->
+  (cost = max0 cost1 + max0 cost2) ->
   is_local F1 ->
   is_local F2 ->
   (exists Q',
-    F1 (\$ ceil cost1 \* H) Q' /\
-    F2 (\$ ceil cost2 \* Q' tt) Q) ->
-  (F1 ;; F2) (\$ ceil cost \* H) Q.
+    F1 (\$ max0 cost1 \* H) Q' /\
+    F2 (\$ max0 cost2 \* Q' tt) Q) ->
+  (F1 ;; F2) (\$ max0 cost \* H) Q.
 Proof.
   introv E L1 L2 (Q' & H1 & H2).
   rewrite E.
   xseq_pre tt. apply local_erase. eexists. split.
-  { xapply H1. rewrite ceil_add_eq; try apply ceil_pos. repeat rewrite ceil_ceil.
-    forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+  { xapply H1. rewrite max0_add_eq; try apply max0_pos. repeat rewrite max0_max0.
+    forwards: max0_pos cost1. forwards: max0_pos cost2.
     credits_split. hsimpl. math. math. }
   { xapply H2. hsimpl. hsimpl. }
 Qed.
@@ -602,20 +602,20 @@ Lemma xlet_refine :
     (F1 : hprop -> (A -> hprop) -> Prop)
     (F2 : A -> hprop -> (B -> hprop) -> Prop)
     (H : hprop) (Q : B -> hprop),
-  (cost = ceil cost1 + ceil cost2) ->
+  (cost = max0 cost1 + max0 cost2) ->
   is_local F1 ->
   (forall x, is_local (F2 x)) ->
   (exists (Q' : A -> hprop),
-    F1 (\$ ceil cost1 \* H) Q' /\
-    (forall r, F2 r (\$ ceil cost2 \* Q' r) Q)) ->
-  cf_let F1 F2 (\$ ceil cost \* H) Q.
+    F1 (\$ max0 cost1 \* H) Q' /\
+    (forall r, F2 r (\$ max0 cost2 \* Q' r) Q)) ->
+  cf_let F1 F2 (\$ max0 cost \* H) Q.
 Proof.
   introv E L1 L2 (Q' & H1 & H2).
   rewrite E.
   unfold cf_let.
   eexists. split.
-  { xapply H1. rewrite ceil_add_eq; try apply ceil_pos. repeat rewrite ceil_ceil.
-    forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+  { xapply H1. rewrite max0_add_eq; try apply max0_pos. repeat rewrite max0_max0.
+    forwards: max0_pos cost1. forwards: max0_pos cost2.
     credits_split. hsimpl. math. math. }
   { intro r. specializes L2 r. xapply H2; hsimpl. }
 Qed.
@@ -635,18 +635,18 @@ Ltac xlet_core cont0 cont1 cont2 ::=
 (* xif ********************************)
 
 Lemma xif_refine : forall (A: Type) cost cost1 cost2 cond (F1 F2: ~~A) H Q,
-  (cost = Z.max (ceil cost1) (ceil cost2)) ->
+  (cost = Z.max (max0 cost1) (max0 cost2)) ->
   is_local F1 ->
   is_local F2 ->
-  ((cond = true -> F1 (\$ ceil cost1 \* H) Q) /\
-   (cond = false -> F2 (\$ ceil cost2 \* H) Q)) ->
-  (If_ cond Then F1 Else F2) (\$ ceil cost \* H) Q.
+  ((cond = true -> F1 (\$ max0 cost1 \* H) Q) /\
+   (cond = false -> F2 (\$ max0 cost2 \* H) Q)) ->
+  (If_ cond Then F1 Else F2) (\$ max0 cost \* H) Q.
 Proof.
   introv costE L1 L2 (H1 & H2).
   apply local_erase. rewrite costE.
-  forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+  forwards: max0_pos cost1. forwards: max0_pos cost2.
   split; intro; [xapply~ H1 | xapply~ H2];
-  hsimpl_credits; try math; rewrite ceil_max; rewrite !ceil_ceil;
+  hsimpl_credits; try math; rewrite max0_max; rewrite !max0_max0;
   math_lia.
 Qed.
 
@@ -676,15 +676,15 @@ Lemma xif_guard_refine : forall (A: Type) cost cost1 cost2 (cond cond': bool) (F
   (cost = If cond' then cost1 else cost2) ->
   is_local F1 ->
   is_local F2 ->
-  ((cond = true -> F1 (\$ ceil cost1 \* H) Q) /\
-   (cond = false -> F2 (\$ ceil cost2 \* H) Q)) ->
-  (If_ cond Then F1 Else F2) (\$ ceil cost \* H) Q.
+  ((cond = true -> F1 (\$ max0 cost1 \* H) Q) /\
+   (cond = false -> F2 (\$ max0 cost2 \* H) Q)) ->
+  (If_ cond Then F1 Else F2) (\$ max0 cost \* H) Q.
 Proof.
   introv condEq costE L1 L2 (H1 & H2).
   apply local_erase. rewrite <-condEq in costE. rewrite costE.
-  forwards: ceil_pos cost1. forwards: ceil_pos cost2.
+  forwards: max0_pos cost1. forwards: max0_pos cost2.
   split; intro C; rewrite C; cases_if; [xapply~ H1 | xapply~ H2];
-  hsimpl_credits; try math; rewrite !ceil_ceil; math.
+  hsimpl_credits; try math; rewrite !max0_max0; math.
 Qed.
 
 Ltac xif_guard_base cont :=
@@ -707,8 +707,8 @@ Lemma xguard_refine :
   forall A (cost cost' : int) (F: ~~A) (G: Prop) H Q,
   G ->
   (cost = If G then cost' else 0) ->
-  F (\$ ceil cost' \* H) Q ->
-  F (\$ ceil cost \* H) Q.
+  F (\$ max0 cost' \* H) Q ->
+  F (\$ max0 cost \* H) Q.
 Proof.
   introv HG E HH. rewrite E. cases_if. trivial.
 Qed.
@@ -727,26 +727,26 @@ Lemma xfor_inv_lemma_pred_refine :
     (cost_body : int -> int)
     (a : int) (b : int) (F : int-> ~~unit) H H',
   (a <= b) ->
-  (forall i, a <= i < b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
+  (forall i, a <= i < b -> F i (\$ max0 (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul a b (fun i => ceil (cost_body i)) <= cost) ->
-  (For i = a To (b - 1) Do F i Done_) (\$ ceil cost \* H) (# I b \* H').
+  (cumul a b (fun i => max0 (cost_body i)) <= cost) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ max0 cost \* H) (# I b \* H').
 Proof.
   introv a_le_b HI HH Flocal Icost.
   assert (cost_nonneg : 0 <= cost0). {
     rewrite cumulP in Icost. rewrite big_nonneg_Z. apply Icost.
-    intros. simpl. apply ceil_pos.
+    intros. simpl. apply max0_pos.
   }
   applys xfor_inv_case_lemma
-    (fun (i: int) => \$ cumul i b (fun i => ceil (cost_body i)) \* I i);
+    (fun (i: int) => \$ cumul i b (fun i => max0 (cost_body i)) \* I i);
   intros C.
   { eexists. splits~.
     - hchange HH. hsimpl.
-      rewrite~ ceil_eq. hsimpl_credits. math. admit. (* ok *)
+      rewrite~ max0_eq. hsimpl_credits. math. admit. (* ok *)
     - intros i Hi.
       (* xframe (\$cumul f (i + 1) n). auto. *) (* ?? *)
-      xframe_but (\$ceil (cost_body i) \* I i). auto.
+      xframe_but (\$max0 (cost_body i) \* I i). auto.
       assert (forall f, cumul i b f = f i + cumul (i + 1) b f) as cumul_lemma by admit.
       rewrite cumul_lemma; clear cumul_lemma.
       credits_split. hsimpl. admit. (* ok *)
@@ -763,31 +763,31 @@ Lemma xfor_inv_case_lemma_refine : forall (I:int->hprop),
    ((a <= b) -> exists H',
           (H ==> I a \* H')
        /\ (forall i, is_local (F i))
-       /\ (forall i, a <= i <= b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1)))
-       /\ (cumul a b (fun i => ceil (cost_body i)) <= cost)
+       /\ (forall i, a <= i <= b -> F i (\$ max0 (cost_body i) \* I i) (# I(i+1)))
+       /\ (cumul a b (fun i => max0 (cost_body i)) <= cost)
        /\ (I (b+1) \* H' ==> Q tt \* \GC)) ->
    ((a > b) ->
           (0 <= cost)
        /\ (H ==> Q tt \* \GC)) ->
-   (For i = a To b Do F i Done_) (\$ ceil cost \* H) Q.
+   (For i = a To b Do F i Done_) (\$ max0 cost \* H) Q.
 Proof.
   introv Ha_le_b Ha_gt_b.
   assert (cost_nonneg : 0 <= cost0). {
     destruct (Z.le_gt_cases a b) as [a_le_b | a_gt_b].
     - specializes~ Ha_le_b ___. destruct Ha_le_b as (? & H').
       rewrite cumulP in H'. rewrite big_nonneg_Z. apply H'.
-      intros. simpl. apply ceil_pos.
+      intros. simpl. apply max0_pos.
     - specializes~ Ha_gt_b ___. math.
   }
   applys xfor_inv_case_lemma
-    (fun (i:int) => \$ cumul i b (fun i => ceil (cost_body i)) \* I i).
+    (fun (i:int) => \$ cumul i b (fun i => max0 (cost_body i)) \* I i).
   - intro a_le_b. specializes~ Ha_le_b.
     destruct Ha_le_b as (H' & H1 & Hl & H2 & Hcumul & H3).
     eexists. splits.
     + hchange H1. hsimpl.
-      rewrite~ ceil_eq. hsimpl_credits. math. admit. (* ok *)
+      rewrite~ max0_eq. hsimpl_credits. math. admit. (* ok *)
     + intros i Hi.
-      xframe_but (\$ ceil (cost_body i) \* I i). auto.
+      xframe_but (\$ max0 (cost_body i) \* I i). auto.
       assert (forall f, cumul i b f = f i + cumul (i + 1) b f) as cumul_lemma by admit.
       rewrite cumul_lemma; clear cumul_lemma.
       credits_split. hsimpl. admit. (* ok *)
@@ -802,11 +802,11 @@ Lemma xfor_inv_lemma_refine : forall (I:int->hprop),
   forall (cost : int) (cost_body : int -> int),
   forall (a:int) (b:int) (F:int->~~unit) H H',
   (a <= b+1) ->
-  (forall i, a <= i <= b -> F i (\$ ceil (cost_body i) \* I i) (# I(i+1))) ->
+  (forall i, a <= i <= b -> F i (\$ max0 (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul a (b + 1) (fun i => ceil (cost_body i)) <= cost) ->
-  (For i = a To b Do F i Done_) (\$ ceil cost \* H) (# I (b+1) \* H').
+  (cumul a (b + 1) (fun i => max0 (cost_body i)) <= cost) ->
+  (For i = a To b Do F i Done_) (\$ max0 cost \* H) (# I (b+1) \* H').
 Proof using.
   introv ML MI MH Mloc HI. applys xfor_inv_case_lemma_refine I; intros C.
   { exists H'. splits~. admit. (* ok *) hsimpl. }
@@ -817,7 +817,7 @@ Lemma xfor_inv_void_lemma_refine :
   forall (a:int) (b:int) (F:int->~~unit) H (cost : int),
   (a > b) ->
   (0 <= cost) ->
-  (For i = a To b Do F i Done_) (\$ ceil cost \* H) (# H).
+  (For i = a To b Do F i Done_) (\$ max0 cost \* H) (# H).
 Proof using.
   introv ML MC.
   applys xfor_inv_case_lemma_refine (fun (i:int) => \[]); intros C.
