@@ -73,7 +73,7 @@ Proof.
      wasn't needed. If we unfold the definition of the tactic (which simply
      applies the [SpecO] lemma), it is not needed. Defining [xspecO] as a tactic
      or a tactic notation apparently makes it necessary. *)
-  xspecO (fun (_:unit_filterType) => 4).
+  xspecO_cost (fun (_:unit_filterType) => 4).
 
   { xcf.
     xpay.
@@ -114,7 +114,7 @@ Lemma tick3_spec2 :
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
-  xspecO_refine.
+  xspecO.
   xcf.
   xpay.
   xseq. xapp.
@@ -136,7 +136,7 @@ Lemma tick31_spec :
            POST (fun (tt:unit) => \[]))
     (fun _ => 1).
 Proof.
-  xspecO_refine.
+  xspecO.
   xcf. xpay.
   xapp. (* usual spec *)
   xapp. (* big-O spec *)
@@ -162,7 +162,7 @@ Lemma loop1_spec :
            PRE (\$ cost n)
            POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
   xcf.
   xpay.
@@ -209,7 +209,7 @@ Lemma let1_spec :
          POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
 
   xcf.
@@ -262,7 +262,7 @@ Lemma let2_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
 
   xcf.
@@ -297,7 +297,7 @@ Lemma loop2_spec :
              POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
 
   xcf. xpay.
@@ -345,7 +345,7 @@ Lemma if1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n cond N.
   xcf. xpay.
   xapp~. intro Ha.
@@ -377,7 +377,7 @@ Lemma looploop_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n ^ 2).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
   xcf. xpay.
 
@@ -454,7 +454,7 @@ Lemma looploop_spec' :
            POST (fun (tt:unit) => \[]))
     (fun n => n ^ 2).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
   xcf. xpay.
 
@@ -488,7 +488,7 @@ Lemma looploop_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n ^ 2).
 Proof.
-  xspecO_refine.
+  xspecO.
   intros n N.
   xcf. xpay.
 
@@ -579,7 +579,7 @@ Lemma rec1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO (fun (n:Z_filterType) => Z.max 0 n + 1).
+  xspecO_cost (fun (n:Z_filterType) => Z.max 0 n + 1).
   intro n.
   induction_wf: (downto 0) n.
 
@@ -612,7 +612,7 @@ Lemma rec1_spec2 :
 Proof.
   evar (a : int). evar (b : int).
   cut (0 <= a /\ 0 <= b). intros (a_nonneg & b_nonneg).
-  xspecO (fun (n:Z_filterType) => a * Z.max 0 n + b).
+  xspecO_cost (fun (n:Z_filterType) => a * Z.max 0 n + b).
   intro n.
   induction_wf: (int_downto_wf 0) n.
 

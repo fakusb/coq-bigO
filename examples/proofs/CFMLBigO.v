@@ -212,14 +212,14 @@ Ltac xspecO_refine_base cost_name :=
       | subst cost_name | subst cost_name ]
   end.
 
-Tactic Notation "xspecO_refine" constr(cost_name) :=
+Tactic Notation "xspecO" constr(cost_name) :=
   xspecO_refine_base cost_name.
 
-Tactic Notation "xspecO_refine" :=
+Tactic Notation "xspecO" :=
   let cost_name := fresh "costf" in
   xspecO_refine_base cost_name.
 
-Ltac xspecO cost_fun :=
+Ltac xspecO_cost cost_fun :=
   apply (@SpecO _ _ _ _ cost_fun).
 
 Ltac dominated_cleanup_cost :=
