@@ -292,6 +292,12 @@ Ltac cleanup_cost :=
     reflexivity
   ].
 
+(* Notations for common [specO]s *)
+
+Notation "'specZ' [ X '\in_O' f ] E" :=
+  (specO Z_filterType Z.le (fun X => E) f)
+    (X ident, f at level 90, E at level 0,
+     format "'[v' 'specZ'  [ X  '\in_O'  f ]  '/'  E ']'", at level 60).
 
 (* Custom CF rules and tactics ************************************************)
 

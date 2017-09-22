@@ -150,18 +150,17 @@ Qed.
 (* [loop1 n]: loops from 1 to n, calls [tick (); tick ()] at each iteration.
 
    The custom rule [xfor_inv] refines the cost function to a [cumul] of the cost
-   of the loop's body.  *)
+   of the loop's body.
 
+   Also, demo of a convenince wrapper notation for [specO] on [Z_filterType].
+*)
 Lemma loop1_spec :
-  specO
-    Z_filterType Z.le
-    (fun cost =>
-       forall (n: Z),
+  specZ [cost \in_O (fun n => n)]
+    (forall (n: Z),
        0 <= n ->
        app loop1 [n]
            PRE (\$ cost n)
-           POST (fun (tt:unit) => \[]))
-    (fun n => n).
+           POST (fun (tt:unit) => \[])).
 Proof.
   xspecO_refine.
   intros n N.
