@@ -745,3 +745,68 @@ Proof.
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
 Qed.
+
+Lemma l :
+  forall (A: filterType) le
+         (domain : A -> Prop)
+         (spec: (A -> int) -> Prop)
+         bound cost,
+  (forall cost_max_0,
+      (forall x, domain x -> cost_max_0 x = cost x) ->
+      spec cost_max_0) ->
+  (forall (x:A), domain x -> 0 <= cost x) ->
+  monotonic le Z.le cost ->
+  dominated A cost bound ->
+  specO A le spec bound.
+Proof.
+  introv S Pos Mon Dom.
+  pose (cost_max_0 := fun (n:A) => Z.max 0 (cost n)).
+
+  apply SpecO with (cost := cost_max_0); subst cost_max_0; simpl.
+  - apply S. intros x D. specialize (Pos _ D). math_lia.
+  - intros x. math_lia.
+  - monotonic.
+  - apply dominated_max_distr.
+    exists 0. apply filter_universe_alt. intros. rewrite Z.abs_0. math_lia. auto. (* xx *)
+Qed.
+
+Lemma rec1_spec5 :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+         0 <= n ->
+         app rec1 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  eapply l2. intros a b facts.
+
+  assert (a_nonneg : 0 <= a) by (prove_later facts).
+  assert (b_nonneg : 0 <= b) by (prove_later facts).
+
+  eapply l with
+      (cost := (fun n => a * n + b))
+      (domain := (fun n => 0 <= n)).
+  intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'.
+  revert N. (* ehh *)
+
+  induction_wf: (int_downto_wf 0) n. intro N.
+
+  xcf. refine_credits.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
+
+  clean_max0. cases_if.
+  { generalize n N C. prove_later facts. }
+  { generalize n N C. prove_later facts. }
+
+  math_nia.
+  monotonic.
+  { apply dominated_sum_distr. apply dominated_mul_cst_l. reflexivity.
+    apply dominated_cst_id. }
+
+  intros. close_facts.
+
+  simpl. exists 1 1. splits.
+  math. math. math_nia. math_nia.
+Qed.
