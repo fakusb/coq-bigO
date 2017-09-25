@@ -601,6 +601,8 @@ Proof.
   { apply dominated_cst_id. }
 Qed.
 
+Require Import EvarsFacts.
+
 Lemma rec1_spec2 :
   specO
     Z_filterType Z.le
@@ -610,8 +612,12 @@ Lemma rec1_spec2 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
+  pose_facts facts.
+
   evar (a : int). evar (b : int).
-  cut (0 <= a /\ 0 <= b). intros (a_nonneg & b_nonneg).
+  assert (a_nonneg : 0 <= a) by (prove_later facts).
+  assert (b_nonneg : 0 <= b) by (prove_later facts).
+
   xspecO_cost (fun (n:Z_filterType) => a * Z.max 0 n + b).
   intro n.
   induction_wf: (int_downto_wf 0) n.
@@ -620,17 +626,122 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math_nia.
 
   clean_max0. cases_if.
-  (* Focus 2. rewrite !Z.max_l by math_lia. ring_simplify. *)
-  { rewrite !Z.max_r by math_nia. ring_simplify.
-    instantiate (1 := 1) in (Value of a).
-    instantiate (1 := 1) in (Value of b).
-    subst a b. math_nia. }
-  { subst a b. math_nia. }
+  { generalize n C. prove_later facts. }
+  { generalize n C. prove_later facts. }
 
   math_nia.
   monotonic.
+  { apply dominated_sum_distr.
+  - apply dominated_mul_cst_l.
+    apply dominated_max_distr. apply dominated_cst_id.
+    reflexivity.
+  - apply dominated_cst_id. }
 
-  subst a b. admit.
+  close_facts.
 
-  subst a b. math.
+  (* XX *)
+Abort.
+
+Definition close_facts P1 P2 :=
+  P2 -> P1.
+
+Lemma l2 : forall
+    (facts : int -> int -> Prop)
+    (facts_closed : int -> int -> Prop)
+    (P: Type),
+  (forall (a b : int), facts a b -> P) ->
+  (forall a b, close_facts (facts a b) (facts_closed a b)) ->
+  (sigT (fun a => { b | facts_closed a b })) ->
+  P.
+Proof.
+  intros facts facts_closed P H1 H2 H3.
+  destruct H3 as (? & ? & ?). unfold close_facts in *. eauto.
+Qed.
+
+Ltac prove_later_aux tm ty :=
+  let ty' := (eval simpl in ty) in
+  lazymatch ty' with
+  | ?x /\ ?y => prove_later_aux (@proj2 x y tm) y
+  | _ => eapply (proj1 tm)
+  end.
+
+Ltac prove_later facts :=
+  let T := type of facts in
+  prove_later_aux facts T.
+
+Lemma rec1_spec3 :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+         app rec1 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  eapply l2. intros a b facts.
+
+  assert (a_nonneg : 0 <= a) by (prove_later facts).
+  assert (b_nonneg : 0 <= b) by (prove_later facts).
+
+  xspecO_cost (fun (n:Z_filterType) => a * Z.max 0 n + b).
+  intro n.
+  induction_wf: (int_downto_wf 0) n.
+
+  xcf. refine_credits.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math. math_nia.
+
+  clean_max0. cases_if.
+  { generalize n C. prove_later facts. }
+  { generalize n C. prove_later facts. }
+
+  math_nia.
+  monotonic.
+  { apply dominated_sum_distr.
+  - apply dominated_mul_cst_l.
+    apply dominated_max_distr. apply dominated_cst_id.
+    reflexivity.
+  - apply dominated_cst_id. }
+
+  intros. close_facts.
+
+  simpl. exists 1 1. splits; math_nia.
+Qed.
+
+Lemma rec1_spec4 :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+         0 <= n ->
+         app rec1 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  eapply l2. intros a b facts.
+
+  assert (a_nonneg : 0 <= a) by (prove_later facts).
+  assert (b_nonneg : 0 <= b) by (prove_later facts).
+
+  xspecO_cost (fun (n:Z_filterType) => Z.max 0 (a * n + b)).
+  intros n.
+  induction_wf: (int_downto_wf 0) n. intro N.
+
+  xcf. refine_credits.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math. math. math_nia.
+
+  clean_max0. cases_if.
+  { generalize n N C. prove_later facts. }
+  { generalize n N C. prove_later facts. }
+
+  math_nia.
+  monotonic.
+  { apply dominated_max_distr.
+    - apply dominated_cst_id.
+    - apply dominated_sum_distr. apply dominated_mul_cst_l. reflexivity.
+      apply dominated_cst_id. }
+
+  intros. close_facts.
+
+  simpl. exists 1 1. splits.
+  math. math. math_nia. math_nia.
 Qed.
