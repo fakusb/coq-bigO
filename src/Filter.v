@@ -378,6 +378,31 @@ Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
+(* The filter of all subsets that contain a particular value [x]. For a property
+   to hold on [singleton x], it only needs to hold on [x]. *)
+
+Section Singleton.
+
+Variable A : Type.
+Variable x : A.
+
+Definition singleton_filterMixin : Filter.mixin_of A.
+Proof.
+  eapply Filter.Mixin with (fun P => P x); eauto.
+Defined.
+
+Definition singleton_filterType := FilterType A singleton_filterMixin.
+
+Lemma singletonP :
+  forall (P : A -> Prop),
+  ultimately singleton_filterType P =
+  P x.
+Proof. reflexivity. Qed.
+
+End Singleton.
+
+(* ---------------------------------------------------------------------------- *)
+
 (* The standard filter on [nat]. *)
 
 Definition nat_filterMixin : Filter.mixin_of nat.
