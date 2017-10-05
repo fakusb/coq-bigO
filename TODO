@@ -16,7 +16,3 @@
   only complicate the proof further. But we could rename "foo" to "foo_base" or
   something similar, and "foo_with" to "foo", and only expect the user to use
   "foo". (maybe "foo_base" could be then declared as a "local lemma"?)
-
-- CFMLBigO.v:
-
-  rename cost_mon into cost_monotonic
