@@ -2,7 +2,7 @@
 
    François a un principe d'induction généralisé qui permet de diviser par 2.
 *)
-let rec bsearch t v i j =
+let rec bsearch (t: int array) v i j =
   if i > j then -1 else begin
     let m = i + (j - i) / 2 in
     if v = t.(m) then

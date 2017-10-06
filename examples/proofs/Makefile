@@ -38,8 +38,15 @@ CFML_FLAGS := -credits
 # We copy these source files to $(CF), and process them with CFML there.
 
 SOURCES := \
-  max_subsequence_sum.ml \
-  simple.ml
+	max_subsequence_sum.ml \
+	simple.ml \
+	dichotomy.ml \
+	exponential.ml \
+	selection_sort.ml \
+	floyd_warshall.ml \
+	bellman_ford.ml \
+	dfs.ml \
+#	merge_sort.ml
 
 CF := $(PWD)/_cf
 
