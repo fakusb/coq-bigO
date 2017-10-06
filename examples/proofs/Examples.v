@@ -746,6 +746,11 @@ Proof.
   math. math. math_nia. math_nia.
 Qed.
 
+(* This allows us to prove that the provided [cost] is non-negative only on the
+   provided [domain].
+
+  TODO: What if we also wanted to prove monicity/dominated only on [domain]?
+*)
 Lemma l :
   forall (A: filterType) le
          (domain : A -> Prop)
