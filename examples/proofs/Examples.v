@@ -193,7 +193,7 @@ Qed.
 Hint Extern 1 (RegisterSpec loop1) => Provide (provide_specO loop1_spec).
 
 (* [let1]: a program of the form [let m = ... in ...] where the cost of the body
-of the [let] depends on [m].
+   of the [let] depends on [m].
 
    As [m] is a locally-bound variable, one needs to come up with a cost for the
    body that is independent from [m]. In this simple example, it suffices to
@@ -236,21 +236,22 @@ Proof.
 Qed.
 
 (* In the previous example, we got away with using [reflexivity] to instantiate
-the evar in [... <= ?Goal{x:=n}].
+   the evar in [... <= ?Goal{x:=n}].
 
    In more general cases, we want to manually give an instantiation for the
-evar. One way of doing that is by applying the following (trivial) lemma, giving
-an instantiation for [b].
-*)
+   evar. One way of doing that is by applying the following (trivial) lemma,
+   giving an instantiation for [b]. *)
 Lemma le_than (b: Z): forall a, a <= b -> a <= b.
 Proof. auto. Qed.
 
 Arguments le_than : clear implicits.
 
 (* [let2]: of the form [let m = ... in ...], where the cost of the body depends
-on [m]. This time however, [m] is only related to [n] by an inequality (we know
-[m <= n]). We cannot simply [subst] the definition of [m]. Instead we use
-monotonicity of cost functions and [le_than].
+   on [m].
+
+   This time however, [m] is only related to [n] by an inequality (we
+   know [m <= n]). We cannot simply [subst] the definition of [m]. Instead we
+   use monotonicity of cost functions and [le_than].
 *)
 Lemma let2_spec :
   specO
@@ -284,8 +285,8 @@ Qed.
 
 
 (* [loop2]: Similarly, we can have a for-loop where the value of the starting
-and finishing indices is not precisely known, but one can bound their
-difference. *)
+   and finishing indices is not precisely known, but one can bound their
+   difference. *)
 Lemma loop2_spec :
   specO
     Z_filterType Z.le
@@ -332,9 +333,8 @@ Proof.
 Qed.
 
 (* [if1]: Similarly, a program of the form [if cond then ... else ...], where
-the cost of branches can only be related to the input parameter by an
-inequality.
-*)
+   the cost of branches can only be related to the input parameter by an
+   inequality. *)
 Lemma if1_spec :
   specO
     Z_filterType Z.le
