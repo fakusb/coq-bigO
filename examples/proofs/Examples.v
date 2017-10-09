@@ -62,7 +62,7 @@ Hint Extern 1 (RegisterSpec rand) => Provide rand_spec.
 *)
 Lemma tick3_spec :
   specO
-    unit_filterType (fun _ _ => True)
+    unit_filterType eq
     (fun cost =>
        app tick3 [tt]
            PRE (\$ cost tt)
@@ -107,7 +107,7 @@ Hint Extern 1 (RegisterSpec tick3) => Provide (provide_specO tick3_spec).
 *)
 Lemma tick3_spec2 :
   specO
-    unit_filterType (fun _ _ => True)
+    unit_filterType eq
     (fun cost =>
        app tick3 [tt]
            PRE (\$ cost tt)
@@ -129,7 +129,7 @@ Qed.
 (* [tick31]: Using a big-O spec for an auxiliary function. *)
 Lemma tick31_spec :
   specO
-    unit_filterType (fun _ _ => True)
+    unit_filterType eq
     (fun cost =>
        app tick31 [tt]
            PRE (\$ cost tt)
