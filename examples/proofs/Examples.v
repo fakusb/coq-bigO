@@ -642,33 +642,6 @@ Proof.
   (* XX *)
 Abort.
 
-Definition close_facts P1 P2 :=
-  P2 -> P1.
-
-Lemma l2 : forall
-    (facts : int -> int -> Prop)
-    (facts_closed : int -> int -> Prop)
-    (P: Type),
-  (forall (a b : int), facts a b -> P) ->
-  (forall a b, close_facts (facts a b) (facts_closed a b)) ->
-  (sigT (fun a => { b | facts_closed a b })) ->
-  P.
-Proof.
-  intros facts facts_closed P H1 H2 H3.
-  destruct H3 as (? & ? & ?). unfold close_facts in *. eauto.
-Qed.
-
-Ltac prove_later_aux tm ty :=
-  let ty' := (eval simpl in ty) in
-  lazymatch ty' with
-  | ?x /\ ?y => prove_later_aux (@proj2 x y tm) y
-  | _ => eapply (proj1 tm)
-  end.
-
-Ltac prove_later facts :=
-  let T := type of facts in
-  prove_later_aux facts T.
-
 Lemma rec1_spec3 :
   specO
     Z_filterType Z.le
@@ -678,7 +651,7 @@ Lemma rec1_spec3 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  eapply l2. intros a b facts.
+  pose_facts_evars facts a b.
 
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
@@ -717,7 +690,7 @@ Lemma rec1_spec4 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  eapply l2. intros a b facts.
+  pose_facts_evars facts a b.
 
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
@@ -785,7 +758,7 @@ Lemma rec1_spec5 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  eapply l2. intros a b facts.
+  pose_facts_evars facts a b.
 
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
