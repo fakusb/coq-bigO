@@ -299,10 +299,6 @@ Lemma limit_pow_l :
   limit A Z_filterType (fun n => (f n) ^ p).
 Proof.
   introv Hp L. rewrite limitP in *.
-  (* assert (Ufpos: ultimately A (fun n => 0 < f n)). *)
-  (* { apply L. apply (filter_closed_under_inclusion (ultimately_ge_Z 1)). *)
-  (*   auto with zarith. } *)
-
   intros P UP.
   forwards H: L (fun y => P (y ^ p)).
   { rewrite ZP_ultimately with (cond := fun x => 0 < x) in UP; swap 1 2.
