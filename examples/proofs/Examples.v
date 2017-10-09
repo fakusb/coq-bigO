@@ -69,11 +69,7 @@ Lemma tick3_spec :
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
-  (* TODO: it would be nice if the type annotation for "_:unit_filterType"
-     wasn't needed. If we unfold the definition of the tactic (which simply
-     applies the [SpecO] lemma), it is not needed. Defining [xspecO] as a tactic
-     or a tactic notation apparently makes it necessary. *)
-  xspecO_cost (fun (_:unit_filterType) => 4).
+  xspecO_cost (fun _ => 4).
 
   { xcf.
     xpay.
@@ -579,7 +575,7 @@ Lemma rec1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_cost (fun (n:Z_filterType) => Z.max 0 n + 1).
+  xspecO_cost (fun n => Z.max 0 n + 1).
   intro n.
   induction_wf: (downto 0) n.
 
@@ -618,7 +614,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
 
-  xspecO_cost (fun (n:Z_filterType) => a * Z.max 0 n + b).
+  xspecO_cost (fun n => a * Z.max 0 n + b).
   intro n.
   induction_wf: (int_downto_wf 0) n.
 
@@ -656,7 +652,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
 
-  xspecO_cost (fun (n:Z_filterType) => a * Z.max 0 n + b).
+  xspecO_cost (fun n => a * Z.max 0 n + b).
   intro n.
   induction_wf: (int_downto_wf 0) n.
 
@@ -695,7 +691,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
 
-  xspecO_cost (fun (n:Z_filterType) => Z.max 0 (a * n + b)).
+  xspecO_cost (fun n => Z.max 0 (a * n + b)).
   intros n.
   induction_wf: (int_downto_wf 0) n. intro N.
 

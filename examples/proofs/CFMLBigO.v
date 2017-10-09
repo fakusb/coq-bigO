@@ -219,8 +219,11 @@ Tactic Notation "xspecO" :=
   let cost_name := fresh "costf" in
   xspecO_refine_base cost_name.
 
-Ltac xspecO_cost cost_fun :=
-  apply (@SpecO _ _ _ _ cost_fun).
+Tactic Notation "xspecO_cost" uconstr(cost_fun) :=
+  match goal with
+  | |- specO ?A _ _ _ =>
+    apply (@SpecO A _ _ _ cost_fun)
+  end.
 
 (* This allows us to prove that the provided [cost] is non-negative only on the
    provided [domain].
@@ -251,10 +254,7 @@ Proof.
     exists 0. apply filter_universe_alt. intros. rewrite Z.abs_0. math_lia. auto. (* xx *)
 Qed.
 
-Tactic Notation "xspecO_cost" constr(cost_fun) :=
-  xspecO_cost cost_fun.
-
-Tactic Notation "xspecO_cost" constr(cost_fun) "on" constr(domain) :=
+Tactic Notation "xspecO_cost" uconstr(cost_fun) "on" uconstr(domain) :=
   match goal with
   | |- specO ?A _ _ _ =>
     apply (@xspecO_cost_on_domain A _ domain _ _ cost_fun)
