@@ -35,7 +35,7 @@ Proof.
 
   admit.
   monotonic.
-  dominated. admit.
+  dominated.
 Qed.
 
 Lemma f_spec2 :
@@ -64,7 +64,7 @@ Proof.
 
   admit.
   monotonic.
-  admit.
+  dominated.
 Qed.
 
 Lemma f_spec3 :
@@ -94,7 +94,7 @@ Proof.
 
   prove_later facts.
   monotonic.
-  admit.
+  dominated.
 
   intros; close_facts.
 

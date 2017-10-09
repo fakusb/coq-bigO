@@ -403,6 +403,53 @@ Proof.
   rewrite~ <-(ZshiftP x0).
 Qed.
 
+Lemma dominated_pow_r_cst_l :
+  forall (f g : A -> Z) (b c: Z),
+  0 <= c -> 0 < b ->
+  (* if f x = -c, g = 0, b ^ (f x) is O(g) but b ^ (c + f x) is not O(g) *)
+  ultimately A (fun x => 0 <= f x) ->
+  dominated A (fun x => b ^ (f x)) g ->
+  dominated A (fun x => b ^ (c + f x)) g.
+Proof.
+  introv cpos bpos Ufpos D.
+  forwards~ [k U]: dominated_mul_cst_l (b^c) D.
+  exists k. applys filter_closed_under_intersection Ufpos U. intros.
+  rewrites~ Z.pow_add_r.
+Qed.
+
+Lemma dominated_pow_r_cst_r :
+  forall (f g : A -> Z) (b c: Z),
+  0 <= c -> 0 < b ->
+  ultimately A (fun x => 0 <= f x) ->
+  dominated A (fun x => b ^ (f x)) g ->
+  dominated A (fun x => b ^ (f x + c)) g.
+Proof.
+  introv cpos bpos ? ?.
+  eapply dominated_eq_l. applys dominated_pow_r_cst_l.
+  apply cpos. apply bpos. eassumption. eassumption.
+  intros. rewrites~ Zplus_comm.
+Qed.
+
+Lemma dominated_pow_l :
+  forall (f g : A -> Z) (e: Z),
+  ultimately A (fun x => 0 <= f x) ->
+  ultimately A (fun x => 0 <= g x) ->
+  dominated A f g ->
+  dominated A (fun x => (f x) ^ e) (fun x => (g x) ^ e).
+Proof.
+  introv Ufpos Ugpos D.
+  forwards (k & K & U) : dominated_nonneg_const D.
+  exists (Z.abs (k ^ e)).
+  generalize Ufpos Ugpos U. filter_closed_under_intersection.
+  intros a (? & ? & ?).
+  asserts f_le_kg: (f a ^ e <= (k * g a) ^ e).
+  { apply Z.pow_le_mono_l. nia. }
+  lets powmul: Z.pow_mul_l k (g a) e. rewrites powmul in f_le_kg.
+  forwards: Z.pow_nonneg k e. lia.
+  repeat (rewrite Z.abs_eq; [| apply Z.pow_nonneg; lia ]).
+  nia.
+Qed.
+
 End DominatedLaws.
 
 (* ---------------------------------------------------------------------------- *)
@@ -1081,6 +1128,9 @@ Hint Resolve dominated_sum_distr : dominated.
 Hint Extern 2 (dominated _ (fun _ => Z.sub _ _) _) =>
   apply dominated_sum_distr : dominated.
 Hint Resolve dominated_shift : dominated.
+Hint Resolve dominated_pow_r_cst_l : dominated.
+Hint Resolve dominated_pow_r_cst_r : dominated.
+Hint Resolve dominated_pow_l : dominated.
 
 Hint Extern 100 => try (intros; omega) : dominated_sidegoals.
 
