@@ -1067,7 +1067,7 @@ Hint Resolve dominated_reflexive : dominated.
 Hint Extern 1 (dominated _ (fun _ => ?a) (fun _ => ?b)) =>
   apply dominated_cst : dominated.
 Hint Resolve dominated_cst_id : dominated.
-Hint Resolve dominated_cst_limit : dominated.
+Hint Resolve dominated_cst_limit | 2 : dominated.
 Hint Resolve dominated_mul : dominated.
 Hint Resolve dominated_mul_cst : dominated.
 Hint Resolve dominated_mul_cst_l : dominated.
