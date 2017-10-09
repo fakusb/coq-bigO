@@ -30,10 +30,10 @@ Proof.
   intro n. induction_wf: (downto 0) n. intro N.
 
   xcf. xpay. hsimpl_credits. admit. math.
-  xlet as cond. xret. xpull. intro Hcond.
-  xif. { xret. hsimpl. }
-       { xapp. math. math. hsimpl_credits. admit. admit.
-         xapp. math. math. hsimpl_credits. admit. admit. }
+  xrets.
+  xif. { xret~. }
+       { xapp; try math. hsimpl_credits. admit. admit.
+         xapp; try math. hsimpl_credits. admit. admit. }
 
   admit.
   monotonic.
@@ -76,9 +76,9 @@ Lemma f_spec3 :
         POST (fun (tt:unit) => \[])).
 Proof.
   pose_facts_evars facts a b.
-  assert (0 <= a /\ 0 <= b) as (Ha & Hb) by (prove_later facts).
+  assert (0 <= a) as Ha by (prove_later facts).
 
-  xspecO_cost (fun n => a * 2^(n+1) - b) on (fun n => 0 <= n).
+  xspecO_cost (fun n => a * 2^n + b) on (fun n => 0 <= n).
 
   intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'. revert n N.
 
@@ -99,7 +99,7 @@ Proof.
 
   intros; close_facts.
 
-  exists 1 1.
+  exists 2 (-1).
   splits; try math.
   - intros. ring_simplify. admit.
   - intros n N. ring_simplify.
