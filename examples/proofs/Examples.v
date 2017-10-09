@@ -568,9 +568,9 @@ Proof.
   xpay.
   (* when the sub-cost functions for the branches of the if need to talk about of/depend on
   the condition... *)
-  xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math. math_lia.
+  xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math.
 
-  simpl. clean_max0. cases_if; math_lia.
+  clean_max0. cases_if; math_lia.
 
   math_lia.
   monotonic.
@@ -599,7 +599,7 @@ Proof.
   induction_wf: (int_downto_wf 0) n.
 
   xcf. refine_credits.
-  xpay. xif. xret. hsimpl. xguard C. xapp. math. math_nia.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
   clean_max0. cases_if.
   { generalize n C. prove_later facts. }
@@ -632,7 +632,7 @@ Proof.
   induction_wf: (int_downto_wf 0) n.
 
   xcf. refine_credits.
-  xpay. xif. xret. hsimpl. xguard C. xapp. math. math_nia.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
   clean_max0. cases_if.
   { generalize n C. prove_later facts. }
@@ -666,7 +666,7 @@ Proof.
   induction_wf: (int_downto_wf 0) n. intro N.
 
   xcf. refine_credits.
-  xpay. xif. xret. hsimpl. xguard C. xapp. math. math. math_nia.
+  xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
   clean_max0. cases_if.
   { generalize n N C. prove_later facts. }

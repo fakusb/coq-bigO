@@ -6,6 +6,7 @@ Require Import CFML.CFLibCredits.
 Require Import Dominated.
 Require Import LibFunOrd.
 Require Import UltimatelyGreater.
+Require Import LibZExtra.
 
 (********************************************************************)
 
@@ -328,12 +329,8 @@ Ltac clean_max0 :=
   repeat match goal with
   | |- context[ Z.max 0 ?x ] =>
     rewrite <-(@max0_max_0 x); rewrite (@max0_eq x) by clean_max0_math
-  end;
-  repeat match goal with
   | |- context[ Z.max ?x 0 ] =>
     rewrite <-(@max0_max_0' x); rewrite (@max0_eq x) by clean_max0_math
-  end;
-  repeat match goal with
   | |- context[ max0 ?x ] => rewrite (@max0_eq x) by clean_max0_math
   end.
 

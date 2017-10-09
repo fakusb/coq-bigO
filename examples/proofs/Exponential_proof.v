@@ -57,10 +57,9 @@ Proof.
   { xret~. }
   { xapp; try math. admit. xapp; try math. admit. }
 
-  rewrite <-max0_max_0.
-  clean_max0. ring_simplify.
+  clean_max0. ring_simplify. ring_simplify ((n-1)+1).
   rewrite max0_eq; swap 1 2. admit.
-  ring_simplify. admit.
+  ring_simplify. rewrite <-pow2_succ. reflexivity. math.
 
   admit.
   monotonic.
@@ -88,7 +87,6 @@ Proof.
   { xapp; try math. generalize n N; prove_later facts.
     xapp; try math. apply facts; eauto. }
 
-  rewrite <-max0_max_0.
   clean_max0. ring_simplify.
   generalize n N. prove_later facts.
 
