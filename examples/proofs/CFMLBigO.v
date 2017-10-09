@@ -302,9 +302,10 @@ Ltac clean_max0_math :=
    nonnegative by [clean_max0_math].
 *)
 Ltac clean_max0 :=
-   repeat match goal with
-   | |- context[ max0 ?x ] => rewrite (@max0_eq x) by clean_max0_math
-   end.
+  rewrite <-!max0_max_0;
+  repeat match goal with
+  | |- context[ max0 ?x ] => rewrite (@max0_eq x) by clean_max0_math
+  end.
 
 Ltac simple_cleanup_cost :=
   simpl; hide_evars_then ltac:(fun _ => ring_simplify).
