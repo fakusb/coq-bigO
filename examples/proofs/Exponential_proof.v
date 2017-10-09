@@ -91,7 +91,9 @@ Proof.
   { xapp; try math. generalize n N; prove_later facts.
     xapp; try math. apply facts; eauto. }
 
-  clean_max0. ring_simplify. generalize n N. prove_later facts.
+  rewrite <-max0_max_0.
+  clean_max0. ring_simplify.
+  generalize n N. prove_later facts.
 
   prove_later facts.
   monotonic.

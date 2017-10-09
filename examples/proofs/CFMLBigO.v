@@ -25,6 +25,14 @@ Proof.
   - simpl. auto with zarith.
 Qed.
 
+Lemma max0_max_0' : forall x, max0 x = Z.max x 0.
+Proof.
+  intro x. destruct x.
+  - reflexivity.
+  - simpl. auto with zarith.
+  - simpl. auto with zarith.
+Qed.
+
 Lemma max0_pos : forall x, 0 <= max0 x.
 Proof. intros. rewrite max0_max_0. math_lia. Qed.
 
@@ -300,9 +308,20 @@ Ltac clean_max0_math :=
 
 (* Simple tactic to eliminate occurences of [max0 x] when x is proved
    nonnegative by [clean_max0_math].
+
+   We explicitely match the occurencies we want to rewrite before effectively
+   rewriting, otherwise rewrite messes with the evars that may appear in the
+   goal...
 *)
 Ltac clean_max0 :=
-  rewrite <-!max0_max_0;
+  repeat match goal with
+  | |- context[ Z.max 0 ?x ] =>
+    rewrite <-(@max0_max_0 x); rewrite (@max0_eq x) by clean_max0_math
+  end;
+  repeat match goal with
+  | |- context[ Z.max ?x 0 ] =>
+    rewrite <-(@max0_max_0' x); rewrite (@max0_eq x) by clean_max0_math
+  end;
   repeat match goal with
   | |- context[ max0 ?x ] => rewrite (@max0_eq x) by clean_max0_math
   end.
