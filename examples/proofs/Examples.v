@@ -719,35 +719,6 @@ Proof.
   math. math. math_nia. math_nia.
 Qed.
 
-(* This allows us to prove that the provided [cost] is non-negative only on the
-   provided [domain].
-
-  TODO: What if we also wanted to prove monicity/dominated only on [domain]?
-*)
-Lemma l :
-  forall (A: filterType) le
-         (domain : A -> Prop)
-         (spec: (A -> int) -> Prop)
-         bound cost,
-  (forall cost_max_0,
-      (forall x, domain x -> cost_max_0 x = cost x) ->
-      spec cost_max_0) ->
-  (forall (x:A), domain x -> 0 <= cost x) ->
-  monotonic le Z.le cost ->
-  dominated A cost bound ->
-  specO A le spec bound.
-Proof.
-  introv S Pos Mon Dom.
-  pose (cost_max_0 := fun (n:A) => Z.max 0 (cost n)).
-
-  apply SpecO with (cost := cost_max_0); subst cost_max_0; simpl.
-  - apply S. intros x D. specialize (Pos _ D). math_lia.
-  - intros x. math_lia.
-  - monotonic.
-  - apply dominated_max_distr.
-    exists 0. apply filter_universe_alt. intros. rewrite Z.abs_0. math_lia. auto. (* xx *)
-Qed.
-
 Lemma rec1_spec5 :
   specO
     Z_filterType Z.le
@@ -763,9 +734,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   assert (b_nonneg : 0 <= b) by (prove_later facts).
 
-  eapply l with
-      (cost := (fun n => a * n + b))
-      (domain := (fun n => 0 <= n)).
+  xspecO_cost (fun n => a * n + b) on (fun n => 0 <= n).
   intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'.
   revert N. (* ehh *)
 

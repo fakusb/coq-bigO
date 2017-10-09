@@ -222,6 +222,44 @@ Tactic Notation "xspecO" :=
 Ltac xspecO_cost cost_fun :=
   apply (@SpecO _ _ _ _ cost_fun).
 
+(* This allows us to prove that the provided [cost] is non-negative only on the
+   provided [domain].
+
+  TODO: What if we also wanted to prove monicity/dominated only on [domain]?
+*)
+Lemma xspecO_cost_on_domain :
+  forall (A: filterType) le
+         (domain : A -> Prop)
+         (spec: (A -> int) -> Prop)
+         bound cost,
+  (forall cost_max_0,
+      (forall x, domain x -> cost_max_0 x = cost x) ->
+      spec cost_max_0) ->
+  (forall (x:A), domain x -> 0 <= cost x) ->
+  monotonic le Z.le cost ->
+  dominated A cost bound ->
+  specO A le spec bound.
+Proof.
+  intros ? ? ? ? ? costf S Pos Mon Dom.
+  pose (cost_max_0 := fun (n:A) => Z.max 0 (costf n)).
+
+  apply SpecO with (cost := cost_max_0); subst cost_max_0; simpl.
+  - apply S. intros x D. specialize (Pos _ D). math_lia.
+  - intros x. math_lia.
+  - Monotonic.monotonic.
+  - apply dominated_max_distr.
+    exists 0. apply filter_universe_alt. intros. rewrite Z.abs_0. math_lia. auto. (* xx *)
+Qed.
+
+Tactic Notation "xspecO_cost" constr(cost_fun) :=
+  xspecO_cost cost_fun.
+
+Tactic Notation "xspecO_cost" constr(cost_fun) "on" constr(domain) :=
+  match goal with
+  | |- specO ?A _ _ _ =>
+    apply (@xspecO_cost_on_domain A _ domain _ _ cost_fun)
+  end.
+
 Ltac dominated_cleanup_cost :=
   first [
       apply dominated_max0; dominated_cleanup_cost
