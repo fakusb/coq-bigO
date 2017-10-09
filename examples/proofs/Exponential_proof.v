@@ -30,10 +30,10 @@ Proof.
   intro n. induction_wf: (downto 0) n. intro N.
 
   xcf. xpay. hsimpl_credits. admit. math.
-  xrets.
-  xif. { xret~. }
-       { xapp; try math. hsimpl_credits. admit. admit.
-         xapp; try math. hsimpl_credits. admit. admit. }
+  xrets. xif.
+  { xret~. }
+  { xapp; try math. hsimpl_credits. admit. admit.
+    xapp; try math. hsimpl_credits. admit. admit. }
 
   admit.
   monotonic.
@@ -52,12 +52,16 @@ Proof.
   intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'. revert n N.
 
   intro n. induction_wf: (downto 0) n. intro N.
+
   refine_credits. xcf. xpay.
+  (* Using xrets here results in a loss of information in the infered cost
+  function; as the xret in the first subcase records "n" as the cost instead of
+  "0"... *)
+  xret. intro H. xif.
+  { xret~. }
+  { xapp; try math. admit. xapp; try math. admit. }
 
-  xlet as cond. xret. xpull. intro Hcond.
-  xif. { xret. hsimpl. }
-       { xapp; try math. admit. xapp; try math. admit. }
-
+  rewrite <-max0_max_0.
   clean_max0. ring_simplify.
   rewrite max0_eq; swap 1 2. admit.
   ring_simplify. admit.
