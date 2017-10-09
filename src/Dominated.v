@@ -450,6 +450,32 @@ Proof.
   nia.
 Qed.
 
+Lemma dominated_log :
+  forall f g : A -> Z,
+    ultimately A (fun x => 2 <= g x) ->
+    dominated A f g ->
+    dominated A (fun x => Z.log2 (f x)) (fun x => Z.log2 (g x)).
+Proof.
+  introv U_g_ge_2 D.
+  forwards (k & K & U) : dominated_nonneg_const D.
+  exists (Z.abs (Z.log2 k) + 1 + 1).
+  applys filter_closed_under_intersection U_g_ge_2 U.
+  intros a g_ge_2 f_le_kg.
+  forwards: Z.log2_nonneg (f a).
+  forwards: Z.log2_nonneg (g a).
+  forwards: Z.log2_nonneg k.
+  destruct (Z.neg_nonneg_cases (f a)) as [fneg | fpos].
+  - (* f a < 0 => Z.log2 (f a) = 0 *)
+    rewrite Z.log2_nonpos. nia. lia.
+  - { (* 0 <= f a *)
+      asserts gpos: (0 <= g a). nia. (* 0 <= g a *)
+
+      assert (g_ge_2' : 2^1 <= g a) by (simpl; apply g_ge_2).
+      forwards~ I: Z.log2_le_mono g_ge_2'. rewrites~ Z.log2_pow2 in I.
+      forwards: Z.log2_le_mono (f a) (k * g a). nia.
+      forwards: Z.log2_mul_above k (g a); try nia. omega. }
+Qed.
+
 End DominatedLaws.
 
 (* ---------------------------------------------------------------------------- *)
@@ -1131,6 +1157,7 @@ Hint Resolve dominated_shift : dominated.
 Hint Resolve dominated_pow_r_cst_l : dominated.
 Hint Resolve dominated_pow_r_cst_r : dominated.
 Hint Resolve dominated_pow_l : dominated.
+Hint Resolve dominated_log : dominated.
 
 Hint Extern 100 => try (intros; omega) : dominated_sidegoals.
 
