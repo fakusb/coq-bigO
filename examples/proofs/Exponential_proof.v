@@ -25,8 +25,6 @@ Lemma f_spec :
         POST (fun (tt:unit) => \[])).
 Proof.
   xspecO_cost (fun n => 2^(n+1) - 1) on (fun n => 0 <= n).
-  intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'. revert n N.
-
   intro n. induction_wf: (downto 0) n. intro N.
 
   xcf. xpay. hsimpl_credits. admit. math.
@@ -49,8 +47,6 @@ Lemma f_spec2 :
         POST (fun (tt:unit) => \[])).
 Proof.
   xspecO_cost (fun n => 2^(n+1) - 1) on (fun n => 0 <= n).
-  intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'. revert n N.
-
   intro n. induction_wf: (downto 0) n. intro N.
 
   refine_credits. xcf. xpay.
@@ -83,12 +79,9 @@ Proof.
   assert (0 <= a) as Ha by (prove_later facts).
 
   xspecO_cost (fun n => a * 2^n + b) on (fun n => 0 <= n).
-
-  intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'. revert n N.
-
   intro n. induction_wf: (downto 0) n. intro N.
-  refine_credits. xcf. xpay.
 
+  refine_credits. xcf. xpay.
   xlet as cond. xret. xpull. intro Hcond.
   xif.
   { xret. hsimpl. }

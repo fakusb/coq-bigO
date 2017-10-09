@@ -731,10 +731,7 @@ Proof.
   assert (b_nonneg : 0 <= b) by (prove_later facts).
 
   xspecO_cost (fun n => a * n + b) on (fun n => 0 <= n).
-  intros cost' E n N. rewrite E; [| solve [auto]]; clear E cost'.
-  revert N. (* ehh *)
-
-  induction_wf: (int_downto_wf 0) n. intro N.
+  intro n. induction_wf: (int_downto_wf 0) n. intro N.
 
   xcf. refine_credits.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.

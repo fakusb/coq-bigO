@@ -262,11 +262,22 @@ Proof.
     exists 0. apply filter_universe_alt. intros. rewrite Z.abs_0. math_lia. auto. (* xx *)
 Qed.
 
+Ltac rewrite_cost_domain :=
+  let cost' := fresh "cost'" in
+  let E := fresh "E" in
+  pose ltac_mark;
+  intros cost' E;
+  repeat intro;
+  (rewrite E; [| solve [auto]]);
+  clear E cost';
+  gen_until_mark.
+
 Tactic Notation "xspecO_cost" uconstr(cost_fun) "on" uconstr(domain) :=
   match goal with
   | |- specO ?A _ _ _ =>
     apply (@xspecO_cost_on_domain A _ domain _ _ cost_fun)
-  end.
+  end;
+  try rewrite_cost_domain.
 
 Ltac dominated_cleanup_cost :=
   first [
