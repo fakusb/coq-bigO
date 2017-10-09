@@ -313,6 +313,27 @@ Proof.
   apply H.
 Qed.
 
+Lemma limit_pow_r :
+  forall (A : filterType) f p,
+  0 < p ->
+  limit A Z_filterType f ->
+  limit A Z_filterType (fun n => p ^ (f n)).
+Proof.
+  introv Hp L.
+  rewrite limitP in *.
+  intros P UP.
+  forwards H: L (fun y => P (p ^ y)).
+  { rewrite ZP_ultimately with (cond := fun x => 1 <= x) in UP; swap 1 2.
+    { apply ultimately_ge_Z. }
+
+    rewrite ZP in *.
+    destruct UP as (n0 & N0 & HP).
+    exists n0. intros. apply HP.
+    admit. (* TODO *)
+  }
+  apply H.
+Qed.
+
 (******************************************************************************)
 (* Exports lemmas in a [limit] hint base. *)
 
@@ -328,6 +349,7 @@ Hint Resolve Zshift_limit : limit.
 Hint Resolve limit_liftl : limit.
 Hint Resolve limit_liftr : limit.
 Hint Resolve limit_pow_l : limit.
+Hint Resolve limit_pow_r : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(a, _) => @?f a)) =>
   apply limit_lift1 : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(_, b) => @?f b)) =>
