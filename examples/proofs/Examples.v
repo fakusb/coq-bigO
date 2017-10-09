@@ -392,7 +392,6 @@ Proof.
     eapply ultimately_monotonic_of_monotonic.
     monotonic.
   }
-  { apply dominated_cst_limit. (* limit. *) (* TODO *) admit. }
 Qed.
 
 (**

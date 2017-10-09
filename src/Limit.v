@@ -292,6 +292,31 @@ Proof.
   simpl. intros. eauto.
 Qed.
 
+Lemma limit_pow_l :
+  forall (A : filterType) f p,
+  0 < p ->
+  limit A Z_filterType f ->
+  limit A Z_filterType (fun n => (f n) ^ p).
+Proof.
+  introv Hp L. rewrite limitP in *.
+  (* assert (Ufpos: ultimately A (fun n => 0 < f n)). *)
+  (* { apply L. apply (filter_closed_under_inclusion (ultimately_ge_Z 1)). *)
+  (*   auto with zarith. } *)
+
+  intros P UP.
+  forwards H: L (fun y => P (y ^ p)).
+  { rewrite ZP_ultimately with (cond := fun x => 0 < x) in UP; swap 1 2.
+    { apply (filter_closed_under_inclusion (ultimately_ge_Z 1)). auto with zarith. }
+
+    destruct UP as (n0 & N0 & HP).
+    rewrite ZP. exists (Z.max n0 1).
+    intros n N. apply HP.
+    rewrite <-(Z.pow_1_r n0).
+    apply Z.pow_le_mono; lia.
+  }
+  apply H.
+Qed.
+
 (******************************************************************************)
 (* Exports lemmas in a [limit] hint base. *)
 
@@ -306,6 +331,7 @@ Hint Resolve limit_max : limit.
 Hint Resolve Zshift_limit : limit.
 Hint Resolve limit_liftl : limit.
 Hint Resolve limit_liftr : limit.
+Hint Resolve limit_pow_l : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(a, _) => @?f a)) =>
   apply limit_lift1 : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(_, b) => @?f b)) =>
