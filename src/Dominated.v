@@ -1059,3 +1059,48 @@ Proof.
   forwards D: dominated_big_sum_cst_bound c lo.
   applys~ dominated_comp_eq D lim_h.
 Qed.
+
+(*----------------------------------------------------------------------------*)
+(** Some automation *)
+
+Hint Resolve dominated_reflexive : dominated.
+Hint Extern 1 (dominated _ (fun _ => ?a) (fun _ => ?b)) =>
+  apply dominated_cst : dominated.
+Hint Resolve dominated_cst_id : dominated.
+Hint Resolve dominated_cst_limit : dominated.
+Hint Resolve dominated_mul : dominated.
+Hint Resolve dominated_mul_cst : dominated.
+Hint Resolve dominated_mul_cst_l : dominated.
+Hint Resolve dominated_mul_cst_r : dominated.
+Hint Resolve dominated_max : dominated.
+Hint Resolve dominated_max_distr : dominated.
+Hint Resolve dominated_max_sum : dominated.
+Hint Resolve dominated_sum_max : dominated.
+Hint Resolve dominated_sum : dominated.
+Hint Resolve dominated_sum_distr : dominated.
+Hint Extern 2 (dominated _ (fun _ => Z.sub _ _) _) =>
+  apply dominated_sum_distr : dominated.
+Hint Resolve dominated_shift : dominated.
+
+Hint Extern 100 => try (intros; omega) : dominated_sidegoals.
+
+Hint Extern 999 (dominated _ _ _) => shelve : dominated_fallback.
+
+(* TODO: make the search depth customisable *)
+
+Ltac dominated :=
+  unshelve (auto 20 with
+                zarith typeclass_instances
+                ultimately_greater
+                limit
+                dominated
+                dominated_sidegoals
+                dominated_fallback).
+
+Ltac dominated_trysolve :=
+  auto 20 with
+    zarith typeclass_instances
+    ultimately_greater
+    limit
+    dominated
+    dominated_sidegoals.

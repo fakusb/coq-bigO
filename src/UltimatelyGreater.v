@@ -139,7 +139,7 @@ Hint Extern 2 (ultimately Z_filterType (fun _ => _ <= cumul _ _ _)) =>
   simple apply ultimately_ge_cumul_Z.
 Hint Resolve filter_universe_alt | 50 : ultimately_greater.
 
-Hint Extern 100 => try (intros; omega) : ultimately_greater.
+Hint Extern 100 => try (intros; omega) : ultimately_greater_sidegoals.
 
 Hint Extern 999 (ultimately _ (fun _ => _ <= _)) => shelve : ultimately_greater_fallback.
 
@@ -152,9 +152,14 @@ Hint Extern 999 (ultimately _ (fun _ => _ <= _)) => shelve : ultimately_greater_
    progress by applying the lemmas, and returning the side-goals it could not
    prove to the user. *)
 Ltac ultimately_greater :=
-  unshelve (auto with zarith ultimately_greater ultimately_greater_fallback).
+  unshelve (auto with zarith
+                      ultimately_greater
+                      ultimately_greater_sidegoals
+                      ultimately_greater_fallback).
 
 (* This variant follows [auto]'s standard behavior. It does not modifies the
    goal if it could not prove it entirely. *)
 Ltac ultimately_greater_trysolve :=
-  auto with zarith ultimately_greater.
+  auto with zarith
+            ultimately_greater
+            ultimately_greater_sidegoals.

@@ -35,7 +35,7 @@ Proof.
 
   admit.
   monotonic.
-  admit.
+  dominated. admit. admit. (* limit : TODO *)
 Qed.
 
 Lemma f_spec2 :

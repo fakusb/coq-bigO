@@ -85,7 +85,7 @@ Proof.
      the bound given in the specification ([fun tt => 1]). *)
   { math. }
   { monotonic. }
-  { apply dominated_cst. math. }
+  { dominated. }
 Qed.
 
 Hint Extern 1 (RegisterSpec tick3) => Provide (provide_specO tick3_spec).
@@ -119,7 +119,7 @@ Proof.
   cleanup_cost.
 
   monotonic.
-  apply dominated_cst. math.
+  dominated.
 Qed.
 
 (* [tick31]: Using a big-O spec for an auxiliary function. *)
@@ -140,7 +140,7 @@ Proof.
   cleanup_cost.
   monotonic.
 
-  apply dominated_cst. math.
+  dominated.
 Qed.
 
 (* [loop1 n]: loops from 1 to n, calls [tick (); tick ()] at each iteration.
@@ -173,16 +173,14 @@ Proof.
 
   { monotonic. }
 
-  { apply dominated_sum_distr.
-    { rewrite dominated_big_sum_bound.
-      { eapply dominated_eq_l.
-        eapply dominated_mul_cst_l.
-        apply dominated_reflexive.
-        eauto with zarith. }
-      ultimately_greater.
-      apply filter_universe_alt. monotonic.
-    }
-    { apply dominated_cst_id. }
+  { dominated.
+    rewrite dominated_big_sum_bound.
+    { eapply dominated_eq_l.
+      eapply dominated_mul_cst_l.
+      apply dominated_reflexive.
+      eauto with zarith. }
+    ultimately_greater.
+    apply filter_universe_alt. monotonic.
   }
 Qed.
 
@@ -225,10 +223,7 @@ Proof.
 
   cleanup_cost.
   monotonic.
-
-  { apply dominated_sum_distr.
-    - reflexivity.
-    - apply dominated_cst_id. }
+  dominated.
 Qed.
 
 (* In the previous example, we got away with using [reflexivity] to instantiate
@@ -273,10 +268,7 @@ Proof.
 
   cleanup_cost.
   monotonic.
-
-  apply dominated_sum_distr.
-  - reflexivity.
-  - apply dominated_cst_id.
+  dominated.
 Qed.
 
 
@@ -322,10 +314,7 @@ Proof.
   cleanup_cost.
 
   monotonic.
-
-  apply dominated_sum_distr.
-  { apply dominated_reflexive. }
-  { apply dominated_cst_id. }
+  dominated.
 Qed.
 
 (* [if1]: Similarly, a program of the form [if cond then ... else ...], where
@@ -356,10 +345,7 @@ Proof.
 
   cleanup_cost.
   monotonic.
-
-  apply dominated_sum_distr.
-  - apply~ dominated_max_distr; reflexivity.
-  - apply dominated_cst_id.
+  dominated.
 Qed.
 
 (* [looploop]: nested for-loops *)
@@ -393,7 +379,7 @@ Proof.
   cleanup_cost.
   monotonic.
 
-  apply dominated_sum_distr.
+  dominated.
   { rewrite dominated_big_sum_bound.
     { apply dominated_mul. reflexivity.
       rewrite dominated_big_sum_bound. reflexivity.
@@ -589,12 +575,7 @@ Proof.
 
   math_lia.
   monotonic.
-
-  apply dominated_sum_distr.
-  { apply dominated_max_distr.
-    apply dominated_cst_id.
-    apply dominated_reflexive. }
-  { apply dominated_cst_id. }
+  dominated.
 Qed.
 
 Require Import EvarsFacts.
@@ -627,12 +608,7 @@ Proof.
 
   math_nia.
   monotonic.
-  { apply dominated_sum_distr.
-  - apply dominated_mul_cst_l.
-    apply dominated_max_distr. apply dominated_cst_id.
-    reflexivity.
-  - apply dominated_cst_id. }
-
+  dominated.
   close_facts.
 
   (* XX *)
@@ -665,12 +641,7 @@ Proof.
 
   math_nia.
   monotonic.
-  { apply dominated_sum_distr.
-  - apply dominated_mul_cst_l.
-    apply dominated_max_distr. apply dominated_cst_id.
-    reflexivity.
-  - apply dominated_cst_id. }
-
+  dominated.
   intros. close_facts.
 
   simpl. exists 1 1. splits; math_nia.
@@ -704,11 +675,7 @@ Proof.
 
   math_nia.
   monotonic.
-  { apply dominated_max_distr.
-    - apply dominated_cst_id.
-    - apply dominated_sum_distr. apply dominated_mul_cst_l. reflexivity.
-      apply dominated_cst_id. }
-
+  dominated.
   intros. close_facts.
 
   simpl. exists 1 1. splits.
@@ -742,9 +709,7 @@ Proof.
 
   math_nia.
   monotonic.
-  { apply dominated_sum_distr. apply dominated_mul_cst_l. reflexivity.
-    apply dominated_cst_id. }
-
+  dominated.
   intros. close_facts.
 
   simpl. exists 1 1. splits.

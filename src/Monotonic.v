@@ -221,7 +221,7 @@ Hint Extern 0 (preorder _) =>
         | apply preorder_of_PreOrder; typeclass ]
   : monotonic.
 
-Hint Extern 100 => try (intros; omega) : monotonic.
+Hint Extern 100 => try (intros; omega) : monotonic_sidegoals.
 
 Hint Extern 999 (monotonic _ _ _) => shelve : monotonic_fallback.
 Hint Extern 999 (preorder _) => shelve : monotonic_fallback.
@@ -231,10 +231,15 @@ Hint Extern 999 (preorder _) => shelve : monotonic_fallback.
 (* TODO: make the search depth customisable *)
 
 Ltac monotonic :=
-  unshelve (auto 20 with zarith typeclass_instances monotonic monotonic_fallback).
+  unshelve (auto 20 with zarith typeclass_instances
+                         monotonic
+                         monotonic_sidegoals
+                         monotonic_fallback).
 
 Ltac monotonic_trysolve :=
-  auto 20 with zarith typeclass_instances monotonic.
+  auto 20 with zarith typeclass_instances
+               monotonic_sidegoals
+               monotonic.
 
 (* TODO: extend monotonic_Z to handle monotonic (le_after ..) .., and ultimately
    (fun a => monotonic (le_after a ..) ..) *)
