@@ -16,6 +16,18 @@ Require Import EvarsFacts.
 (* Load the CF definitions. *)
 Require Import Exponential_ml.
 
+(* This is kind of ad-hoc... *)
+Lemma pow2_sub_1_nonneg :
+  forall x,
+  0 <= x ->
+  0 <= 2^x - 1.
+Proof.
+  intros. apply Z.le_add_le_sub_r.
+  auto with zarith.
+Qed.
+
+Hint Resolve pow2_sub_1_nonneg : zarith.
+
 Lemma f_spec :
   specZ [cost \in_O (fun n => 2 ^ n)]
     (forall (n: int),
@@ -27,7 +39,8 @@ Proof.
   xspecO_cost (fun n => 2^(n+1) - 1) on (fun n => 0 <= n).
   intro n. induction_wf: (downto 0) n. intro N.
 
-  xcf. xpay. hsimpl_credits. admit. math.
+  xcf. xpay. hsimpl_credits.
+  (* math_debug. auto with zarith. *) (* XXX *) admit. math.
   xrets. xif.
   { xret~. }
   { xapp; try math. hsimpl_credits. admit. admit.
@@ -55,13 +68,12 @@ Proof.
   "0"... *)
   xret. intro H. xif.
   { xret~. }
-  { xapp; try math. admit. xapp; try math. admit. }
+  { xapp; try math. xapp; try math. }
 
   clean_max0. ring_simplify. ring_simplify ((n-1)+1).
-  rewrite max0_eq; swap 1 2. admit.
-  ring_simplify. rewrite <-pow2_succ. reflexivity. math.
+  rewrite <-pow2_succ. math. math.
 
-  admit.
+  (* ultimately_greater. *) auto with zarith.
   monotonic.
   dominated.
 Qed.
@@ -84,11 +96,12 @@ Proof.
   xlet as cond. xret. xpull. intro Hcond.
   xif.
   { xret. hsimpl. }
-  { xapp; try math. generalize n N; prove_later facts.
+  { xguard C.
+    xapp; try math. generalize n N C; prove_later facts.
     xapp; try math. apply facts; eauto. }
 
   clean_max0. ring_simplify.
-  generalize n N. prove_later facts.
+  generalize n N; prove_later facts.
 
   prove_later facts.
   monotonic.
@@ -98,10 +111,12 @@ Proof.
 
   exists 2 (-1).
   splits; try math.
-  - intros. ring_simplify. admit.
-  - intros n N. ring_simplify.
-    rewrite max0_eq; swap 1 2.
-    { ring_simplify. admit. }
-    ring_simplify. admit.
-  - intros x X. ring_simplify. admit.
+  - intros. ring_simplify. rewrite <-pow2_succ. auto with zarith. math.
+  - intros n N. cases_if; ring_simplify.
+    { rewrite max0_eq; swap 1 2.
+      rewrite <-pow2_succ. ring_simplify ((n-1)+1).
+      ring_simplify. auto with zarith. math.
+      rewrite <-pow2_succ. ring_simplify ((n-1)+1). math. math. }
+    { subst n. auto with zarith. }
+  - intros x X. rewrite <-pow2_succ; try ring_simplify; auto with zarith.
 Qed.
