@@ -7,6 +7,7 @@ Unset Printing Implicit Defensive.
 Require Import Filter.
 Require Import ZArith.
 Require Import Psatz.
+Require Import LibZExtra.
 Local Open Scope Z_scope.
 
 (* A notion of limit, or convergence, or divergence -- it all depends on which
@@ -292,46 +293,77 @@ Proof.
   simpl. intros. eauto.
 Qed.
 
-Lemma limit_pow_l :
+Lemma limit_pow_l : forall p,
+  0 < p ->
+  limit Z_filterType Z_filterType (fun n => n ^ p).
+Proof.
+  introv Hp.
+  rewrite limitP. intros P UP.
+  rewrite ZP_ultimately with (cond := fun n => 1 <= n) in UP
+    by (apply ultimately_ge_Z).
+  destruct UP as (n0 & N0 & HP). rewrite ZP.
+  exists n0. intros n N. apply HP.
+  rewrite <-(Z.pow_1_r n0).
+  apply Z.pow_le_mono; omega.
+Qed.
+
+Lemma limit_pow_r : forall p,
+  0 < p ->
+  limit Z_filterType Z_filterType (fun n => p ^ n).
+Proof.
+  introv Hp.
+  rewrite limitP. intros P UP.
+  rewrite ZP_ultimately with (cond := fun n => 1 <= n) in UP
+    by (apply ultimately_ge_Z).
+  destruct UP as (n0 & N0 & HP). rewrite ZP.
+  exists n0. intros n N. apply HP.
+  admit. (* TODO *)
+Qed.
+
+(* These variants combine [limit_comp] and [limit_pow_l]/[limit_pow_r]. This is
+   useful in particular when added to an auto hint base. *)
+
+Lemma limit_pow_l_comp :
   forall (A : filterType) f p,
   0 < p ->
   limit A Z_filterType f ->
   limit A Z_filterType (fun n => (f n) ^ p).
 Proof.
-  introv Hp L. rewrite limitP in *.
-  intros P UP.
-  forwards H: L (fun y => P (y ^ p)).
-  { rewrite ZP_ultimately with (cond := fun x => 0 < x) in UP; swap 1 2.
-    { apply (filter_closed_under_inclusion (ultimately_ge_Z 1)). auto with zarith. }
-
-    destruct UP as (n0 & N0 & HP).
-    rewrite ZP. exists (Z.max n0 1).
-    intros n N. apply HP.
-    rewrite <-(Z.pow_1_r n0).
-    apply Z.pow_le_mono; lia.
-  }
-  apply H.
+  introv Hp L. apply limit_comp with (g := fun n => n ^ p).
+  assumption. apply limit_pow_l. assumption.
 Qed.
 
-Lemma limit_pow_r :
+Lemma limit_pow_r_comp :
   forall (A : filterType) f p,
   0 < p ->
   limit A Z_filterType f ->
   limit A Z_filterType (fun n => p ^ (f n)).
 Proof.
-  introv Hp L.
-  rewrite limitP in *.
-  intros P UP.
-  forwards H: L (fun y => P (p ^ y)).
-  { rewrite ZP_ultimately with (cond := fun x => 1 <= x) in UP; swap 1 2.
-    { apply ultimately_ge_Z. }
+  introv Hp L. apply limit_comp with (g := fun n => p ^ n).
+  assumption. apply limit_pow_r. assumption.
+Qed.
 
-    rewrite ZP in *.
-    destruct UP as (n0 & N0 & HP).
-    exists n0. intros. apply HP.
-    admit. (* TODO *)
-  }
-  apply H.
+Lemma limit_log2 :
+  limit Z_filterType Z_filterType Z.log2.
+Proof.
+  introv L.
+  rewrite ZP_ultimately with (cond := fun n => 1 <= n) in L
+    by apply ultimately_ge_Z.
+  destruct L as (n0 & N0 & HP).
+  rewrite imageP. rewrite ZP. exists (2 ^ n0). intros n N.
+  apply HP. rewrite <-Z.log2_le_mono; [| exact N].
+  apply Z.log2_le_pow2; auto with zarith.
+  cut (1 <= 2 ^ n0); auto with zarith.
+Qed.
+
+(* Similarly, this lemma is mostly useful in combination with auto. *)
+
+Lemma limit_log2_comp :
+  forall (A : filterType) f,
+  limit A Z_filterType f ->
+  limit A Z_filterType (fun n => Z.log2 (f n)).
+Proof.
+  introv L. apply limit_comp. assumption. apply limit_log2.
 Qed.
 
 (******************************************************************************)
@@ -348,8 +380,9 @@ Hint Resolve limit_max : limit.
 Hint Resolve Zshift_limit : limit.
 Hint Resolve limit_liftl : limit.
 Hint Resolve limit_liftr : limit.
-Hint Resolve limit_pow_l : limit.
-Hint Resolve limit_pow_r : limit.
+Hint Resolve limit_pow_l_comp : limit.
+Hint Resolve limit_pow_r_comp : limit.
+Hint Resolve limit_log2_comp : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(a, _) => @?f a)) =>
   apply limit_lift1 : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(_, b) => @?f b)) =>
