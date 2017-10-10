@@ -544,6 +544,21 @@ Proof.
   introv. rewrite star_neutral_l. auto.
 Qed.
 
+Lemma hsimpl_assoc_right_1 : forall H H1 H2 H3,
+  H ==> H1 \* H2 \* H3 ->
+  H ==> (H1 \* H2) \* H3.
+Proof. admit. (* ok *) Qed.
+
+Lemma hsimpl_assoc_right_2 : forall H H1 H2 H3,
+  H ==> H2 \* H1 \* H3 ->
+  H ==> (H1 \* H2) \* H3.
+Proof. admit. Qed.
+
+Lemma hsimpl_assoc_right_3 : forall H H1 H2 H3 H4,
+  H ==> H1 \* H2 \* H3 \* H4 ->
+  H ==> (H1 \* H2 \* H3) \* H4.
+Proof. admit. Qed.
+
 (* \$_nat ? *)
 Ltac hsimpl_inst_credits_cost_setup tt :=
   match goal with
@@ -556,6 +571,11 @@ Ltac hsimpl_inst_credits_cost_setup tt :=
   | |- _ ==> _ \* \$ _ => apply hsimpl_starify
   | |- _ ==> \$ _ \* _ => apply hsimpl_starify_left
   | |- _ ==> _ \* \$ _ \* _ => idtac
+  (* FIXME? *)
+  | |- _ ==> (_ \* \$ _) \* _ => apply hsimpl_assoc_right_1
+  | |- _ ==> (\$ _ \* _) \* _ => apply hsimpl_assoc_right_2
+  | |- _ ==> (_ \* \$ _ \* _) \* _ => apply hsimpl_assoc_right_3
+  (* *)
   | |- _ ==> _ \* _ => apply intro_zero_credits_right
   end.
 
