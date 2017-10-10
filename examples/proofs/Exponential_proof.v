@@ -66,12 +66,16 @@ Proof.
   (* Using xrets here results in a loss of information in the infered cost
   function; as the xret in the first subcase records "n" as the cost instead of
   "0"... *)
-  xret. intro H. xif.
+  (* xret. intro H. xif. *)
+  (* Unless one uses xif_guard/guard in the first case... *)
+  xrets. xif_guard.
   { xret~. }
   { xapp; try math. xapp; try math. }
 
   clean_max0. ring_simplify. ring_simplify ((n-1)+1).
-  rewrite <-pow2_succ. math. math.
+  case_if.
+  { subst n. reflexivity. }
+  { ring_simplify. rewrite <-pow2_succ. math. math. }
 
   (* ultimately_greater. *) auto with zarith.
   monotonic.
@@ -92,16 +96,17 @@ Proof.
   xspecO_cost (fun n => a * 2^n + b) on (fun n => 0 <= n).
   intro n. induction_wf: (downto 0) n. intro N.
 
-  refine_credits. xcf. xpay.
-  xlet as cond. xret. xpull. intro Hcond.
-  xif.
+  refine_credits. xcf. xpay. xrets.
+  xif_guard.
   { xret. hsimpl. }
-  { xguard C.
-    xapp; try math. generalize n N C; prove_later facts.
+  { xapp; try math. generalize n N C; prove_later facts.
     xapp; try math. apply facts; eauto. }
 
   clean_max0. ring_simplify.
-  generalize n N; prove_later facts.
+  cases_if.
+  { subst n. ring_simplify. prove_later facts. }
+  { ring_simplify. rewrite max0_eq; [| apply~ facts].
+    cut (2 * b + 1 <= b). admit. prove_later facts. }
 
   prove_later facts.
   monotonic.
@@ -112,11 +117,5 @@ Proof.
   exists 2 (-1).
   splits; try math.
   - intros. ring_simplify. rewrite <-pow2_succ. auto with zarith. math.
-  - intros n N. cases_if; ring_simplify.
-    { rewrite max0_eq; swap 1 2.
-      rewrite <-pow2_succ. ring_simplify ((n-1)+1).
-      ring_simplify. auto with zarith. math.
-      rewrite <-pow2_succ. ring_simplify ((n-1)+1). math. math. }
-    { subst n. auto with zarith. }
-  - intros x X. rewrite <-pow2_succ; try ring_simplify; auto with zarith.
+  - intros. ring_simplify. rewrite <-pow2_succ. auto with zarith. math.
 Qed.
