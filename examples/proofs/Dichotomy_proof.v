@@ -34,7 +34,7 @@ Proof.
   sets cost: (fun (n:Z_filterType) => If 0 < n then a * Z.log2 n + b else 1).
   asserts cost_nonneg: (forall x, 0 <= cost x).
   { intro x. subst cost; simpl. case_if; [| math].
-    generalize x C; prove_later facts.
+    rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
   }
   asserts costPpos: (forall n, 0 < n -> cost n = a * Z.log2 n + b).
   { intro n. subst cost; simpl. case_if; math. }
@@ -44,7 +44,8 @@ Proof.
   asserts cost_monotonic: (monotonic Z.le Z.le cost).
   { intros x y H. subst cost; simpl.
     case_if. { case_if; [| exfalso; math]. monotonic. }
-             { case_if; [| math]. generalize y C0; prove_later facts. } }
+             { case_if; [| math]. rewrite <-Z.log2_nonneg.
+               ring_simplify. prove_later facts. } }
 
   xspecO_cost cost.
 
@@ -90,7 +91,8 @@ Proof.
     cases_if_on (isTrue ((j - i) = 1)) as Hn1.
     + rewrite Hn1. assert (H: 1 `/` 2 = 0) by (compute; reflexivity). rewrite H.
       rewrite costPneg with 0 by math. rewrite costPpos with n by math.
-      ring_simplify. assert (Hn': 1 <= n) by math. generalize n Hn'; prove_later facts.
+      ring_simplify. assert (Hn': 1 <= n) by math.
+      rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
     + rewrite costPpos; [| admit]. rewrite costPpos by math.
       assert (H: Z.log2 (j - i `/` 2) = Z.log2 n - 1) by admit. rewrite H.
       ring_simplify. cut (1 <= a). math. prove_later facts.
@@ -103,7 +105,5 @@ Proof.
 
   intros; close_facts.
 
-  simpl.
-  exists 1 2; splits; try math;
-  (intros; rewrite <-Z.log2_nonneg; math).
+  simpl. exists 1 2; math.
 Qed.
