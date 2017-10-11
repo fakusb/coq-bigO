@@ -353,7 +353,6 @@ Proof.
   rewrite imageP. rewrite ZP. exists (2 ^ n0). intros n N.
   apply HP. rewrite <-Z.log2_le_mono; [| exact N].
   apply Z.log2_le_pow2; auto with zarith.
-  cut (1 <= 2 ^ n0); auto with zarith.
 Qed.
 
 (* Similarly, this lemma is mostly useful in combination with auto. *)

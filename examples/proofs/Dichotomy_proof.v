@@ -10,19 +10,19 @@ Require Import Array_proof.
 Require Import Dominated.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
+Require Import LibZExtra.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 Require Import EvarsFacts.
 (* Load the CF definitions. *)
 Require Import Dichotomy_ml.
 
-Ltac ring_simplify' :=
-  hide_evars_then ltac:(fun tt => ring_simplify).
+Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
 Lemma bsearch_spec :
   specZ [cost \in_O (fun n => Z.log2 n)]
     (forall t (xs : list int) (v : int) (i j : int),
-        0 <= i < length xs ->
+        0 <= i <= length xs ->
         0 <= j <= length xs ->
         app bsearch [t v i j]
         PRE (\$ (cost (j - i)) \* t ~> Array xs)
@@ -33,77 +33,63 @@ Proof.
 
   sets cost: (fun (n:Z_filterType) => If 0 < n then a * Z.log2 n + b else 1).
   asserts cost_nonneg: (forall x, 0 <= cost x).
-  { intro x. subst cost; simpl. case_if; [| math].
+  { intro x. subst cost; simpl. case_if~.
     rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
   }
+  (* Could be generated automatically... *)
   asserts costPpos: (forall n, 0 < n -> cost n = a * Z.log2 n + b).
-  { intro n. subst cost; simpl. case_if; math. }
+  { intro n. subst cost; simpl. case_if~. }
   asserts costPneg: (forall n, n <= 0 -> cost n = 1).
-  { intro n. subst cost; simpl. case_if; math. }
+  { intro n. subst cost; simpl. case_if~. }
 
   asserts cost_monotonic: (monotonic Z.le Z.le cost).
   { intros x y H. subst cost; simpl.
-    case_if. { case_if; [| exfalso; math]. monotonic. }
-             { case_if; [| math]. rewrite <-Z.log2_nonneg.
-               ring_simplify. prove_later facts. } }
+    case_if; case_if~.
+    { monotonic. }
+    { rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts. } }
 
-  xspecO_cost cost.
 
-  introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
-  intros i j Hn Hi Hj.
+  { xspecO_cost cost.
 
-  refine_credits. xcf. xpay.
-  xif_guard as C. { xret~. }
-  assert (C' : i < j) by math. clear C.
-  xrets. xapps. { apply int_index_prove. admit. admit. }
-  xrets. xif. { xret~. }
-  xapps. { apply int_index_prove. admit. admit. }
-  xif.
-  { xapp; swap 1 2.
-    - ring_simplify'. reflexivity.
-    - admit.
-    - math.
-    - admit. }
-  { xapp; swap 1 2.
-    - transitivity ((j - i) - (j - i `/` 2) - 1); [| math].
-      reflexivity.
-    - admit.
-    - admit.
-    - math. }
+    introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
+    intros i j Hn Hi Hj.
 
-  clean_max0. cases_if; ring_simplify.
-  { rewrite costPneg; math. }
-  { assert (C' : i < j) by math. clear C.
-    rewrite Z.max_l; swap 1 2.
-    { apply cost_monotonic. sets half: (j - i `/` 2).
-      case_if_on (Z.odd (j - i)) as Hsplit.
-      - (* both partitions are of equal size *)
-        apply Z.eq_le_incl.
-        rewrite Zodd_quot2 with (n := (j - i)); try math. ring_simplify.
-        subst half. rewrite <-Zquot2_quot. math.
-        apply~ Zodd_bool_iff.
-      - (* the first partition is bigger (by one) *)
-        rewrite Zeven_quot2 with (n := (j - i)).
-        subst half. rewrite <-Zquot2_quot. math.
-        apply Zeven_bool_iff. rewrite Zeven.Zeven_odd_bool.
-        rewrite Hsplit. reflexivity.
+    refine_credits. xcf. xpay.
+    (* xif_ifcost / xif_maxcost / xif = celui qui sert le plus souvent *)
+    xif_guard as C. { xret~. }
+    (* rewrite nle_as_gt in C. *) asserts~ C' : (i < j). clear C.
+    xret ;=> Hm. assert (Hmbound: i <= m < j) by admit.
+    xapps. { apply~ int_index_prove. }
+    xrets. xif. { xret~. }
+    xapps. { apply~ int_index_prove. }
+    xif.
+    { xapp~ (m - i). subst m.
+      (* tactique xcost? *)
+      match goal with |- cost ?x <= _ => ring_simplify x end.
+      reflexivity. }
+    { (* forwards: IH __ (m+1) j. Focus 2. reflexivity. *)
+      xapp~ (j - (m+1)). subst m. reflexivity. }
+
+    clean_max0. cases_if; ring_simplify.
+    { rewrite~ costPneg. }
+    { rewrite Z.max_l; swap 1 2.
+      { apply cost_monotonic. forwards~: Zquot_mul_2 (j-i). }
+      tests Hn1: (j - i = 1).
+      + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
+        rewrite~ (costPneg 0). rewrite~ (costPpos n).
+        rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
+      + rewrite costPpos; [| admit]. rewrite~ costPpos.
+        rewrite <-Hn. rewrite~ <-(@Zlog2_step n).
+        ring_simplify. cuts~: (1 <= a). prove_later facts.
     }
-    cases_if_on (isTrue ((j - i) = 1)) as Hn1.
-    + rewrite Hn1. assert (H: 1 `/` 2 = 0) by (compute; reflexivity). rewrite H.
-      rewrite costPneg with 0 by math. rewrite costPpos with n by math.
-      ring_simplify. assert (Hn': 1 <= n) by math.
-      rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
-    + rewrite costPpos; [| admit]. rewrite costPpos by math.
-      assert (H: Z.log2 (j - i `/` 2) = Z.log2 n - 1) by admit. rewrite H.
-      ring_simplify. cut (1 <= a). math. prove_later facts.
+
+    assumption. assumption.
+    { unfold cost. rewrite dominated_ultimately_eq; swap 1 2.
+      rewrite ZP. exists 1. intros. cases_if~. reflexivity.
+      apply dominated_sum_distr; dominated. (* FIXME; dominated alone should work *)
+    }
   }
 
-  assumption. assumption.
-  { unfold cost. rewrite dominated_ultimately_eq; swap 1 2.
-    rewrite ZP. exists 1. intros. cases_if; [| exfalso; math]. reflexivity.
-    apply dominated_sum_distr; dominated. (* FIXME; dominated alone should work *) }
-
   intros; close_facts.
-
-  simpl. exists 1 2; math.
+  simpl. exists~ 1 2.
 Qed.

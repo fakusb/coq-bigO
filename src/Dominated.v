@@ -466,7 +466,7 @@ Proof.
   forwards: Z.log2_nonneg k.
   destruct (Z.neg_nonneg_cases (f a)) as [fneg | fpos].
   - (* f a < 0 => Z.log2 (f a) = 0 *)
-    rewrite Z.log2_nonpos. nia. lia.
+    rewrite Z.log2_nonpos. rewrite Z.abs_0. nia. lia.
   - { (* 0 <= f a *)
       asserts gpos: (0 <= g a). nia. (* 0 <= g a *)
 

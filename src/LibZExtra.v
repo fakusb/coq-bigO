@@ -1,3 +1,6 @@
+Set Implicit Arguments.
+Require Import TLC.LibTactics.
+Require Import TLC.LibInt.
 Require Import ZArith.
 Open Scope Z_scope.
 Require Import Psatz.
@@ -24,3 +27,25 @@ Lemma Zmax_rub : forall a b c,
 Proof. intros. lia. Qed.
 
 Hint Resolve Zmax_rub : zarith.
+
+Lemma Zquot_mul_2 : forall x,
+  0 <= x ->
+  x - 1 <= 2 * (x ÷ 2) <= x.
+Proof.
+  intros x Hx. rewrite <-Zquot2_quot. sets half: (Z.quot2 x).
+  cases_if_on (Z.odd x) as H.
+  - rewrite (Zodd_quot2 x); subst half; try math. apply~ Zodd_bool_iff.
+  - rewrite (Zeven_quot2 x); subst half; try math. apply~ Zeven_bool_iff.
+    rewrite Zeven.Zeven_odd_bool. rewrite H; reflexivity.
+Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* Base 2 logarithm. *)
+
+Lemma Zlog2_step : forall x,
+  2 <= x ->
+  1 + Z.log2 (x÷2) = Z.log2 x.
+Proof.
+  admit. (* TODO: prove from the log2_step in LibNatExtra? *)
+Qed.
