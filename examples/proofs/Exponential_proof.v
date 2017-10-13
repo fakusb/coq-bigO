@@ -28,6 +28,8 @@ Qed.
 
 Hint Resolve pow2_sub_1_nonneg : zarith.
 
+Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
+
 Lemma f_spec :
   specZ [cost \in_O (fun n => 2 ^ n)]
     (forall (n: int),
@@ -43,8 +45,8 @@ Proof.
   (* math_debug. auto with zarith. *) (* XXX *) admit. math.
   xrets. xif.
   { xret~. }
-  { xapp; try math. hsimpl_credits. admit. admit.
-    xapp; try math. hsimpl_credits. admit. admit. }
+  { xapp~. hsimpl_credits. admit. admit.
+    xapp~. hsimpl_credits. admit. admit. }
 
   admit.
   monotonic.
@@ -70,12 +72,12 @@ Proof.
   (* Unless one uses xif_guard/guard in the first case... *)
   xrets. xif_guard.
   { xret~. }
-  { xapp; try math. xapp; try math. }
+  { xapp~. xapp~. }
 
   clean_max0. ring_simplify. ring_simplify ((n-1)+1).
   case_if.
   { subst n. reflexivity. }
-  { ring_simplify. rewrite <-pow2_succ. math. math. }
+  { ring_simplify. rewrite~ <-pow2_succ. }
 
   (* ultimately_greater. *) auto with zarith.
   monotonic.
@@ -93,29 +95,34 @@ Proof.
   pose_facts_evars facts a b.
   assert (0 <= a) as Ha by (prove_later facts).
 
-  xspecO_cost (fun n => a * 2^n + b) on (fun n => 0 <= n).
+  sets cost: (fun (n:Z_filterType) => a * 2^n + b).
+  asserts cost_nonneg: (forall n, 0 <= n -> 0 <= cost n).
+  { intros. unfold cost. (* rewrite~ <-Z.pow_pos_nonneg. *) (* TODO *)
+    asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
+    ring_simplify. prove_later facts. }
+
+  xspecO_cost cost on (fun n => 0 <= n).
   intro n. induction_wf: (downto 0) n. intro N.
 
   refine_credits. xcf. xpay. xrets.
   xif_guard.
   { xret. hsimpl. }
-  { xapp; try math. generalize n N C; prove_later facts.
-    xapp; try math. apply facts; eauto. }
+  { xapp~. xapp~. }
 
   clean_max0. ring_simplify.
-  cases_if.
-  { subst n. ring_simplify. prove_later facts. }
-  { ring_simplify. rewrite max0_eq; [| apply~ facts].
-    cut (2 * b + 1 <= b). admit. prove_later facts. }
+  cases_if; ring_simplify.
+  { subst n. subst cost. ring_simplify. prove_later facts. }
+  { rewrite~ max0_eq. unfold cost.
+    transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
+    rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
+    math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
+    prove_later facts. }
 
-  prove_later facts.
-  monotonic.
-  dominated.
+  apply cost_nonneg.
+  unfold cost. monotonic.
+  unfold cost. dominated.
 
   intros; close_facts.
 
-  exists 2 (-1).
-  splits; try math.
-  - intros. ring_simplify. rewrite <-pow2_succ. auto with zarith. math.
-  - intros. ring_simplify. rewrite <-pow2_succ. auto with zarith. math.
+  simpl. exists~ 2 (-1).
 Qed.
