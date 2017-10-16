@@ -714,3 +714,54 @@ Proof.
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
 Qed.
+
+(* TEMPORARY: this is slightly ad-hoc *)
+Ltac xspecO_evar_cost facts cost_name domain :=
+  match goal with
+  | |- specO ?A _ _ _ =>
+    pose_facts_evars facts cost_name;
+    [ let Hnonneg := fresh "cost_nonneg" in
+      assert (forall (x : A), domain x -> 0 <= cost_name x)
+        as Hnonneg
+        by (simpl; prove_later facts);
+      simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
+      xspecO_cost cost_name on domain;
+      [ | apply Hnonneg | prove_later facts | prove_later facts ]
+    | ..]
+  end.
+
+Lemma rec1_spec6 :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+         0 <= n ->
+         app rec1 [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n).
+Proof.
+  xspecO_evar_cost facts rec_cost (fun x => 0 <= x).
+  intro n. induction_wf: (int_downto_wf 0) n. intro N.
+
+  xcf. refine_credits.
+  xpay. xif_guard. xret. hsimpl. xapp. math. math.
+
+  clean_max0. cases_if; clean_max0.
+  { ring_simplify. generalize n N. prove_later facts. }
+  { generalize n N C. prove_later facts. }
+
+  intros. close_facts.
+
+  simpl.
+  pose_facts_evars facts a b. exists (fun (n:Z_filterType) => a * n + b).
+  assert (a_nonneg : 0 <= a) by (prove_later facts).
+  splits.
+  { intros. cut (0 <= b). math_nia. prove_later facts. }
+  { monotonic. }
+  { dominated. }
+  { intros. cut (1 <= b). math_nia. prove_later facts. }
+  { intros n N N'. rewrite max0_eq by math_nia.
+    cut (1 <= a). math_nia. prove_later facts. }
+  { intros. close_facts. }
+  { simpl. exists 1 1. splits; math. }
+Qed.
