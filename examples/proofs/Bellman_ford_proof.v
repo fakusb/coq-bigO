@@ -95,10 +95,15 @@ Lemma dominated_cst_limit_2 A B c g :
   dominated (product_filterType A B) (fun '(_,_) => c) g.
 Proof. Admitted.
 
+Definition ZZle (p1 p2 : Z * Z) :=
+  let (x1, y1) := p1 in
+  let (x2, y2) := p2 in
+  1 <= x1 <= x2 /\ 0 <= y1 <= y2.
+
 Lemma bellman_ford2_spec :
   specO
     (product_filterType Z_filterType Z_filterType)
-    eq (* TODO *)
+    ZZle
     (fun cost =>
       forall (inf : int) t (edges : list (int * int * int)%type) (nb_nodes : int),
         (* TODO: smthg about inf? *)
@@ -135,7 +140,7 @@ Proof.
 
   cleanup_cost.
 
-  intros ? ? E. rewrite E. reflexivity.
+  admit. (* TODO monotonic *)
 
   eapply dominated_sum_distr2; swap 1 2.
   apply dominated_cst_limit_2. admit. (* TODO limit *)
@@ -189,13 +194,13 @@ Proof.
   - unfold domain. reflexivity.
 Qed.
 
-Lemma bellman_ford2_spec_derived :
+Lemma bellman_ford2_spec_within :
   specO
     (within_filterType
       (product_filterType Z_filterType Z_filterType)
       domain
       domain_often)
-    eq (* TODO *)
+    ZZle
     (fun cost =>
       forall (inf : int) t (edges : list (int * int * int)%type) (nb_nodes : int),
         1 <= nb_nodes ->
@@ -215,4 +220,41 @@ Proof.
     rewrite Z.abs_eq; [| math_nia].
     rewrite Z.abs_eq; swap 1 2. apply~ Z.pow_nonneg.
     rewrite D. math_nia. }
+Qed.
+
+Lemma bellman_ford2_spec_derived :
+  specO
+    Z_filterType
+    Z.le
+    (fun cost =>
+      forall (inf : int) t (edges : list (int * int * int)%type) (nb_nodes : int),
+        1 <= nb_nodes ->
+        LibListZ.length edges <= nb_nodes ^ 2 ->
+        app bellman_ford2 [inf t nb_nodes]
+        PRE (\$ (cost nb_nodes) \* t ~> Array edges)
+        POST (fun (_: array int) => t ~> Array edges))
+    (fun n => n ^ 3).
+Proof.
+  xspecO_cost (fun n =>
+    let m := If 0 < n then n^2 else 0 in
+    cost bellman_ford2_spec (n, m)).
+  { introv Hnodes Hedges. xapply~ (spec bellman_ford2_spec).
+    hsimpl_credits; swap 1 2;
+    (asserts_rewrite (forall (x y : Z), ge x y <-> y <= x); [math|..]).
+    apply (cost_nonneg bellman_ford2_spec).
+    apply (cost_monotonic bellman_ford2_spec).
+    unfolds ZZle. splits~. cases_if~.
+  }
+  { ultimately_greater. }
+  { eapply monotonic_comp. monotonic.
+    intros x1 x2 H. unfold ZZle. splits~.
+    cases_if~. cases_if~. apply~ Z.pow_le_mono. cases_if~. math_nia. }
+  { eapply dominated_transitive.
+    eapply dominated_ultimately_eq.
+    { exists 1. intros. cases_if~. reflexivity. }
+    eapply dominated_comp_eq.
+    apply (cost_dominated bellman_ford2_spec).
+    Focus 2. intro. reflexivity.
+    Focus 2. intro. reflexivity.
+    limit. }
 Qed.
