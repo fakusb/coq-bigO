@@ -208,40 +208,40 @@ Proof.
     rewrite~ (proj2 D1). intro. rewrite~ (proj1 D1).
 Qed.
 
-Ltac intro_cost_expr_1 A cost_name :=
-  let cost_curry := fresh "cost" in
-  refine (let cost_curry := (fun (x : A) => max0 _) : A -> Z in _);
-  refine (let cost_name := cost_curry in _);
-  subst cost_curry.
+(* body is expected to be a uconstr *)
+Ltac intro_cost_expr_1 A cost_name body :=
+  refine (let cost_name := (fun (x:A) => body) : A -> Z in _).
 
-Ltac intro_cost_expr_2 AB A B cost_name :=
-  let cost_curry := fresh "cost" in
-  refine (let cost_curry := (fun (x : A) (y : B) => max0 _) : A -> B -> Z in _);
-  refine (let cost_name := (fun '(x, y) => cost_curry x y) : AB -> Z in _);
-  subst cost_curry; simpl in cost_name.
+(* body is expected to be a uconstr *)
+Ltac intro_cost_expr_2 A cost_name body :=
+  refine (let cost_name := (fun '(x, y) => body) : A -> Z in _).
 
-Ltac intro_cost_expr A cost_name :=
+(* body is expected to be a uconstr *)
+Ltac intro_cost_expr A cost_name body :=
   let A_sort := constr:(Filter.sort A) in
   let A_sort' := (eval compute in A_sort) in
   (* TODO: handle more arities *)
   match A_sort' with
-  | (?X * ?Y)%type => intro_cost_expr_2 A X Y cost_name
-  | _ => intro_cost_expr_1 A cost_name
+  | (_ * _)%type => intro_cost_expr_2 A cost_name body
+  | _ => intro_cost_expr_1 A cost_name body
   end.
 
-Ltac prove_refined_nonneg :=
+(* TODO: make it more robust *)
+Ltac intro_destructs :=
   let x := fresh "x" in
-  intro x;
-  repeat (destruct x as [x ?]);
-  simpl; apply max0_pos.
+  intro x; repeat (destruct x as [x ?]).
+
+Ltac prove_refined_nonneg :=
+  intro_destructs; simpl; apply max0_pos.
 
 Ltac xspecO_refine_base cost_name :=
   match goal with
     |- specO ?A ?le _ _ =>
     let cost_clean_eq := fresh "cost_clean_eq" in
     let cost_clean := fresh "cost_clean" in
-    intro_cost_expr A cost_name;
-    evar (cost_clean : A -> Z); evar (cost_clean_eq : A -> Z);
+    intro_cost_expr A cost_name uconstr:(max0 _);
+    intro_cost_expr A cost_clean uconstr:(_);
+    intro_cost_expr A cost_clean_eq uconstr:(_);
     eapply (@specO_refine_prove A le cost_name cost_clean_eq cost_clean);
     subst cost_clean cost_clean_eq;
     [ unfold cost_name | | prove_refined_nonneg
@@ -375,12 +375,12 @@ Ltac unfold_cost_lhs :=
 Ltac cleanup_cost :=
   unfold cleanup_cost;
   split; [
-    intro; unfold_cost_lhs;
+    intro_destructs; unfold_cost_lhs;
     simple_cleanup_cost_eq;
     reflexivity
   | eapply dominated_eq_r;
     [ dominated_cleanup_cost |];
-    intro;
+    intro_destructs;
     simple_cleanup_cost;
     reflexivity
   ].
