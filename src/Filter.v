@@ -693,3 +693,133 @@ Proof.
     apply HP1. lia. apply HP2. lia.
     lia. }
 Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
+(* The dual of [ultimately] is [often]. Whereas [ultimately x, P x] intuitively
+   means that, once [x] is large enough, [P x] holds always, [often x, P x]
+   means that it is not the case that, once [x] is large enough, [P x] is false
+   always. In other words, [often x, P x] means that there exist arbitrarily
+   large [x]'s such that [P x] holds. We use the positive formulation as a
+   definition. The fact this is equivalent to the doubly-negated form can be
+   proved by exploiting the principle of excluded middle. *)
+
+Section Often.
+
+Variable A : filterType.
+
+Implicit Type P Q : pred A.
+
+Definition often P :=
+  forall Q, ultimately A Q -> exists a, P a /\ Q a.
+
+Lemma often_characterization:
+  forall P,
+  ~ ultimately A (fun x => ~ P x) <-> often P.
+Proof.
+  unfold often. split.
+
+  (* Left-to-right implication. *) {
+  (* Reductio ad absurdum. If there did not exist [a] that satisfies [P /\ Q],
+     then [~ (P /\ Q)] would hold everywhere. *)
+  intros oftenP Q ultQ.
+  apply not_all_not_ex. intros nPQ.
+  (* Thus, [~ (P /\ Q)] would hold ultimately. *)
+  specialize (filter_universe_alt nPQ). intro nPQ'.
+  (* However, by hypothesis, [Q] holds ultimately. By combining these facts,
+     we find that [~P] holds ultimately. *)
+  assert (ultimately A (fun a => ~ P a)).
+  { eapply filter_closed_under_intersection.
+    - exact ultQ.
+    - exact nPQ'.
+    - eauto. }
+  (* This contradicts the hypothesis [~ ultimately ~ P]. *)
+  tauto. }
+
+  (* Right-to-left implication. *)
+  { intros H unP. destruct (H _ unP). tauto. }
+Qed.
+
+(* TEMPORARY the definition of [often] looks like a [limit] assertion. Is it one?
+   Is there a connection? *)
+
+End Often.
+
+Arguments often : clear implicits.
+
+(* ---------------------------------------------------------------------------- *)
+
+Section Within.
+
+(* If we have a filter on [A], and if [P] is a subset of [A], then [within P] is
+   also a filter on [A]. By definition, a formula [Q] is ultimately holds within
+   [P] if and only if [P -> Q] is ultimately true. *)
+
+(* There is a condition on [P], though. The formula [P] must not forbid `going
+   to the limit' in the sense of [ultimately]. To take a concrete example, if
+   our initial filter is [up_nat], then it would not make sense for [P] to be
+   the property [fun n => n <= k]. If we did choose such a [P], then [within P]
+   would be a filter that says ``when [n] tends towards infinity while remaining
+   under [k]''. This makes no sense.
+
+   What is an appropriate condition on [P]? We could require [ultimately P], but
+   that would be too strong; if ultimately [P] holds, then ultimately [P -> Q]
+   is equivalent to ultimately [Q]. (Another way to see that this is wrong is to
+   take an example where [P] is [fun (i, n) => i <= n]. This property does not
+   hold ultimately, yet it does make sense.)
+
+   An appropriate condition seems to be [~ ultimately ~ P], also known as [often
+   P]. Indeed, if [P] is ultimately false, this means that [P] `forbids going to
+   the limit'. We can see that if [P] is ultimately false, then [P -> Q] is
+   ultimately true, regardless of [Q], and that is not a good thing, as we
+   expect [ultimately (P -> Q)] to imply something about [Q]. Technically, the
+   condition [often P] seems to be exactly what is needed in order to prove that
+   [within P] does not accept an empty [Q]. *)
+
+Variable A : filterType.
+
+Variable P : pred A.
+
+Hypothesis oftenP : often A P.
+
+Definition within : Filter.filter A :=
+  fun Q => ultimately A (fun x => P x -> Q x).
+
+Definition within_filterMixin : Filter.mixin_of A.
+Proof.
+  eapply Filter.Mixin with within.
+  { apply filter_universe_alt. tauto. }
+  { intros Q hPQ. destruct (oftenP hPQ) as [x [? ?]].
+    eauto. }
+  { intros Q1 Q2 Q hPQ1 hPQ2 ?.
+    eapply filter_closed_under_intersection.
+    - exact hPQ1.
+    - exact hPQ2.
+    - eauto. }
+Defined.
+
+Definition within_filterType := FilterType A within_filterMixin.
+
+Goal ultimately within_filterType = within.
+Proof. reflexivity. Qed.
+
+End Within.
+
+Arguments within : clear implicits.
+Arguments within_filterType : clear implicits.
+
+Lemma withinP:
+  forall (A : filterType) (P : A -> Prop),
+  forall O : often A P,
+  forall Q,
+  ultimately (within_filterType A P O) Q =
+  ultimately A (fun x => P x -> Q x).
+Proof. reflexivity. Qed.
+
+Lemma within_finer :
+  forall (A : filterType) P O,
+  finer (ultimately (within_filterType A P O)) (ultimately A) .
+Proof.
+  introv. unfold finer. intros Q. rewrite withinP.
+  filter_closed_under_intersection. tauto.
+Qed.
