@@ -17,7 +17,7 @@ let bellman_ford inf (edges : (int * int * int) list) nb_nodes =
   done;
   d
 
-let bellman_ford2 inf (edges : (int * int * int) array) nb_nodes =
+let bellman_ford2 (inf : int) (edges : (int * int * int) array) (nb_nodes : int) =
   let d = Array.make nb_nodes inf in
   for i = 0 to nb_nodes - 2 do
     for j = 0 to Array.length edges - 1 do

@@ -208,20 +208,47 @@ Proof.
     rewrite~ (proj2 D1). intro. rewrite~ (proj1 D1).
 Qed.
 
+Ltac intro_cost_expr_1 A cost_name :=
+  let cost_curry := fresh "cost" in
+  refine (let cost_curry := (fun (x : A) => max0 _) : A -> Z in _);
+  refine (let cost_name := cost_curry in _);
+  subst cost_curry.
+
+Ltac intro_cost_expr_2 AB A B cost_name :=
+  let cost_curry := fresh "cost" in
+  refine (let cost_curry := (fun (x : A) (y : B) => max0 _) : A -> B -> Z in _);
+  refine (let cost_name := (fun '(x, y) => cost_curry x y) : AB -> Z in _);
+  subst cost_curry; simpl in cost_name.
+
+Ltac intro_cost_expr A cost_name :=
+  let A_sort := constr:(Filter.sort A) in
+  let A_sort' := (eval compute in A_sort) in
+  (* TODO: handle more arities *)
+  match A_sort' with
+  | (?X * ?Y)%type => intro_cost_expr_2 A X Y cost_name
+  | _ => intro_cost_expr_1 A cost_name
+  end.
+
+Ltac prove_refined_nonneg :=
+  let x := fresh "x" in
+  intro x;
+  repeat (destruct x as [x ?]);
+  simpl; apply max0_pos.
+
 Ltac xspecO_refine_base cost_name :=
   match goal with
     |- specO ?A ?le _ _ =>
     let cost_clean_eq := fresh "cost_clean_eq" in
     let cost_clean := fresh "cost_clean" in
-    refine (let cost_name := (fun (x : A) => max0 _ ) : A -> Z in _);
+    intro_cost_expr A cost_name;
     evar (cost_clean : A -> Z); evar (cost_clean_eq : A -> Z);
     eapply (@specO_refine_prove A le cost_name cost_clean_eq cost_clean);
     subst cost_clean cost_clean_eq;
-    [ unfold cost_name | | intro; apply max0_pos
+    [ unfold cost_name | | prove_refined_nonneg
       | subst cost_name | subst cost_name ]
   end.
 
-Tactic Notation "xspecO" constr(cost_name) :=
+Tactic Notation "xspecO" ident(cost_name) :=
   xspecO_refine_base cost_name.
 
 Tactic Notation "xspecO" :=
@@ -917,7 +944,7 @@ Ltac xfor_inv_core I ::=
     tryif is_refine_cost_goal then (
       first [ eapply (@xfor_inv_lemma_pred_refine I)
             | eapply (@xfor_inv_lemma_refine I) ];
-      [ | xtag_pre_post | | intro; xlocal | try reflexivity ]
+      [ | xtag_pre_post | | intro; xlocal | (* try reflexivity *) ]
    ) else (
      first [ apply (@xfor_inv_lemma_pred I)
            | apply (@xfor_inv_lemma I) ];

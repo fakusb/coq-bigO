@@ -167,7 +167,7 @@ Proof.
   { intros i Hi.
     xseq.
     xapp. xapp. }
-  hsimpl. hsimpl.
+  hsimpl. reflexivity. hsimpl.
 
   { cleanup_cost. }
 
@@ -373,8 +373,7 @@ Proof.
       apply Z.le_refl. }
     { hsimpl. }
   }
-  { hsimpl. }
-  { hsimpl. }
+  { hsimpl. } { reflexivity. } { hsimpl. }
 
   cleanup_cost.
   monotonic.
