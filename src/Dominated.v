@@ -216,7 +216,7 @@ Proof.
   applys~ dominated_cst. auto. auto.
 Qed.
 
-Lemma dominated_mul_cst_l c f g :
+Lemma dominated_mul_cst_l_1 c f g :
   dominated A f g ->
   dominated A (fun x => c * (f x)) g.
 Proof.
@@ -225,7 +225,15 @@ Proof.
   auto with zarith.
 Qed.
 
-Lemma dominated_mul_cst_r c f g :
+Lemma dominated_mul_cst_l_2 c f g :
+  dominated A f g ->
+  dominated A (fun x => (f x) * c) g.
+Proof.
+  intros D. eapply dominated_eq_l. applys dominated_mul_cst_l_1 D.
+  intros. rewrite Z.mul_comm. reflexivity.
+Qed.
+
+Lemma dominated_mul_cst_r_1 c f g :
   dominated A f g ->
   c <> 0 ->
   dominated A f (fun x => c * (g x)).
@@ -233,6 +241,16 @@ Proof.
   intros D NZ. rewrite dominated_eq.
   applys dominated_mul_cst 1 D. assumption.
   auto with zarith.
+Qed.
+
+Lemma dominated_mul_cst_r_2 c f g :
+  dominated A f g ->
+  c <> 0 ->
+  dominated A f (fun x => (g x) * c).
+Proof.
+  intros D NZ. rewrite dominated_eq_r; swap 1 2. applys dominated_mul_cst_r_1 D.
+  apply NZ. apply dominated_reflexive. intros. simpl. rewrite Z.mul_comm. reflexivity.
+  (* TODO: cleanup *)
 Qed.
 
 (* Dominated is compatible with max. *)
@@ -412,7 +430,7 @@ Lemma dominated_pow_r_cst_l :
   dominated A (fun x => b ^ (c + f x)) g.
 Proof.
   introv cpos bpos Ufpos D.
-  forwards~ [k U]: dominated_mul_cst_l (b^c) D.
+  forwards~ [k U]: dominated_mul_cst_l_1 (b^c) D.
   exists k. applys filter_closed_under_intersection Ufpos U. intros.
   rewrites~ Z.pow_add_r.
 Qed.
@@ -1143,8 +1161,10 @@ Hint Resolve dominated_cst_id : dominated.
 Hint Resolve dominated_cst_limit | 2 : dominated.
 Hint Resolve dominated_mul : dominated.
 Hint Resolve dominated_mul_cst : dominated.
-Hint Resolve dominated_mul_cst_l : dominated.
-Hint Resolve dominated_mul_cst_r : dominated.
+Hint Resolve dominated_mul_cst_l_1 : dominated.
+Hint Resolve dominated_mul_cst_r_1 : dominated.
+Hint Resolve dominated_mul_cst_l_2 : dominated.
+Hint Resolve dominated_mul_cst_r_2 : dominated.
 Hint Resolve dominated_max : dominated.
 Hint Resolve dominated_max_distr : dominated.
 Hint Resolve dominated_max_sum : dominated.

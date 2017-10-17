@@ -175,10 +175,7 @@ Proof.
 
   { dominated.
     rewrite dominated_big_sum_bound.
-    { eapply dominated_eq_l.
-      eapply dominated_mul_cst_l.
-      apply dominated_reflexive.
-      eauto with zarith. }
+    { apply dominated_mul_cst_l_2. reflexivity. }
     ultimately_greater.
     apply filter_universe_alt. monotonic.
   }
