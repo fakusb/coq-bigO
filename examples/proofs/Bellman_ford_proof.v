@@ -237,18 +237,21 @@ Lemma bellman_ford2_spec_derived :
 Proof.
   xspecO_cost (fun n =>
     let m := If 0 < n then n^2 else 0 in
-    cost bellman_ford2_spec (n, m)).
+    let n' := If 0 < n then n else 1 in
+    cost bellman_ford2_spec (n', m)).
   { introv Hnodes Hedges. xapply~ (spec bellman_ford2_spec).
     hsimpl_credits; swap 1 2;
     (asserts_rewrite (forall (x y : Z), ge x y <-> y <= x); [math|..]).
     apply (cost_nonneg bellman_ford2_spec).
     apply (cost_monotonic bellman_ford2_spec).
-    unfolds ZZle. splits~. cases_if~.
+    unfolds ZZle. splits~. cases_if~. cases_if~.
   }
   { ultimately_greater. }
   { eapply monotonic_comp. monotonic.
     intros x1 x2 H. unfold ZZle. splits~.
-    cases_if~. cases_if~. apply~ Z.pow_le_mono. cases_if~. math_nia. }
+    - cases_if; cases_if~.
+    - cases_if~. apply~ Z.pow_nonneg.
+    - cases_if; cases_if~. apply~ Z.pow_le_mono. apply~ Z.pow_nonneg. }
   { eapply dominated_transitive.
     eapply dominated_ultimately_eq.
     { exists 1. intros. cases_if~. reflexivity. }
