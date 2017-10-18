@@ -46,6 +46,7 @@ SOURCES := \
 	floyd_warshall.ml \
 	bellman_ford.ml \
 	dfs.ml \
+  sec6_example.ml \
 #	merge_sort.ml
 
 CF := $(PWD)/_cf
