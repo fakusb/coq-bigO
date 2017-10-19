@@ -325,6 +325,41 @@ Proof. reflexivity. Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
+(* The filter [on Q] represents validity everywhere in the set [Q].
+   In other words, [on Q P] holds if and only if [Q] implies [P]. *)
+
+Section On.
+
+Variable A : Type.
+
+Variable Q : pred A.
+
+Hypothesis Qx : exists x, Q x.
+
+Definition on : Filter.filter A :=
+  fun P => forall x, Q x -> P x.
+
+Definition on_filterMixin : Filter.mixin_of A.
+Proof.
+  eapply Filter.Mixin with on; unfold on; eauto.
+  destruct Qx as [? ?]. eauto.
+Defined.
+
+Definition on_filterType := FilterType A on_filterMixin.
+
+Goal ultimately on_filterType = on.
+Proof. reflexivity. Qed.
+
+Lemma onP:
+  forall P : pred A,
+  ultimately on_filterType P =
+  forall x, Q x -> P x.
+Proof. reflexivity. Qed.
+
+End On.
+
+(* ---------------------------------------------------------------------------- *)
+
 (* If the type A is inhabited, then the singleton set that contains just the set
    [A] is a filter. We call this modality [everywhere]. *)
 
@@ -693,6 +728,42 @@ Proof.
     apply HP1. lia. apply HP2. lia.
     lia. }
 Qed.
+
+(* ---------------------------------------------------------------------------- *)
+
+Section FilterAsymProduct.
+
+Variable A1 A2 : filterType.
+
+Definition asymproduct : Filter.filter (A1 * A2) :=
+  fun P => ultimately A1 (fun a1 => ultimately A2 (fun a2 => P (a1, a2))).
+
+Definition asymproduct_filterMixin : Filter.mixin_of (A1 * A2).
+Proof.
+  eapply Filter.Mixin with asymproduct.
+  { repeat (apply filter_universe_alt; intro). trivial. }
+  { intros P HP.
+    forwards [ a1 HP' ] : filter_member_nonempty HP.
+    forwards [ a2 HP'' ] : filter_member_nonempty HP'.
+    exists (a1, a2). eauto. }
+  { intros P Q R H1 H2 HH.
+    revert H1 H2. unfold asymproduct. filter_closed_under_intersection.
+    intro. intros [H1 H2]. revert H1 H2. filter_closed_under_intersection.
+    intro. intros [? ?]. eauto. }
+Defined.
+
+Definition asymproduct_filterType :=
+  FilterType (A1 * A2) asymproduct_filterMixin.
+
+End FilterAsymProduct.
+
+Arguments asymproduct : clear implicits.
+
+Lemma asymproductP :
+  forall (A1 A2 : filterType) P,
+  ultimately (asymproduct_filterType A1 A2) P =
+  ultimately A1 (fun a1 => ultimately A2 (fun a2 => P (a1, a2))).
+Proof. reflexivity. Qed.
 
 (* ---------------------------------------------------------------------------- *)
 
