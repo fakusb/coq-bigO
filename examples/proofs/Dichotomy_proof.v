@@ -5,7 +5,7 @@ Require Import CFML.CFLibCredits.
 Require Pervasives_ml.
 Require Array_ml.
 Require Import Pervasives_proof.
-Require Import Array_proof.
+Require Import ArrayCredits_proof.
 (* Load the big-O library. *)
 Require Import Dominated.
 Require Import UltimatelyGreater.
@@ -80,7 +80,7 @@ Proof.
         rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
       + rewrite costPpos; [| admit]. rewrite~ costPpos.
         rewrite <-Hn. rewrite~ <-(@Zlog2_step n).
-        ring_simplify. cuts~: (1 <= a). prove_later facts.
+        ring_simplify. cuts~: (3 <= a). prove_later facts.
     }
 
     assumption. assumption.
@@ -91,7 +91,7 @@ Proof.
   }
 
   intros; close_facts.
-  simpl. exists~ 1 2.
+  simpl. exists~ 3 4.
 Qed.
 
 (* TEMPORARY: this is slightly ad-hoc *)
@@ -167,8 +167,8 @@ Proof.
   { cases_if~. cases_if~. simpl. ring_simplify. prove_later facts. }
   { intros n N. cases_if~; [| exfalso; admit]. cases_if~.
     rewrite~ <-(@Zlog2_step n). ring_simplify.
-    cuts~: (1 <= a). prove_later facts. }
+    cuts~: (3 <= a). prove_later facts. }
 
   intros; close_facts.
-  simpl. exists~ 1 2.
+  simpl. exists~ 3 4.
 Qed.

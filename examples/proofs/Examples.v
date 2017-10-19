@@ -268,7 +268,6 @@ Proof.
   dominated.
 Qed.
 
-
 (* [loop2]: Similarly, we can have a for-loop where the value of the starting
    and finishing indices is not precisely known, but one can bound their
    difference. *)
