@@ -142,13 +142,13 @@ Proof.
   intros. apply H. math_nia.
 Qed.
 
-Lemma multivar_specialize_spec :
+Lemma g_spec :
   specO
     asymproduct_positive_order
     eq (* dummy *)
     (fun cost =>
       (forall m n,
-         1 <= n -> 1 <= m -> (* FIXME (need more xfor lemmas) *)
+         0 <= n -> 0 <= m -> (* FIXME (need more xfor lemmas) *)
          app g [(m, n)]
          PRE (\$ cost (m, n))
          POST (fun (_:unit) => \[])))
@@ -177,8 +177,42 @@ Proof.
   { apply dominated_cst_limit_a2. apply asymproduct_positive_order_limit. }
 Qed.
 
-(* This "works", but probably does not hold the spec we wanted...
-   (here the constant of the O() can depend on m...)
+(* TODO: make xapp_spec work with a specO *)
+Hint Extern 1 (RegisterSpec g) => Provide (provide_specO g_spec).
+
+Lemma f_spec :
+  specO
+    Z_filterType
+    eq (* dummy *)
+    (fun cost =>
+      (forall n,
+         0 <= n ->
+         app f [n]
+         PRE (\$ cost n)
+         POST (fun (_:unit) => \[])))
+    (fun n => n).
+Proof.
+  xspecO. xcf. xpay. xapp~.
+  cleanup_cost.
+  admit.
+  { dominated.
+    eapply dominated_comp_eq. applys cost_dominated g_spec.
+    Focus 2. intros. reflexivity.
+    Focus 2. intros. simpl. math.
+    rewrite limitP. simpl. intros P UP.
+    unfold asymproduct_positive_order in UP. rewrite asymproductP in UP. simpl in UP.
+    rewrite onP in UP. apply~ UP. }
+Qed.
+
+
+(* There is also the solution of quantifying m outside the specO... This
+   trivially ensures we can instantiate it later.
+
+   It works (we can prove that [forall m, g is O(n)]), but this is basically a
+   uni-variate specification now. The O() constant can (and does) depend on m...
+
+   Question: Does using the previous less agressive asymmetrical filter give us
+   additionnal properties?...
 *)
 
 Definition product_singleton_order (m : Z) : filterType.
@@ -193,7 +227,7 @@ Lemma multivar_specialize_spec' :
     eq (* dummy *)
     (fun cost =>
       (forall m n,
-         1 <= n -> 1 <= m -> (* FIXME (need more xfor lemmas) *)
+         0 <= n -> 0 <= m -> (* FIXME (need more xfor lemmas) *)
          app g [(m, n)]
          PRE (\$ cost (m, n))
          POST (fun (_:unit) => \[])))
