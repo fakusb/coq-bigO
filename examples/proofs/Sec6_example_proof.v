@@ -20,14 +20,16 @@ Require Import Sec6_example_ml.
 Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
 Parameter g1_spec :
-  specZ [cost \in_O (fun _ => 1)]
-        (app g1 [tt] PRE (\$ cost 0) POST (fun (_:unit) => \[])).
+  specO unit_filterType eq
+    (fun cost => app g1 [tt] PRE (\$ cost tt) POST (fun (_:unit) => \[]))
+    (fun (_:unit) => 1).
 
 Hint Extern 1 (RegisterSpec g1) => Provide (provide_specO g1_spec).
 
 Parameter g2_spec :
-  specZ [cost \in_O (fun _ => 1)]
-        (app g2 [tt] PRE (\$ cost 0) POST (fun (_:unit) => \[])).
+  specO unit_filterType eq
+    (fun cost => app g2 [tt] PRE (\$ cost tt) POST (fun (_:unit) => \[]))
+    (fun (_:unit) => 1).
 
 Hint Extern 1 (RegisterSpec g2) => Provide (provide_specO g2_spec).
 
@@ -76,10 +78,10 @@ Proof.
     - rewrite max0_eq by math_nia.
       ring_simplify.
 
-      cut (cost g1_spec 0 + cost g2_spec 0 + 1 <= a). admit.
+      cut (cost g1_spec tt + cost g2_spec tt + 1 <= a). admit.
       prove_later facts. }
 
   intros; close_facts.
-  simpl. exists (cost g1_spec 0 + cost g2_spec 0 + 1) 1.
+  simpl. exists (cost g1_spec tt + cost g2_spec tt + 1) 1.
   splits; auto with zarith.
 Qed.
