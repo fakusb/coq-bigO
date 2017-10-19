@@ -13,7 +13,7 @@ Require Import Monotonic.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 (* Load the examples CF definitions. *)
-Require Import Simple_ml.
+Require Import Examples_ml.
 
 (* Prove specifications for auxiliary functions [tick] and [rand].
 

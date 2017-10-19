@@ -39,7 +39,7 @@ CFML_FLAGS := -credits
 
 SOURCES := \
 	max_subsequence_sum.ml \
-	simple.ml \
+	examples.ml \
 	dichotomy.ml \
 	exponential.ml \
 	selection_sort.ml \
