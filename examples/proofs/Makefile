@@ -47,6 +47,7 @@ SOURCES := \
 	bellman_ford.ml \
 	dfs.ml \
   sec6_example.ml \
+  multivar_specialize.ml \
 #	merge_sort.ml
 
 CF := $(PWD)/_cf
