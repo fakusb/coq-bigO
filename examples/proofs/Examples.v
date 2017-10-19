@@ -760,3 +760,40 @@ Proof.
   { intros. close_facts. }
   { simpl. exists 1 1. splits; math. }
 Qed.
+
+
+Parameter tree : Type.
+Parameter size : tree -> Z.
+Parameter height : tree -> Z.
+Parameter balanced : tree -> Prop.
+
+Parameter search : func.
+
+Parameter search_spec :
+  specZ [cost \in_O (fun n => n)]
+    (forall (t: tree),
+       app search [t]
+         PRE (\$ cost (height t))
+         POST (fun (_:Z) => \[])).
+
+Hypothesis tree_height_bound : forall (t: tree),
+  balanced t ->
+  height t <= Z.log2 (size t).
+
+
+Lemma search_spec_balanced :
+  specZ [cost \in_O (fun n => Z.log2 n)]
+    (forall (t: tree),
+       balanced t ->
+       app search [t]
+         PRE (\$ cost (size t))
+         POST (fun (_:Z) => \[])).
+Proof.
+  xspecO. intros t HB.
+  xapply search_spec. hsimpl_credits.
+  apply cost_monotonic. (* apply tree_height_bound. *)
+  rewrite tree_height_bound. sets sz: (size t). reflexivity.
+  assumption.
+
+  hsimpl. cleanup_cost. monotonic. dominated.
+Qed.
