@@ -16,8 +16,8 @@ Implicit Types V : elem -> data.
 Parameter UF : set elem -> (elem -> elem) -> (elem -> data) -> hprop.
 
 Parameter UnionFind_ml_find : func.
-Parameter alpha : nat -> nat.
 
+Parameter alpha : nat -> nat.
 Hypothesis alpha_monotonic : monotonic Peano.le Peano.le alpha.
 Hypothesis alpha_limit : limit nat_filterType nat_filterType alpha.
 
