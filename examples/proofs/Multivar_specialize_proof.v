@@ -11,6 +11,7 @@ Require Import Dominated.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 Require Import LibZExtra.
+Require Import Tmp.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 Require Import EvarsFacts.
@@ -21,53 +22,6 @@ Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
 Hypothesis pay1 : forall B (F : ~~B) (H: hprop) (Q: B -> hprop) c,
   F (\$ max0 c \* H) Q -> F (\$ max0 (1 + c) \* H) Q.
-
-
-
-
-Lemma dominated_max0_2 : forall A B f g,
-    dominated (product_filterType A B) (fun '(a,b) => f a b) g ->
-    dominated (product_filterType A B) (fun '(a,b) => max0 (f a b)) g.
-Proof.
-  introv H. applys_eq dominated_max0 2. apply H. extens. intros [? ?].
-  reflexivity.
-Qed.
-
-Lemma dominated_max0_a2 : forall A B f g,
-    dominated (asymproduct_filterType A B) (fun '(a,b) => f a b) g ->
-    dominated (asymproduct_filterType A B) (fun '(a,b) => max0 (f a b)) g.
-Proof.
-  introv H. applys_eq dominated_max0 2. apply H. extens. intros [? ?].
-  reflexivity.
-Qed.
-
-Lemma dominated_sum_distr_2 (A B : filterType) f g h :
-  dominated (product_filterType A B) (fun '(a,b) => f a b) h ->
-  dominated (product_filterType A B) (fun '(a,b) => g a b) h ->
-  dominated (product_filterType A B) (fun '(a,b) => (f a b) + (g a b)) h.
-Proof.
-  intros Hf Hg. applys_eq dominated_sum_distr 2. apply Hf. apply Hg.
-  extens. intros [? ?]. reflexivity.
-Qed.
-
-Lemma dominated_sum_distr_a2 (A B : filterType) f g h :
-  dominated (asymproduct_filterType A B) (fun '(a,b) => f a b) h ->
-  dominated (asymproduct_filterType A B) (fun '(a,b) => g a b) h ->
-  dominated (asymproduct_filterType A B) (fun '(a,b) => (f a b) + (g a b)) h.
-Proof.
-  intros Hf Hg. applys_eq dominated_sum_distr 2. apply Hf. apply Hg.
-  extens. intros [? ?]. reflexivity.
-Qed.
-
-Lemma dominated_cst_limit_2 A B c g :
-  limit (product_filterType A B) Z_filterType g ->
-  dominated (product_filterType A B) (fun '(_,_) => c) g.
-Admitted.
-
-Lemma dominated_cst_limit_a2 A B c g :
-  limit (asymproduct_filterType A B) Z_filterType g ->
-  dominated (asymproduct_filterType A B) (fun '(_,_) => c) g.
-Admitted.
 
 (*----------------------------------------------------------------------------*)
 
