@@ -1126,6 +1126,28 @@ Proof.
   applys~ dominated_comp_eq dom_bound lim_h.
 Qed.
 
+Lemma dominated_big_sum_bound' :
+  forall (f g : Z -> Z -> Z) (h : Z -> Z) (lo : Z),
+  ultimately Z_filterType (fun n => forall i, lo <= i -> 0 <= f n i) ->
+  ultimately Z_filterType (fun n => forall i, lo <= i -> 0 <= g n i) ->
+  dominated (product_filterType Z_filterType Z_filterType)
+    (fun '(n, i) => f n i) (fun '(n, i) => g n i) ->
+  (forall n, monotonic (le_after lo Z.le) Z.le (fun i : Z => f n i)) ->
+  limit Z_filterType Z_filterType h ->
+  dominated Z_filterType
+    (fun n => cumul lo (h n) (fun i => f n i))
+    (fun n => h n * f n (h n)).
+Proof.
+  introv ? ? D ? ?.
+  forwards~ Dcumul: Product.dominated_big_sum_bound_with h Z_filterType. assumption.
+  eapply dominated_comp_eq with
+    (J := product_filterType Z_filterType Z_filterType)
+    (p := fun (i:Z) => (i, i)).
+  apply Dcumul.
+  limit.
+  reflexivity. simpl. reflexivity.
+Qed.
+
 (* Special case of [dominated_big_sum_bound], where the function in the big sum
    is constant.
 *)
