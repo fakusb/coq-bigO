@@ -13,13 +13,24 @@ Implicit Types D : set elem.
 Implicit Types R : elem -> elem.
 Implicit Types V : elem -> data.
 
+Parameter card : set elem -> Z.
+Hypothesis card_nonneg : forall D, 0 <= card D.
+Hint Resolve card_nonneg : zarith.
+
 Parameter UF : set elem -> (elem -> elem) -> (elem -> data) -> hprop.
 
 Parameter UnionFind_ml_find : func.
 
-Parameter alpha : nat -> nat.
-Hypothesis alpha_monotonic : monotonic Peano.le Peano.le alpha.
-Hypothesis alpha_limit : limit nat_filterType nat_filterType alpha.
+Parameter alpha : Z -> Z.
+
+Hypothesis alpha_nonneg : forall (x: Z), 0 <= x -> 0 <= alpha x.
+Hint Resolve alpha_nonneg : zarith.
+
+Hypothesis alpha_monotonic : monotonic Z.le Z.le alpha.
+Hint Resolve alpha_monotonic : monotonic.
+
+Hypothesis alpha_limit : limit Z_filterType Z_filterType alpha.
+Hint Resolve alpha_limit : limit.
 
 Parameter find_spec : forall D R V x, x \in D ->
   app UnionFind_ml_find [x]
@@ -27,7 +38,7 @@ Parameter find_spec : forall D R V x, x \in D ->
     POST (fun y => UF D R V \* \[ R x = y ]).
 
 Theorem find_specO :
-  specO nat_filterType Peano.le
+  specO Z_filterType Z.le
     (fun cost =>
       (forall D R V x, x \in D ->
        app UnionFind_ml_find [x]
@@ -35,18 +46,6 @@ Theorem find_specO :
          POST (fun y => UF D R V \* \[ R x = y ])))
     alpha.
 Proof using.
-  xspecO. intros.
-  xapply find_spec. apply H. hsimpl. sets cD: (card D). reflexivity.
-  hsimpl~.
-
-  cleanup_cost.
-  { monotonic. eapply monotonic_comp; swap 1 2. apply alpha_monotonic.
-    intros ? ? ?. math. }
-  { dominated. apply dominated_cst_limit.
-    eapply limit_comp_eq. apply alpha_limit. Focus 2. intro. reflexivity.
-    rewrite limitP. simpl. intros P UP.
-    rewrite ZP_ultimately with (cond := fun (x:Z) => 0 <= x) in UP
-      by (apply ultimately_ge_Z).
-    destruct UP as (x0 & X0 & H). exists (Z.to_nat x0).
-    intros n N. apply H. math_lia. }
+  xspecO. intros. xapply find_spec. apply H. hsimpl. sets cD: (card D). reflexivity.
+  hsimpl~. cleanup_cost. monotonic. dominated.
 Qed.
