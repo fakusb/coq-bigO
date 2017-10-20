@@ -48,6 +48,7 @@ SOURCES := \
 	dfs.ml \
   sec6_example.ml \
   multivar_specialize.ml \
+  dependent_nested.ml \
 #	merge_sort.ml
 
 CF := $(PWD)/_cf
