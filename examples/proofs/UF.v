@@ -18,7 +18,7 @@ Parameter UF : set elem -> (elem -> elem) -> (elem -> data) -> hprop.
 Parameter UnionFind_ml_find : func.
 Parameter alpha : nat -> nat.
 
-Hypothesis alpha_monotonic : monotonic Nat.le Nat.le alpha.
+Hypothesis alpha_monotonic : monotonic Peano.le Peano.le alpha.
 Hypothesis alpha_limit : limit nat_filterType nat_filterType alpha.
 
 Parameter find_spec : forall D R V x, x \in D ->
@@ -27,7 +27,7 @@ Parameter find_spec : forall D R V x, x \in D ->
     POST (fun y => UF D R V \* \[ R x = y ]).
 
 Theorem find_specO :
-  specO nat_filterType Nat.le
+  specO nat_filterType Peano.le
     (fun cost =>
       (forall D R V x, x \in D ->
        app UnionFind_ml_find [x]
@@ -41,8 +41,12 @@ Proof using.
 
   cleanup_cost.
   { monotonic. eapply monotonic_comp; swap 1 2. apply alpha_monotonic.
-    admit. (* ... *) }
+    intros ? ? ?. math. }
   { dominated. apply dominated_cst_limit.
     eapply limit_comp_eq. apply alpha_limit. Focus 2. intro. reflexivity.
-    admit. (* ... *) }
+    rewrite limitP. simpl. intros P UP.
+    rewrite ZP_ultimately with (cond := fun (x:Z) => 0 <= x) in UP
+      by (apply ultimately_ge_Z).
+    destruct UP as (x0 & X0 & H). exists (Z.to_nat x0).
+    intros n N. apply H. math_lia. }
 Qed.
