@@ -20,9 +20,6 @@ Require Import Dependent_nested_ml.
 
 Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
-Hypothesis pay1 : forall B (F : ~~B) (H: hprop) (Q: B -> hprop) c,
-  F (\$ max0 c \* H) Q -> F (\$ max0 (1 + c) \* H) Q.
-
 Lemma f_spec :
   specZ [cost \in_O (fun n => n^2)]
     (forall n,
@@ -33,16 +30,16 @@ Lemma f_spec :
 Proof.
   xspecO. intros n N. xcf. xpay.
   xfor_inv (fun (_:int) => \[]). math.
-  { intros i Hi. apply pay1.
+  { intros i Hi. xpay.
     xfor_inv (fun (_:int) => \[]). math.
-    intros j Hj. apply pay1. xret. hsimpl. hsimpl.
+    intros j Hj. xpay. xret. hsimpl. hsimpl.
     simpl. clean_max0. rewrite Z.add_0_r. reflexivity.
     hsimpl. }
   hsimpl.
   simpl.
   assert (L: forall f g a b, f = g -> cumul a b f = cumul a b g) by admit. (* FIXME *)
   erewrite L; swap 1 2. extens. intro i.
-  rewrite max0_eq; [| admit]. reflexivity. reflexivity.
+  clean_max0. rewrite max0_eq; [| admit]. reflexivity. reflexivity.
   hsimpl.
 
   cleanup_cost.

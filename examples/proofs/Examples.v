@@ -165,6 +165,7 @@ Proof.
 
   xfor_inv (fun (i:int) => \[]). math.
   { intros i Hi.
+    xpay.
     xseq.
     xapp. xapp. }
   hsimpl. reflexivity. hsimpl.
@@ -293,16 +294,16 @@ Proof.
   xpull. intros Hb.
 
   xfor_inv (fun (i:int) => \[]). math.
-  { intros i Hi. xapp. }
+  { intros i Hi. xpay. xapp. }
   { hsimpl. }
-  { simpl.
+  { simpl. clean_max0.
     (* At this point, we can simply reduce [cumul] of a constant to a product.
     *)
     rewrite cumulP. rewrite big_const_Z.
     (* Do some cleanup, and work around the fact that [ring_simplify] chokes on
     evars... *)
     hide_evars_then ltac:(fun _ => ring_simplify).
-    apply (le_than n).
+    apply (le_than (2 * n)).
     math. }
 
   hsimpl.
@@ -361,10 +362,10 @@ Proof.
 
   xfor_inv (fun (i:int) => \[]). auto.
   { intros i I.
-    xfor_inv (fun (j:int) => \[]). math.
-    { intros j J. xapp. }
+    xpay. xfor_inv (fun (j:int) => \[]). math.
+    { intros j J. xpay. xapp. }
     { hsimpl. }
-    { simpl.
+    { simpl. clean_max0.
       (* reflexivity. *) (* fixme? *)
       apply Z.le_refl. }
     { hsimpl. }
@@ -377,12 +378,12 @@ Proof.
   dominated.
   { rewrite dominated_big_sum_bound.
     { apply dominated_mul. reflexivity.
-      rewrite dominated_big_sum_bound. reflexivity.
+      dominated. rewrite dominated_big_sum_bound. dominated.
       ultimately_greater.
       (* todo: improve *)
       eapply ultimately_monotonic_of_monotonic.
       monotonic. }
-    ultimately_greater.
+    ultimately_greater. ultimately_greater. (* FIXME *)
     (* todo: improve *)
     eapply ultimately_monotonic_of_monotonic.
     monotonic.

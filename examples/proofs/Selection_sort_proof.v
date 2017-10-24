@@ -55,14 +55,14 @@ Proof.
   ).
   { math. }
   { intros i Hi. xpull. intros xs' L.
-    xapp. xseq.
+    xpay. xapp. xseq.
     { xfor_inv (fun (_:int) =>
         Hexists (xs'':list int) (k:int),
         a ~> Array xs'' \* p ~~> k \*
         \[index xs'' k /\ length xs = length xs'']).
       { math. }
       intros j Hj. xpull. intros xs'' k (Hk & L').
-      xapps. xapps~. xapps~. apply~ int_index_prove.
+      xpay. xapps. xapps~. xapps~. apply~ int_index_prove.
       xif.
       { xapp. hsimpl. splits~. apply~ int_index_prove. }
       { xret. hsimpl. splits~. }
@@ -71,7 +71,7 @@ Proof.
       clean_max0. match goal with |- cumul _ _ (fun _ => ?X) <= _ => ring_simplify X end.
       (* reflexivity. *)
       rewrite cumulP; rewrite big_const_Z.
-        transitivity (2 * (length xs - i - 1)). math. reflexivity.
+        transitivity (3 * (length xs - i - 1)). math. reflexivity.
     }
 
     xpull. intros xs'' k (? & ?). xapps. xapps~. apply~ int_index_prove.
@@ -101,15 +101,17 @@ Proof.
   assert (LL: forall a b f g,
              (forall i, g i = f (b - i)) ->
              cumul a b g = cumul 1 (b-a-1) f) by admit.
-  apply dominated_eq_l with (fun (x:Z_filterType) => cumul 1 (x-2) (fun i => 2 * i + cost swap_spec tt)); swap 1 2.
+  apply dominated_eq_l with (fun (x:Z_filterType) => cumul 1 (x-2) (fun i => 3 * i + cost swap_spec tt + 1)); swap 1 2.
   { intro x.
-    rewrite LL with (a := 0) (f := fun i => 2 * i + cost swap_spec tt); auto.
+    rewrite LL with (a := 0) (f := fun i => 3 * i + cost swap_spec tt + 1); auto.
     ring_simplify (((x-1) - 0) - 1). auto. }
 
   etransitivity. eapply dominated_big_sum_bound'.
-  Focus 3. apply dominated_sum_distr_2. apply dominated_mul_cst_l_1_2.
-  apply dominated_reflexive. simpl.
-  apply dominated_cst_limit_2. limit.
+  Focus 3.
+  apply dominated_sum_distr_2. apply dominated_sum_distr_2.
+  apply dominated_mul_cst_l_1_2. apply dominated_reflexive.
+  simpl. apply dominated_cst_limit_2. limit.
+  simpl. apply dominated_cst_limit_2. limit.
 
   ultimately_greater. ultimately_greater.
   monotonic. intros ? ? H. destruct~ H.
