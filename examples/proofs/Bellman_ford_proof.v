@@ -84,18 +84,18 @@ Proof.
   apply Product.dominated_big_sum_bound_with.
   { ultimately_greater. }
   { monotonic. }
-  { limit. admit. }
+  { limit. apply limit_sum_cst_r. limit. }
   simpl.
 
   eapply dominated_mul_2.
   eapply dominated_sum_distr_2.
   eapply dominated_sum_distr_2.
   reflexivity.
-  apply dominated_cst_limit_2. admit.
-  apply dominated_cst_limit_2. admit.
+  apply dominated_cst_limit_2. limit.
+  apply dominated_cst_limit_2. limit.
 
   eapply dominated_sum_distr_2.
-  apply dominated_cst_limit_2. admit.
+  apply dominated_cst_limit_2. limit.
   eapply dominated_max0_2.
   eapply dominated_transitive.
   apply Product.dominated_big_sum_bound.
