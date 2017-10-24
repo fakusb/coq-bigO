@@ -46,10 +46,10 @@ Proof.
   xseq.
   { xfor_inv (fun (_:int) => Hexists (ds: list int), t ~> Array edges \* d ~> Array ds). math.
     { intros i Hi. xpull. intros ds.
-      xapp as edges_nb. intro Hedges_nb.
+      xpay. xapp as edges_nb. intro Hedges_nb.
       xfor_inv (fun (_:int) => Hexists (ds: list int), t ~> Array edges \* d ~> Array ds). math.
       { intros j Hj. xpull. intros ds'.
-        xapps. apply~ int_index_prove.
+        xpay. xapps. apply~ int_index_prove.
         xmatch.
         xapp as d1. admit. (* TODO *) intro Hd1.
         xapp as d2. admit. (* TODO *) intro Hd2.
@@ -96,6 +96,7 @@ Proof.
 
   eapply dominated_sum_distr_2.
   apply dominated_cst_limit_2. limit.
+  apply dominated_sum_distr_2. apply dominated_cst_limit_2. limit.
   eapply dominated_max0_2.
   eapply dominated_transitive.
   apply Product.dominated_big_sum_bound.

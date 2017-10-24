@@ -91,7 +91,7 @@ Proof.
 
   cleanup_cost.
   monotonic. admit. (* todo *)
-  dominated. apply dominated_max0.
+  dominated.
 
   (* cumul a b (λi. f (b-i))
      = f(b-a) + f(b-(a+1)) + ... + f(b-(b-1))

@@ -124,6 +124,8 @@ Proof.
   rewrite I. assumption.
 Qed.
 
+Hint Resolve dominated_max0 : dominated.
+
 (* TODO: prove & move *)
 
 Lemma monotonic_cumul_Z : forall (f : Z -> Z) (lo : Z),

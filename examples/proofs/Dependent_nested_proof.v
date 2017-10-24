@@ -48,7 +48,7 @@ Proof.
   cleanup_cost.
   admit. (* TODO *)
 
-  dominated. apply dominated_max0.
+  dominated.
   rewrite dominated_big_sum_bound.
   { eapply dominated_eq_r; swap 1 2.
     { intros a. rewrite (Z.pow_2_r a). reflexivity. }

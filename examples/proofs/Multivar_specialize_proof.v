@@ -20,9 +20,6 @@ Require Import Multivar_specialize_ml.
 
 Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
-Hypothesis pay1 : forall B (F : ~~B) (H: hprop) (Q: B -> hprop) c,
-  F (\$ max0 c \* H) Q -> F (\$ max0 (1 + c) \* H) Q.
-
 (*----------------------------------------------------------------------------*)
 
 (* Symmetric product "everywhere x order". Does not work: see proofs below *)
@@ -114,15 +111,15 @@ Proof.
   xspecO.
   xcf. xpay. xmatch.
   xfor_inv (fun (_:int) => \[]). math.
-  { intros i I. apply pay1.
+  { intros i I. xpay.
     xfor_inv (fun (_:int) => \[]). math.
-    intros j J. apply pay1. xret. hsimpl. hsimpl.
+    intros j J. xpay. xret. hsimpl. hsimpl.
     simpl. clean_max0. rewrite cumulP. rewrite big_const_Z. ring_simplify.
     apply Z.le_refl.
     hsimpl.
   }
   hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z. rewrite~ max0_eq.
+  simpl. rewrite cumulP. rewrite big_const_Z. rewrite !max0_eq by auto with zarith.
   hide_evars_then ltac:(fun _ => ring_simplify). apply Z.le_refl.
   hsimpl.
 
@@ -130,7 +127,7 @@ Proof.
   admit.
 
   apply dominated_sum_distr_2.
-  { apply dominated_max0_2. apply dominated_reflexive. }
+  { apply dominated_max0_2. reflexivity. }
   { apply dominated_cst_limit_2. apply product_positive_order_limit. }
 Qed.
 
@@ -195,15 +192,15 @@ Proof.
   xspecO.
   xcf. xpay. xmatch.
   xfor_inv (fun (_:int) => \[]). math.
-  { intros i I. apply pay1.
+  { intros i I. xpay.
     xfor_inv (fun (_:int) => \[]). math.
-    intros j J. apply pay1. xret. hsimpl. hsimpl.
+    intros j J. xpay. xret. hsimpl. hsimpl.
     simpl. clean_max0. rewrite cumulP. rewrite big_const_Z. ring_simplify.
     apply Z.le_refl.
     hsimpl.
   }
   hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z. rewrite~ max0_eq.
+  simpl. rewrite cumulP. rewrite big_const_Z. rewrite !max0_eq by auto with zarith.
   hide_evars_then ltac:(fun _ => ring_simplify). apply Z.le_refl.
   hsimpl.
 
@@ -275,15 +272,15 @@ Proof.
   intro m. xspecO.
   xcf. xpay. xmatch.
   xfor_inv (fun (_:int) => \[]). math.
-  { intros i I. apply pay1.
+  { intros i I. xpay.
     xfor_inv (fun (_:int) => \[]). math.
-    intros j J. apply pay1. xret. hsimpl. hsimpl.
+    intros j J. xpay. xret. hsimpl. hsimpl.
     simpl. clean_max0. rewrite cumulP. rewrite big_const_Z. ring_simplify.
     apply Z.le_refl.
     hsimpl.
   }
   hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z. rewrite~ max0_eq.
+  simpl. rewrite cumulP. rewrite big_const_Z. rewrite !max0_eq by auto with zarith.
   hide_evars_then ltac:(fun _ => ring_simplify). apply Z.le_refl.
   hsimpl.
 
