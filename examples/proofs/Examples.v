@@ -751,10 +751,10 @@ Proof.
   pose_facts_evars facts a b. exists (fun (n:Z_filterType) => a * n + b).
   assert (a_nonneg : 0 <= a) by (prove_later facts).
   splits.
-  { intros. cut (0 <= b). math_nia. prove_later facts. }
+  { intros ? H. rewrite <-H. ring_simplify. prove_later facts. }
   { monotonic. }
   { dominated. }
-  { intros. cut (1 <= b). math_nia. prove_later facts. }
+  { intros ? H. rewrite <-H. ring_simplify. prove_later facts. }
   { intros n N N'. rewrite max0_eq by math_nia.
     cut (1 <= a). math_nia. prove_later facts. }
   { intros. close_facts. }
