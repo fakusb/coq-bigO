@@ -13,7 +13,6 @@ Require Import Monotonic.
 Require Import LibZExtra.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
-Require Import EvarsFacts.
 
 (* FIXME: coq bug *)
 Lemma L: forall A B (x : (A * B)%type) (f g : A -> B -> Z),

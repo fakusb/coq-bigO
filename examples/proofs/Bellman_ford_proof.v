@@ -14,7 +14,6 @@ Require Import LibZExtra.
 Require Import Tmp.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
-Require Import EvarsFacts.
 (* Load the CF definitions. *)
 Require Import Bellman_ford_ml.
 

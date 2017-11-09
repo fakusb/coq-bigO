@@ -573,7 +573,7 @@ Proof.
   dominated.
 Qed.
 
-Require Import EvarsFacts.
+Require Import Procrastination.Procrastination.
 
 Lemma rec1_spec2 :
   specO
@@ -584,11 +584,11 @@ Lemma rec1_spec2 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  pose_facts facts.
+  begin procrastination.
 
   evar (a : int). evar (b : int).
-  assert (a_nonneg : 0 <= a) by (prove_later facts).
-  assert (b_nonneg : 0 <= b) by (prove_later facts).
+  assert (a_nonneg : 0 <= a) by procrastinate.
+  assert (b_nonneg : 0 <= b) by procrastinate.
 
   xspecO_cost (fun n => a * Z.max 0 n + b).
   intro n.
@@ -598,13 +598,13 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
   clean_max0. cases_if.
-  { generalize n C. prove_later facts. }
-  { generalize n C. prove_later facts. }
+  { generalize n C. procrastinate. }
+  { generalize n C. procrastinate. }
 
   math_nia.
   monotonic.
   dominated.
-  close_facts.
+  end procrastination.
 
   (* XX *)
 Abort.
@@ -618,10 +618,10 @@ Lemma rec1_spec3 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  pose_facts_evars facts a b.
+  begin procrastination assuming a b.
 
-  assert (a_nonneg : 0 <= a) by (prove_later facts).
-  assert (b_nonneg : 0 <= b) by (prove_later facts).
+  assert (a_nonneg : 0 <= a) by procrastinate.
+  assert (b_nonneg : 0 <= b) by procrastinate.
 
   xspecO_cost (fun n => a * Z.max 0 n + b).
   intro n.
@@ -631,13 +631,13 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
   clean_max0. cases_if.
-  { generalize n C. prove_later facts. }
-  { generalize n C. prove_later facts. }
+  { generalize n C. procrastinate. }
+  { generalize n C. procrastinate. }
 
   math_nia.
   monotonic.
   dominated.
-  intros. close_facts.
+  end procrastination.
 
   simpl. exists 1 1. splits; math_nia.
 Qed.
@@ -652,10 +652,10 @@ Lemma rec1_spec4 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  pose_facts_evars facts a b.
+  begin procrastination assuming a b.
 
-  assert (a_nonneg : 0 <= a) by (prove_later facts).
-  assert (b_nonneg : 0 <= b) by (prove_later facts).
+  assert (a_nonneg : 0 <= a) by procrastinate.
+  assert (b_nonneg : 0 <= b) by procrastinate.
 
   xspecO_cost (fun n => Z.max 0 (a * n + b)).
   intros n.
@@ -665,13 +665,13 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
   clean_max0. cases_if.
-  { generalize n N C. prove_later facts. }
-  { generalize n N C. prove_later facts. }
+  { generalize n N C. procrastinate. }
+  { generalize n N C. procrastinate. }
 
   math_nia.
   monotonic.
   dominated.
-  intros. close_facts.
+  end procrastination.
 
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
@@ -687,10 +687,10 @@ Lemma rec1_spec5 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  pose_facts_evars facts a b.
+  begin procrastination assuming a b.
 
-  assert (a_nonneg : 0 <= a) by (prove_later facts).
-  assert (b_nonneg : 0 <= b) by (prove_later facts).
+  assert (a_nonneg : 0 <= a) by procrastinate.
+  assert (b_nonneg : 0 <= b) by procrastinate.
 
   xspecO_cost (fun n => a * n + b) on (fun n => 0 <= n).
   intro n. induction_wf: (int_downto_wf 0) n. intro N.
@@ -699,30 +699,30 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
   clean_max0. cases_if.
-  { generalize n N C. prove_later facts. }
-  { generalize n N C. prove_later facts. }
+  { generalize n N C. procrastinate. }
+  { generalize n N C. procrastinate. }
 
   math_nia.
   monotonic.
   dominated.
-  intros. close_facts.
+  end procrastination.
 
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
 Qed.
 
 (* TEMPORARY: this is slightly ad-hoc *)
-Ltac xspecO_evar_cost facts cost_name domain :=
+Ltac xspecO_evar_cost cost_name domain :=
   match goal with
   | |- specO ?A _ _ _ =>
-    pose_facts_evars facts cost_name;
+    begin procrastination assuming cost_name;
     [ let Hnonneg := fresh "cost_nonneg" in
       assert (forall (x : A), domain x -> 0 <= cost_name x)
         as Hnonneg
-        by (simpl; prove_later facts);
+        by (simpl; procrastinate);
       simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
       xspecO_cost cost_name on domain;
-      [ | apply Hnonneg | prove_later facts | prove_later facts ]
+      [ | apply Hnonneg | procrastinate | procrastinate ]
     | ..]
   end.
 
@@ -736,30 +736,32 @@ Lemma rec1_spec6 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_evar_cost facts rec_cost (fun x => 0 <= x).
+  xspecO_evar_cost rec_cost (fun x => 0 <= x).
   intro n. induction_wf: (int_downto_wf 0) n. intro N.
 
   xcf. refine_credits.
   xpay. xif_guard. xret. hsimpl. xapp. math. math.
 
   clean_max0. cases_if; clean_max0.
-  { ring_simplify. generalize n N. prove_later facts. }
-  { generalize n N C. prove_later facts. }
+  { ring_simplify. generalize n N. procrastinate. }
+  { generalize n N C. procrastinate. }
 
-  intros. close_facts.
+  end procrastination.
 
   simpl.
-  pose_facts_evars facts a b. exists (fun (n:Z_filterType) => a * n + b).
-  assert (a_nonneg : 0 <= a) by (prove_later facts).
+  begin procrastination assuming a b. exists (fun (n:Z_filterType) => a * n + b).
+  assert (a_nonneg : 0 <= a) by procrastinate.
   splits.
-  { intros ? H. rewrite <-H. ring_simplify. prove_later facts. }
+  { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
   { monotonic. }
   { dominated. }
-  { intros ? H. rewrite <-H. ring_simplify. prove_later facts. }
-  { intros n N N'. rewrite max0_eq by math_nia.
-    cut (1 <= a). math_nia. prove_later facts. }
-  { intros. close_facts. }
-  { simpl. exists 1 1. splits; math. }
+  { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
+  { intros n N N'.
+    with procrastination do
+      (fun t => try (pose proof t; rewrite max0_eq by math_nia)). (* FIXME? *)
+    cut (1 <= a). math_nia. procrastinate. }
+  { end procrastination.
+    simpl. exists 1 1. splits; math. }
 Qed.
 
 

@@ -13,7 +13,7 @@ Require Import Monotonic.
 Require Import LibZExtra.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
-Require Import EvarsFacts.
+Require Import Procrastination.Procrastination.
 (* Load the CF definitions. *)
 Require Import Dichotomy_ml.
 
@@ -28,13 +28,13 @@ Lemma bsearch_spec :
         PRE (\$ (cost (j - i)) \* t ~> Array xs)
         POST (fun (k:int) => t ~> Array xs)).
 Proof.
-  pose_facts_evars facts a b.
-  assert (0 <= a) as Ha by (prove_later facts).
+  begin procrastination assuming a b.
+  assert (0 <= a) as Ha by procrastinate.
 
   sets cost: (fun (n:Z_filterType) => If 0 < n then a * Z.log2 n + b else 1).
   asserts cost_nonneg: (forall x, 0 <= cost x).
   { intro x. subst cost; simpl. case_if~.
-    rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
+    rewrite <-Z.log2_nonneg. ring_simplify. procrastinate.
   }
   (* Could be generated automatically... *)
   asserts costPpos: (forall n, 0 < n -> cost n = a * Z.log2 n + b).
@@ -46,7 +46,7 @@ Proof.
   { intros x y H. subst cost; simpl.
     case_if; case_if~.
     { monotonic. }
-    { rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts. } }
+    { rewrite <-Z.log2_nonneg. ring_simplify. procrastinate. } }
 
 
   { xspecO_cost cost.
@@ -77,10 +77,10 @@ Proof.
       tests Hn1: (j - i = 1).
       + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
         rewrite~ (costPneg 0). rewrite~ (costPpos n).
-        rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts.
+        rewrite <-Z.log2_nonneg. ring_simplify. procrastinate.
       + rewrite costPpos; [| admit]. rewrite~ costPpos.
         rewrite <-Hn. rewrite~ <-(@Zlog2_step n).
-        ring_simplify. cuts~: (3 <= a). prove_later facts.
+        ring_simplify. cuts~: (3 <= a). procrastinate.
     }
 
     assumption. assumption.
@@ -90,21 +90,21 @@ Proof.
     }
   }
 
-  intros; close_facts.
+  end procrastination.
   simpl. exists~ 3 4.
 Qed.
 
 (* TEMPORARY: this is slightly ad-hoc *)
-Ltac xspecO_evar_cost facts cost_name :=
+Ltac xspecO_evar_cost cost_name :=
   match goal with
   | |- specO ?A _ _ _ =>
-    pose_facts_evars facts cost_name;
+    begin procrastination assuming cost_name;
     [ let Hnonneg := fresh "cost_nonneg" in
       assert (forall (x : A), 0 <= cost_name x)
         as Hnonneg
-        by (prove_later facts);
+        by procrastinate;
       xspecO_cost cost_name;
-      [ | apply Hnonneg | prove_later facts | prove_later facts ]
+      [ | apply Hnonneg | procrastinate | procrastinate ]
     | ..]
   end.
 
@@ -117,7 +117,7 @@ Lemma bsearch_spec2 :
         PRE (\$ (cost (j - i)) \* t ~> Array xs)
         POST (fun (k:int) => t ~> Array xs)).
 Proof.
-  xspecO_evar_cost facts costf.
+  xspecO_evar_cost costf.
   { introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
     intros i j Hn Hi Hj.
 
@@ -138,37 +138,39 @@ Proof.
       xapp~ (j - (m+1)). subst m. reflexivity. }
 
     clean_max0. cases_if; ring_simplify.
-    { assert (HH: n <= 0) by math. generalize n HH. prove_later facts. }
+    { assert (HH: n <= 0) by math. generalize n HH. procrastinate. }
     { rewrite Z.max_l; swap 1 2.
-      { apply facts. forwards~: Zquot_mul_2 (j-i). }
+      { simpl in g.
+        with procrastination do (fun t => try (apply t)). (* FIXME? *) (* use monotonicity *)
+        forwards~: Zquot_mul_2 (j-i). }
       tests Hn1: (j-i = 1).
       + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
-        asserts_rewrite~ (n = 1). prove_later facts.
+        asserts_rewrite~ (n = 1). procrastinate.
       + assert (HH: 2 <= n) by math. rewrite <-Hn.
-        generalize n HH. prove_later facts. }
+        generalize n HH. procrastinate. }
   }
 
-  intros; close_facts.
+  end procrastination.
 
-  pose_facts_evars facts a b.
-  assert (0 <= a) as Ha by (prove_later facts).
+  begin procrastination assuming a b.
+  assert (0 <= a) as Ha by procrastinate.
   exists (fun (n:Z_filterType) => If 0 < n then a * Z.log2 n + b else 1). splits.
   { intros. cases_if~. rewrite <-Z.log2_nonneg. ring_simplify.
-    prove_later facts. }
+    procrastinate. }
   { intros x y H. cases_if; case_if~.
     { monotonic. }
-    { rewrite <-Z.log2_nonneg. ring_simplify. prove_later facts. } }
+    { rewrite <-Z.log2_nonneg. ring_simplify. procrastinate. } }
   { unfold cost. rewrite dominated_ultimately_eq; swap 1 2.
       rewrite ZP. exists 1. intros. cases_if~. reflexivity.
       apply dominated_sum_distr; dominated.
       (* FIXME; dominated alone should work *)
   }
   { intros. cases_if~. }
-  { cases_if~. cases_if~. simpl. ring_simplify. prove_later facts. }
+  { cases_if~. cases_if~. simpl. ring_simplify. procrastinate. }
   { intros n N. cases_if~; [| exfalso; admit]. cases_if~.
     rewrite~ <-(@Zlog2_step n). ring_simplify.
-    cuts~: (3 <= a). prove_later facts. }
+    cuts~: (3 <= a). procrastinate. }
 
-  intros; close_facts.
+  end procrastination.
   simpl. exists~ 3 4.
 Qed.

@@ -12,7 +12,7 @@ Require Import UltimatelyGreater.
 Require Import Monotonic.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
-Require Import EvarsFacts.
+Require Import Procrastination.Procrastination.
 (* Load the CF definitions. *)
 Require Import Exponential_ml.
 
@@ -92,14 +92,14 @@ Lemma f_spec3 :
         PRE (\$ (cost n))
         POST (fun (tt:unit) => \[])).
 Proof.
-  pose_facts_evars facts a b.
-  assert (0 <= a) as Ha by (prove_later facts).
+  begin procrastination assuming a b.
+  assert (0 <= a) as Ha by procrastinate.
 
   sets cost: (fun (n:Z_filterType) => a * 2^n + b).
   asserts cost_nonneg: (forall n, 0 <= n -> 0 <= cost n).
   { intros. unfold cost. (* rewrite~ <-Z.pow_pos_nonneg. *) (* TODO *)
     asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
-    ring_simplify. prove_later facts. }
+    ring_simplify. procrastinate. }
 
   xspecO_cost cost on (fun n => 0 <= n).
   intro n. induction_wf: (downto 0) n. intro N.
@@ -111,33 +111,33 @@ Proof.
 
   clean_max0. ring_simplify.
   cases_if; ring_simplify.
-  { subst n. subst cost. ring_simplify. prove_later facts. }
+  { subst n. subst cost. ring_simplify. procrastinate. }
   { rewrite~ max0_eq. unfold cost.
     transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
     rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
     math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
-    prove_later facts. }
+    procrastinate. }
 
   apply cost_nonneg.
   unfold cost. monotonic.
   unfold cost. dominated.
 
-  intros; close_facts.
+  end procrastination.
 
   simpl. exists~ 2 (-1).
 Qed.
 
-Ltac xspecO_evar_cost facts cost_name domain :=
+Ltac xspecO_evar_cost cost_name domain :=
   match goal with
   | |- specO ?A _ _ _ =>
-    pose_facts_evars facts cost_name;
+    begin procrastination assuming cost_name;
     [ let Hnonneg := fresh "cost_nonneg" in
       assert (forall (x : A), domain x -> 0 <= cost_name x)
         as Hnonneg
-        by (simpl; prove_later facts);
+        by (simpl; procrastinate);
       simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
       xspecO_cost cost_name on domain;
-      [ | apply Hnonneg | prove_later facts | prove_later facts ]
+      [ | apply Hnonneg | procrastinate | procrastinate ]
     | ..]
   end.
 
@@ -149,36 +149,36 @@ Lemma f_spec4 :
         PRE (\$ (cost n))
         POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_evar_cost facts costf (fun n => 0 <= n).
+  xspecO_evar_cost costf (fun n => 0 <= n).
   intros n. induction_wf: (downto 0) n. intro N.
   refine_credits. xcf. xpay. xrets.
   xif_guard.
   { xret. hsimpl. }
   { xapp~. xapp~. }
 
-  clean_max0. ring_simplify. generalize n N. prove_later facts.
-  intros; close_facts.
+  clean_max0. ring_simplify. generalize n N. procrastinate.
+  end procrastination.
 
-  pose_facts_evars facts a b.
-  assert (0 <= a) as Ha by (prove_later facts).
+  begin procrastination assuming a b.
+  assert (0 <= a) as Ha by procrastinate.
   sets cost: (fun (n:Z_filterType) => a * 2^n + b).
   assert (cost_nonneg: forall n, 0 <= n -> 0 <= cost n).
   { intros n N. unfold cost.
     asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
-    ring_simplify. prove_later facts. }
+    ring_simplify. procrastinate. }
 
   exists cost. splits~.
   { unfold cost. monotonic. }
   { unfold cost. dominated. }
   { intros n N. cases_if; ring_simplify.
-    { subst n. unfold cost. ring_simplify. prove_later facts. }
+    { subst n. unfold cost. ring_simplify. procrastinate. }
     { rewrite~ max0_eq. unfold cost.
       transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
       rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
       math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
-      prove_later facts. } }
+      procrastinate. } }
 
-  intros; close_facts.
+  end procrastination.
 
   simpl. exists~ 2 (-1).
 Qed.

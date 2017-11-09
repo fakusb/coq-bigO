@@ -13,7 +13,7 @@ Require Import Monotonic.
 Require Import LibZExtra.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
-Require Import EvarsFacts.
+Require Import Procrastination.Procrastination.
 (* Load the CF definitions. *)
 Require Import Sec6_example_ml.
 
@@ -33,17 +33,17 @@ Parameter g2_spec :
 
 Hint Extern 1 (RegisterSpec g2) => Provide (provide_specO g2_spec).
 
-Ltac xspecO_evar_cost facts cost_name domain :=
+Ltac xspecO_evar_cost cost_name domain :=
   match goal with
   | |- specO ?A _ _ _ =>
-    pose_facts_evars facts cost_name;
+    begin procrastination assuming cost_name;
     [ let Hnonneg := fresh "cost_nonneg" in
       assert (forall (x : A), domain x -> 0 <= cost_name x)
         as Hnonneg
-        by (simpl; prove_later facts);
+        by (simpl; procrastinate);
       simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
       xspecO_cost cost_name on domain;
-      [ | apply Hnonneg | prove_later facts | prove_later facts ]
+      [ | apply Hnonneg | procrastinate | procrastinate ]
     | ..]
   end.
 
@@ -55,7 +55,7 @@ Lemma f_spec :
            PRE (\$ cost n)
            POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_evar_cost facts costf (fun x => 0 <= x).
+  xspecO_evar_cost costf (fun x => 0 <= x).
 
   intros n. induction_wf: (downto 1) n. intro N.
   xcf. refine_credits. xpay.
@@ -63,25 +63,26 @@ Proof.
   { xret~. }
   { xapp. xapp. xapp~. }
 
-  { clean_max0. generalize n N. prove_later facts. }
-  intros; close_facts.
+  { clean_max0. generalize n N. procrastinate. }
+  end procrastination.
 
-  pose_facts_evars facts a b.
-  assert (A: 0 <= a) by (prove_later facts).
+  begin procrastination assuming a b.
+  assert (A: 0 <= a) by procrastinate.
   exists (fun (n:Z_filterType) => a * n + b). splits.
 
-  { intro. cut (0 <= b). math_nia. prove_later facts. }
+  { intro. cut (0 <= b). math_nia. procrastinate. }
   { monotonic. }
   { dominated. }
   { intros n N. cases_if; ring_simplify.
-    - cut (1 <= b). math_nia. prove_later facts.
-    - rewrite max0_eq by math_nia.
+    - cut (1 <= b). math_nia. procrastinate.
+    - with procrastination do (fun t => pose proof t). (* FIXME? *)
+      rewrite max0_eq by math_nia.
       ring_simplify.
 
       cut (cost g1_spec tt + cost g2_spec tt + 1 <= a). admit.
-      prove_later facts. }
+      procrastinate. }
 
-  intros; close_facts.
+  end procrastination.
   simpl. exists (cost g1_spec tt + cost g2_spec tt + 1) 1.
   splits; auto with zarith.
 Qed.
