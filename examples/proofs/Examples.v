@@ -756,9 +756,7 @@ Proof.
   { monotonic. }
   { dominated. }
   { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
-  { intros n N N'.
-    with procrastination do
-      (fun t => try (pose proof t; rewrite max0_eq by math_nia)). (* FIXME? *)
+  { intros n N N'. rewrite max0_eq by (with procrastination; math_nia).
     cut (1 <= a). math_nia. procrastinate. }
   { end procrastination.
     simpl. exists 1 1. splits; math. }

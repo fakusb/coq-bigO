@@ -75,8 +75,7 @@ Proof.
   { dominated. }
   { intros n N. cases_if; ring_simplify.
     - cut (1 <= b). math_nia. procrastinate.
-    - with procrastination do (fun t => pose proof t). (* FIXME? *)
-      rewrite max0_eq by math_nia.
+    - rewrite max0_eq by (with procrastination; math_nia).
       ring_simplify.
 
       cut (cost g1_spec tt + cost g2_spec tt + 1 <= a). admit.
