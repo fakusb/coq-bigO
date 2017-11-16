@@ -140,8 +140,7 @@ Proof.
     clean_max0. cases_if; ring_simplify.
     { assert (HH: n <= 0) by math. generalize n HH. procrastinate. }
     { rewrite Z.max_l; swap 1 2.
-      { simpl in g.
-        with procrastination do (fun t => try (apply t)). (* FIXME? *) (* use monotonicity *)
+      { simpl in g. already procrastinated. (* monotonicity *)
         forwards~: Zquot_mul_2 (j-i). }
       tests Hn1: (j-i = 1).
       + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
