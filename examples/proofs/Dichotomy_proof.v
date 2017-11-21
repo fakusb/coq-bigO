@@ -20,7 +20,7 @@ Require Import Dichotomy_ml.
 Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
 Lemma bsearch_spec :
-  specZ [cost \in_O (fun n => Z.log2 n)]
+  specZ [cost \in_O Z.log2]
     (forall t (xs : list int) (v : int) (i j : int),
         0 <= i <= length xs ->
         0 <= j <= length xs ->
@@ -109,7 +109,7 @@ Ltac xspecO_evar_cost cost_name :=
   end.
 
 Lemma bsearch_spec2 :
-  specZ [cost \in_O (fun n => Z.log2 n)]
+  specZ [cost \in_O Z.log2]
     (forall t (xs : list int) (v : int) (i j : int),
         0 <= i <= length xs ->
         0 <= j <= length xs ->
@@ -140,7 +140,7 @@ Proof.
     clean_max0. cases_if; ring_simplify.
     { assert (HH: n <= 0) by math. generalize n HH. procrastinate. }
     { rewrite Z.max_l; swap 1 2.
-      { simpl in g. already procrastinated. (* monotonicity *)
+      { already procrastinated. (* monotonicity *)
         forwards~: Zquot_mul_2 (j-i). }
       tests Hn1: (j-i = 1).
       + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
@@ -159,7 +159,7 @@ Proof.
   { intros x y H. cases_if; case_if~.
     { monotonic. }
     { rewrite <-Z.log2_nonneg. ring_simplify. procrastinate. } }
-  { unfold cost. rewrite dominated_ultimately_eq; swap 1 2.
+  { rewrite dominated_ultimately_eq; swap 1 2.
       rewrite ZP. exists 1. intros. cases_if~. reflexivity.
       apply dominated_sum_distr; dominated.
       (* FIXME; dominated alone should work *)
