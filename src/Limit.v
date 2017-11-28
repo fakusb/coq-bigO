@@ -78,7 +78,7 @@ Lemma limit_comp_eq :
   limit A C h.
 Proof.
   introv LF LG E.
-  forwards E': func_ext_dep E.
+  forwards E': fun_ext_dep E.
   rewrite E'. applys~ limit_comp.
 Qed.
 
@@ -353,6 +353,7 @@ Proof.
   rewrite imageP. rewrite ZP. exists (2 ^ n0). intros n N.
   apply HP. rewrite <-Z.log2_le_mono; [| exact N].
   apply Z.log2_le_pow2; auto with zarith.
+  forwards: pow_ge_1 2 n0; auto with zarith.
 Qed.
 
 (* Similarly, this lemma is mostly useful in combination with auto. *)
