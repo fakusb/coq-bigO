@@ -10,6 +10,7 @@ Require Import Array_proof.
 Require Import Dominated.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
+Require Import LibZExtra.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 Require Import Procrastination.Procrastination.

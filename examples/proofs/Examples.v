@@ -1,5 +1,6 @@
 Set Implicit Arguments.
 Require Import TLC.LibTactics.
+Require Import TLC.LibIntTactics.
 (* Load the CFML library, with time credits. *)
 Require Import CFML.CFLibCredits.
 Require Pervasives_ml.
@@ -592,7 +593,7 @@ Proof.
 
   xspecO_cost (fun n => a * Z.max 0 n + b).
   intro n.
-  induction_wf: (int_downto_wf 0) n.
+  induction_wf: (wf_downto 0) n.
 
   xcf. refine_credits.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
@@ -625,7 +626,7 @@ Proof.
 
   xspecO_cost (fun n => a * Z.max 0 n + b).
   intro n.
-  induction_wf: (int_downto_wf 0) n.
+  induction_wf: (wf_downto 0) n.
 
   xcf. refine_credits.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
@@ -659,7 +660,7 @@ Proof.
 
   xspecO_cost (fun n => Z.max 0 (a * n + b)).
   intros n.
-  induction_wf: (int_downto_wf 0) n. intro N.
+  induction_wf: (wf_downto 0) n. intro N.
 
   xcf. refine_credits.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
@@ -693,7 +694,7 @@ Proof.
   assert (b_nonneg : 0 <= b) by procrastinate.
 
   xspecO_cost (fun n => a * n + b) on (fun n => 0 <= n).
-  intro n. induction_wf: (int_downto_wf 0) n. intro N.
+  intro n. induction_wf: (wf_downto 0) n. intro N.
 
   xcf. refine_credits.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
@@ -737,7 +738,7 @@ Lemma rec1_spec6 :
     (fun n => n).
 Proof.
   xspecO_evar_cost rec_cost (fun x => 0 <= x).
-  intro n. induction_wf: (int_downto_wf 0) n. intro N.
+  intro n. induction_wf: (wf_downto 0) n. intro N.
 
   xcf. refine_credits.
   xpay. xif_guard. xret. hsimpl. xapp. math. math.

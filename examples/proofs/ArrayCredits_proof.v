@@ -1,6 +1,6 @@
 Set Implicit Arguments.
 Require Import CFML.CFLib.
-Require Import TLC.LibListZ.
+Require Import TLC.LibListZ TLC.LibListSub.
 Require CFML.Stdlib.Sys_ml.
 Require CFML.Stdlib.Array_ml.
 
@@ -79,7 +79,7 @@ Parameter get_spec :
   index xs i ->
   app Array_ml.get [t i]
     PRE (\$ 1 \* t ~> Array xs)
-    POST (fun x => t ~> Array xs \* \[x = xs[i] ]).
+    POST (fun x => t ~> Array xs \* \[ x = xs[i] ]).
 
 Hint Extern 1 (RegisterSpec Array_ml.get) => Provide get_spec.
 
@@ -124,7 +124,7 @@ Hint Extern 1 (RegisterSpec Array_ml.make) => Provide make_spec.
 
 (* TEMPORARY clean up: *)
 
-Local Hint Resolve index_length_unfold int_index_prove. (* for array indexing *)
+Local Hint Resolve index_of_index_length int_index_prove. (* for array indexing *)
 
 Lemma aaa: forall n, n <= n.
 Proof. math. Qed.
@@ -142,8 +142,8 @@ Lemma singleton_prefix_make:
 Proof.
   intros.
   exists (make (n - 1) x).
-  rewrite app_cons_one.
-  apply* cons_make.
+  rewrite app_cons_one_r.
+  rewrite* <- make_eq_cons_make_pred.
 Qed.
 
 Lemma prefix_snoc_write:
@@ -159,7 +159,7 @@ Proof.
   destruct ys as [| y ys ].
   { false. rewrite app_nil_r in Hp. subst xs. math. }
   (* The witness is the tail of [ys], now also named [ys]. *)
-  exists ys. subst zs. rewrite* update_app_right_here.
+  exists ys. subst zs. rewrite* update_middle.
 Qed.
 
 Lemma prefix_identity:
@@ -180,13 +180,15 @@ Lemma init_spec :
   (forall (i : int) (xs : list A),
       index n i ->
       i = length xs ->
-      app f [i] (F xs) (fun x => F (xs & x))) ->
+      app f [i]
+        PRE  (F xs)
+        POST (fun x => F (xs & x))) ->
   app Array_ml.init [n f]
-      (\$ (n+1) \* F nil)
-      (fun t =>
-         Hexists xs, t ~> Array xs \* \[n = length xs] \* F xs).
+    PRE  (\$ (n+1) \* F nil)
+    POST (fun t =>
+           Hexists xs, t ~> Array xs \* \[n = length xs] \* F xs).
 Proof.
-Admitted.
+Admitted. (* TODO: credits *)
 
 Hint Extern 1 (RegisterSpec Array_ml.init) => Provide init_spec.
 
@@ -198,8 +200,8 @@ Parameter copy_spec:
   curried 1%nat Array_ml.copy /\
   forall A (xs:list A) t,
   app Array_ml.copy [t]
-    INV (\$ (length xs + 1) \* t ~> Array xs)
-    POST (fun t' => t' ~> Array xs).
+    PRE (\$ (length xs + 1) \* t ~> Array xs)
+    POST (fun t' => t ~> Array xs \* t' ~> Array xs).
 
 Hint Extern 1 (RegisterSpec Array_ml.copy) => Provide copy_spec.
 
@@ -207,6 +209,7 @@ Hint Extern 1 (RegisterSpec Array_ml.copy) => Provide copy_spec.
 
 (* [Array.fill]. *)
 
+(* TODO: specs with credits *)
 (*
 Parameter fill_spec :
   curried 4%nat Array_ml.fill /\
@@ -232,6 +235,7 @@ Hint Extern 1 (RegisterSpec Array_ml.fill) => Provide fill_spec.
 
 (* [Array.iter]. *)
 
+(* TODO: specs with credits *)
 (*
 Parameter iter_spec :
   curried 2%nat Array_ml.iter /\
@@ -258,6 +262,7 @@ Hint Extern 1 (RegisterSpec Array_ml.iter) => Provide iter_spec.
 
 (* [Array.sub]. *)
 
+(* TODO: specs with credits *)
 (*
 Parameter sub_spec :
   curried 3%nat Array_ml.sub /\

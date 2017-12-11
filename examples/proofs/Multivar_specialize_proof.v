@@ -1,5 +1,6 @@
 Set Implicit Arguments.
 Require Import TLC.LibTactics.
+Require Import TLC.LibIntTactics.
 (* Load the CFML library, with time credits. *)
 Require Import CFML.CFLibCredits.
 Require Pervasives_ml.

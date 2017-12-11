@@ -1,6 +1,7 @@
 Set Implicit Arguments.
 Require Import TLC.LibTactics.
-Require Import TLC.LibListSorted.
+Require Import TLC.LibListSort.
+Require Import TLC.LibListZ.
 (* Load the CFML library, with time credits. *)
 Require Import CFML.CFLibCredits.
 Require Pervasives_ml.
@@ -17,8 +18,6 @@ Require Import Tmp.
 Require Import CFMLBigO.
 (* Load the CF definitions. *)
 Require Import Selection_sort_ml.
-
-Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
 Lemma swap_spec :
   specO unit_filterType eq
@@ -37,7 +36,7 @@ Qed.
 
 Hint Extern 1 (RegisterSpec swap) => Provide (provide_specO swap_spec).
 
-Require Import TLC.LibListZ.
+Ltac auto_tilde ::= try solve [ eauto with maths | false; math ].
 
 Lemma selection_sort_spec :
   specZ [cost \in_O (fun n => n ^ 2)]

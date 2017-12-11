@@ -7,6 +7,7 @@ Require Import Dominated.
 Require Import LibFunOrd.
 Require Import UltimatelyGreater.
 Require Import LibZExtra.
+Require Import TLC.LibIntTactics.
 
 (********************************************************************)
 

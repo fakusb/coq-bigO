@@ -1,5 +1,6 @@
 Set Implicit Arguments.
 Require Import TLC.LibTactics.
+Require Import TLC.LibIntTactics.
 (* Load the CFML library, with time credits. *)
 Require Import CFML.CFLibCredits.
 Require Pervasives_ml.
@@ -41,7 +42,7 @@ Proof.
   xcf. xpay.
 
   xapp~. intros ds Hds. subst ds.
-  xapp~. apply index_zmake. apply~ int_index_prove.
+  xapp~. apply index_make. apply~ int_index_prove.
   xseq.
   { xfor_inv (fun (_:int) => Hexists (ds: list int), t ~> Array edges \* d ~> Array ds). math.
     { intros i Hi. xpull. intros ds.
