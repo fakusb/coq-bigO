@@ -30,10 +30,12 @@ Require Import TLC.LibLogic.
 
 Section Domination.
 
-Variable A : filterType.
+Implicit Types A : filterType.
 
-Definition dominated (f g : A -> Z) :=
+Definition dominated A (f g : A -> Z) :=
   exists c, ultimately A (fun x => Z.abs (f x) <= c * Z.abs (g x)).
+
+Arguments dominated : clear implicits.
 
 (* This notion is analogous to [is_domin] in Coquelicot. *)
 
@@ -43,8 +45,8 @@ Definition dominated (f g : A -> Z) :=
    non-negative.
 *)
 
-Lemma dominated_nonneg_const (f g : A -> Z) :
-  dominated f g ->
+Lemma dominated_nonneg_const A f g :
+  dominated A f g ->
   exists c, (0 <= c) /\ ultimately A (fun x => Z.abs (f x) <= c * Z.abs (g x)).
 Proof.
   intros (c & U).
@@ -57,16 +59,16 @@ Qed.
 
 (* Domination is reflexive. *)
 
-Lemma dominated_reflexive f :
-  dominated f f.
+Lemma dominated_reflexive A f :
+  dominated A f f.
 Proof.
   exists 1. auto using filter_universe_alt with zarith.
 Qed.
 
 (* Domination is transitive. *)
 
-Lemma dominated_transitive f g h :
-  dominated f g -> dominated g h -> dominated f h.
+Lemma dominated_transitive A f g h :
+  dominated A f g -> dominated A g h -> dominated A f h.
 Proof.
   intros D1 D2.
   forwards (c1 & c1P & U1): dominated_nonneg_const D1.
@@ -76,21 +78,9 @@ Proof.
   intros. nia.
 Qed.
 
-End Domination.
-Arguments dominated : clear implicits.
-
-Add Parametric Relation (A : filterType) : (A -> Z) (dominated A)
-  reflexivity proved by (@dominated_reflexive A)
-  transitivity proved by (@dominated_transitive A)
-  as dominated_preorder.
-
-Section DominatedLaws.
-
-Variable A : filterType.
-
 (* Pointwise equality implies domination. *)
 
-Lemma dominated_eq f f' :
+Lemma dominated_eq A f f' :
   (forall a, f a = f' a) ->
   dominated A f f'.
 Proof.
@@ -98,20 +88,22 @@ Proof.
   intros. rewrite H. auto with zarith.
 Qed.
 
-Lemma dominated_eq_l f f' g :
+Lemma dominated_eq_l A f f' g :
   dominated A f g ->
   (forall a, f a = f' a) ->
   dominated A f' g.
 Proof.
-  introv D E. rewrite dominated_eq. apply D. auto.
+  introv D E. eapply dominated_transitive; [| eapply D].
+  apply dominated_eq. auto.
 Qed.
 
-Lemma dominated_eq_r f g g' :
+Lemma dominated_eq_r A f g g' :
   dominated A f g ->
   (forall a, g a = g' a) ->
   dominated A f g'.
 Proof.
-  introv D E. rewrite <-dominated_eq with (f' := g'). apply D. auto.
+  introv D E. eapply dominated_transitive; [eapply D |].
+  apply dominated_eq. auto.
 Qed.
 
 (* Asymptotic pointwise equality implies domination.
@@ -131,7 +123,7 @@ Qed.
    nonnegative, which may be more convenient to handle.
 *)
 
-Lemma dominated_ultimately_eq f f' :
+Lemma dominated_ultimately_eq A f f' :
   ultimately A (fun x => f x = f' x) ->
   dominated A f f'.
 Proof.
@@ -142,7 +134,7 @@ Qed.
 
 (* Pointwise inequality implies domination. *)
 
-Lemma dominated_le f g :
+Lemma dominated_le A f g :
   (forall x, Z.abs (f x) <= Z.abs (g x)) ->
   dominated A f g.
 Proof.
@@ -151,7 +143,7 @@ Qed.
 
 (* Asymptotic pointwise inequality implies domination. *)
 
-Lemma dominated_ultimately_le f g :
+Lemma dominated_ultimately_le A f g :
   ultimately A (fun x => Z.abs (f x) <= Z.abs (g x)) ->
   dominated A f g.
 Proof.
@@ -160,9 +152,22 @@ Proof.
   eauto with zarith.
 Qed.
 
+End Domination.
+
+Arguments dominated : clear implicits.
+
+Add Parametric Relation (A : filterType) : (A -> Z) (dominated A)
+  reflexivity proved by (@dominated_reflexive A)
+  transitivity proved by (@dominated_transitive A)
+  as dominated_preorder.
+
+Section DominatedLaws.
+
+Implicit Types A : filterType.
+
 (* A constant is dominated by any other non-zero constant. *)
 
-Lemma dominated_cst c1 c2 :
+Lemma dominated_cst A c1 c2 :
   c2 <> 0 ->
   dominated A (fun _ => c1) (fun _ => c2).
 Proof.
@@ -173,7 +178,7 @@ Qed.
 
 (* A constant is dominated by any function going to infinity. *)
 
-Lemma dominated_cst_limit c g :
+Lemma dominated_cst_limit A c g :
   limit A Z_filterType g ->
   dominated A (fun _ => c) g.
 Proof.
@@ -191,7 +196,7 @@ Qed.
 
 (* Domination is compatible with mul. *)
 
-Lemma dominated_mul f1 f2 g1 g2 :
+Lemma dominated_mul A f1 f2 g1 g2 :
   dominated A f1 g1 ->
   dominated A f2 g2 ->
   dominated A (fun x => (f1 x) * (f2 x)) (fun x => (g1 x) * (g2 x)).
@@ -206,7 +211,7 @@ Qed.
 
 (* As a corollary, domination is compatible with multiplying by constants. *)
 
-Lemma dominated_mul_cst c1 c2 f g :
+Lemma dominated_mul_cst A c1 c2 f g :
   c2 <> 0 ->
   dominated A f g ->
   dominated A (fun x => c1 * (f x)) (fun x => c2 * (g x)).
@@ -216,7 +221,7 @@ Proof.
   applys~ dominated_cst. auto. auto.
 Qed.
 
-Lemma dominated_mul_cst_l_1 c f g :
+Lemma dominated_mul_cst_l_1 A c f g :
   dominated A f g ->
   dominated A (fun x => c * (f x)) g.
 Proof.
@@ -225,7 +230,7 @@ Proof.
   auto with zarith.
 Qed.
 
-Lemma dominated_mul_cst_l_2 c f g :
+Lemma dominated_mul_cst_l_2 A c f g :
   dominated A f g ->
   dominated A (fun x => (f x) * c) g.
 Proof.
@@ -233,7 +238,7 @@ Proof.
   intros. rewrite Z.mul_comm. reflexivity.
 Qed.
 
-Lemma dominated_mul_cst_r_1 c f g :
+Lemma dominated_mul_cst_r_1 A c f g :
   dominated A f g ->
   c <> 0 ->
   dominated A f (fun x => c * (g x)).
@@ -243,7 +248,7 @@ Proof.
   auto with zarith.
 Qed.
 
-Lemma dominated_mul_cst_r_2 c f g :
+Lemma dominated_mul_cst_r_2 A c f g :
   dominated A f g ->
   c <> 0 ->
   dominated A f (fun x => (g x) * c).
@@ -255,7 +260,7 @@ Qed.
 
 (* Dominated is compatible with max. *)
 
-Lemma dominated_max f1 f2 g1 g2 :
+Lemma dominated_max A f1 f2 g1 g2 :
   ultimately A (fun x => 0 <= g1 x) ->
   ultimately A (fun x => 0 <= g2 x) ->
   dominated A f1 g1 ->
@@ -274,7 +279,7 @@ Qed.
    function if both its components are dominated by it.
 *)
 
-Lemma dominated_max_distr f g h :
+Lemma dominated_max_distr A f g h :
   dominated A f h ->
   dominated A g h ->
   dominated A (fun x => Z.max (f x) (g x)) h.
@@ -287,7 +292,7 @@ Qed.
 
 (* A maximum is dominated by a sum, for ultimately nonnegative functions. *)
 
-Lemma dominated_max_sum f g :
+Lemma dominated_max_sum A f g :
   ultimately A (fun x => 0 <= f x) ->
   ultimately A (fun x => 0 <= g x) ->
   dominated A (fun x => Z.max (f x) (g x)) (fun x => f x + g x).
@@ -300,7 +305,7 @@ Qed.
 (* Conversely, a sum is dominated by a maximum. [max] and [+] are asymptotically
    equivalent, for ultimately nonnegative functions. *)
 
-Lemma dominated_sum_max f g :
+Lemma dominated_sum_max A f g :
   ultimately A (fun x => 0 <= f x) ->
   ultimately A (fun x => 0 <= g x) ->
   dominated A (fun x => f x + g x) (fun x => Z.max (f x) (g x)).
@@ -312,7 +317,7 @@ Qed.
 
 (* Domination is compatible with sum. *)
 
-Lemma dominated_sum f1 f2 g1 g2 :
+Lemma dominated_sum A f1 f2 g1 g2 :
   ultimately A (fun x => 0 <= g1 x) ->
   ultimately A (fun x => 0 <= g2 x) ->
   dominated A f1 g1 ->
@@ -325,7 +330,7 @@ Proof.
   intros. nia.
 Qed.
 
-Lemma dominated_sum_distr f g h :
+Lemma dominated_sum_distr A f g h :
   dominated A f h ->
   dominated A g h ->
   dominated A (fun x => f x + g x) h.
@@ -421,7 +426,7 @@ Proof.
   rewrite~ <-(ZshiftP x0).
 Qed.
 
-Lemma dominated_pow_r_cst_l :
+Lemma dominated_pow_r_cst_l A :
   forall (f g : A -> Z) (b c: Z),
   0 <= c -> 0 < b ->
   (* if f x = -c, g = 0, b ^ (f x) is O(g) but b ^ (c + f x) is not O(g) *)
@@ -435,7 +440,7 @@ Proof.
   rewrites~ Z.pow_add_r.
 Qed.
 
-Lemma dominated_pow_r_cst_r :
+Lemma dominated_pow_r_cst_r A :
   forall (f g : A -> Z) (b c: Z),
   0 <= c -> 0 < b ->
   ultimately A (fun x => 0 <= f x) ->
@@ -448,7 +453,7 @@ Proof.
   intros. rewrites~ Zplus_comm.
 Qed.
 
-Lemma dominated_pow_l :
+Lemma dominated_pow_l A :
   forall (f g : A -> Z) (e: Z),
   ultimately A (fun x => 0 <= f x) ->
   ultimately A (fun x => 0 <= g x) ->
@@ -468,7 +473,7 @@ Proof.
   nia.
 Qed.
 
-Lemma dominated_log :
+Lemma dominated_log A :
   forall f g : A -> Z,
     ultimately A (fun x => 2 <= g x) ->
     dominated A f g ->
