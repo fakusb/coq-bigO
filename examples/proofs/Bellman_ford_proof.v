@@ -15,7 +15,6 @@ Require Import LimitNary.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 Require Import LibZExtra.
-Require Import Tmp.
 Require Import Generic.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.

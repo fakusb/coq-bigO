@@ -677,9 +677,21 @@ Ltac math_apply P :=
 
 (* ---------------------------------------------------------------------------- *)
 
-Module Product.
-
 Section ProductLaws.
+
+(* [product_filterType] is "symmetrical" *)
+Lemma dominated_product_swap : forall (A B : filterType) f g,
+  dominated (product_filterType A B) (fun '(a,b) => f a b) (fun '(a,b) => g a b) ->
+  dominated (product_filterType B A) (fun '(b,a) => f a b) (fun '(b,a) => g a b).
+Proof.
+  introv H. destruct H as [c U].
+  exists c. rewrite productP in *. destruct U as (P1 & P2 & UP1 & UP2 & UU).
+  exists P2 P1. splits~.
+Qed.
+
+End ProductLaws.
+
+Module Product.
 
 (* Under some assumptions, domination is compatible with [cumul] (i.e "big sum").
 
@@ -941,8 +953,6 @@ Proof.
   - intros [? ?]. reflexivity.
   - intros [? ?]. reflexivity.
 Qed.
-
-End ProductLaws.
 
 End Product.
 
