@@ -11,6 +11,7 @@ Require Export Filter.
 Require Export Limit.
 Require Import Big.
 Require Export LibFunOrd.
+Require Import LibRewrite.
 Require Import BigEnough.
 Require Import Monotonic.
 Require Import TLC.LibAxioms.
@@ -156,10 +157,96 @@ End Domination.
 
 Arguments dominated : clear implicits.
 
+(******************************************************************************)
+(* Setoid instances to rewrite with/under dominated.
+
+   We came up with this by trial and error; it is sketchy and should probably be
+   improved. *)
+
 Add Parametric Relation (A : filterType) : (A -> Z) (dominated A)
   reflexivity proved by (@dominated_reflexive A)
   transitivity proved by (@dominated_transitive A)
   as dominated_preorder.
+
+Program Instance Eq_dominated_subrelation (A : filterType) :
+  subrelation (pw eq) (dominated A).
+Next Obligation.
+  intros ? f g H. apply dominated_eq. apply H.
+Qed.
+
+Program Instance Eq_flip_dominated_subrelation (A : filterType) :
+  subrelation (Basics.flip (pw eq)) (dominated A).
+Next Obligation.
+  intros ? f g H. unfold pw, Basics.flip in H. apply dominated_eq. eauto.
+Qed.
+
+(*?*)
+Program Instance Pw_eq_dominated_proper (A : filterType) :
+  Proper (pw eq ==> pw eq ==> Basics.flip Basics.impl) (dominated A).
+Next Obligation.
+  intros. unfold respectful, pointwise_relation, Basics.flip, Basics.impl.
+  intros f g H f' g' H' D.
+  eapply dominated_transitive. apply (dominated_eq H).
+  eapply dominated_transitive. apply D. apply dominated_eq. auto.
+Qed.
+
+(*
+Program Instance Le_dominated_subrelation (A : filterType) :
+  subrelation (pw Z.le) (dominated A).
+Next Obligation. Admitted.
+*)
+
+(*
+Program Instance Pw_eq_subrelation_eq (A B : Type) :
+  subrelation (@pointwise_relation A B eq) eq.
+Next Obligation. Admitted.
+
+Goal forall (A:filterType), subrelation eq (dominated A).
+  typeclasses eauto.
+Qed.
+
+Goal forall A B, subrelation (@pointwise_relation A B eq) eq.
+  typeclasses eauto.
+Qed.
+*)
+
+(* Program Instance Subrelation_transitive (A : Type) : Transitive (@subrelation A). *)
+(* Next Obligation. apply subrelation_transitive. Qed. *)
+
+(* Hint Resolve subrelation_transitive : typeclass_instances. *)
+
+(*
+Goal forall (A:filterType), subrelation (@pointwise_relation _ _ eq) (dominated A).
+  typeclasses eauto.
+Qed.
+
+Goal forall (A:filterType), subrelation (Basics.flip (@pointwise_relation _ _ eq)) (dominated A).
+  typeclasses eauto.
+Qed.
+*)
+
+Hint Rewrite Z.add_0_r : myhints.
+
+Goal dominated Z_filterType (fun x => (x+0)+0) (fun x => x).
+  setoid_rewrite Z.add_0_r. Undo.
+  rewrite_strat (topdown (hints myhints)).
+  apply dominated_reflexive.
+Qed.
+
+Goal dominated Z_filterType (fun x => x) (fun x => x+0).
+  setoid_rewrite Z.add_0_r.
+  apply dominated_reflexive.
+Qed.
+
+(*
+Goal forall a b, a <= b -> dominated Z_filterType (fun x => x + a) (fun x => x + b).
+  intros a b H.
+  setoid_rewrite H.
+  apply dominated_reflexive.
+Qed.
+*)
+
+(******************************************************************************)
 
 Section DominatedLaws.
 

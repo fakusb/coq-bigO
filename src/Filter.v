@@ -6,6 +6,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+Require Import LibRewrite.
 Require Import ZArith.
 Require Import Psatz.
 
@@ -190,6 +191,16 @@ Qed.
 End FilterLaws.
 
 (* TEMPORARY define rewriting-rule versions of these laws? *)
+
+(* Instance for rewriting under [ultimately] *)
+
+Program Instance Pw_eq_ultimately_proper (A : filterType) :
+  Proper (pw eq ==> Basics.flip Basics.impl) (ultimately A).
+Next Obligation.
+  intros. unfold respectful, pointwise_relation, Basics.flip, Basics.impl.
+  intros P1 P2 H U. apply (filter_closed_under_inclusion U).
+  intros. rewrite H. assumption.
+Qed.
 
 (* ---------------------------------------------------------------------------- *)
 (* A set of tactics useful to intersect an arbitrary number of filters.
