@@ -4,10 +4,13 @@ Require Import TLC.LibTactics.
 Require Import CFML.CFLibCredits.
 (* Load the BigO library. *)
 Require Import Dominated.
+Require Import DominatedNary.
+Require Import FilterNary.
 Require Import LibFunOrd.
 Require Import UltimatelyGreater.
 Require Import LibZExtra.
 Require Import TLC.LibIntTactics.
+Require Import Generic.
 
 (********************************************************************)
 
@@ -126,6 +129,15 @@ Proof.
 Qed.
 
 Hint Resolve dominated_max0 : dominated.
+
+(* FIXME: "Generic.App" clashes with CFML's "App" notation *)
+Lemma dominated_max0_nary : forall domain M f g,
+  dominated (nFilterType domain M) (Uncurry f) (Uncurry g) ->
+  dominated (nFilterType domain M) (Fun' (fun p => max0 (Generic.App f p))) (Uncurry g).
+Proof. prove_nary dominated_max0. Qed.
+
+Hint Extern 1 (dominated _ (fun '(_, _) => max0 _) _) =>
+  apply_nary dominated_max0_nary : dominated.
 
 (* TODO: prove & move *)
 

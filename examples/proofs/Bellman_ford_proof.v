@@ -9,10 +9,14 @@ Require Import Pervasives_proof.
 Require Import ArrayCredits_proof.
 (* Load the big-O library. *)
 Require Import Dominated.
+Require Import DominatedNary.
+Require Import FilterNary.
+Require Import LimitNary.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 Require Import LibZExtra.
 Require Import Tmp.
+Require Import Generic.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 (* Load the CF definitions. *)
@@ -69,39 +73,42 @@ Proof.
 
   admit. (* TODO monotonic *)
 
-  eapply dominated_sum_distr_2; swap 1 2.
-  apply dominated_cst_limit_2. admit. (* TODO limit *)
+  apply_nary dominated_sum_distr_nary; swap 1 2.
+  dominated.
 
-  eapply dominated_sum_distr_2.
-  eapply dominated_max0_2.
-  eapply dominated_sum_distr_2.
-  (* TODO *) admit.
-  apply dominated_cst_limit_2. admit.
+  apply_nary dominated_sum_distr_nary.
+  { dominated.
+    apply_nary dominated_sum_distr_nary.
+    { apply dominated_transitive with (fun '(x, y) => x * 1).
+      - (* TODO: improve using some setoid rewrite instances? *)
+        apply dominated_eq. intros [? ?]. math.
+      - apply_nary dominated_mul_nary; dominated. }
+    { dominated. } }
+  { dominated.
+    eapply dominated_transitive.
+    apply dominated_product_swap.
+    apply Product.dominated_big_sum_bound_with.
+    { ultimately_greater. }
+    { monotonic. }
+    { limit. (* FIXME *) apply limit_sum_cst_r. limit. }
 
-  eapply dominated_max0_2.
-  eapply dominated_transitive.
-  apply dominated_product_swap.
-  apply Product.dominated_big_sum_bound_with.
-  { ultimately_greater. }
-  { monotonic. }
-  { limit. apply limit_sum_cst_r. limit. }
-  simpl.
+    simpl. dominated.
 
-  eapply dominated_mul_2.
-  eapply dominated_sum_distr_2.
-  eapply dominated_sum_distr_2.
-  reflexivity.
-  apply dominated_cst_limit_2. limit.
-  apply dominated_cst_limit_2. limit.
+    apply_nary dominated_sum_distr_nary.
+    { apply_nary dominated_sum_distr_nary.
+      { reflexivity. }
+      { dominated. } }
+    { dominated. }
 
-  eapply dominated_sum_distr_2.
-  apply dominated_cst_limit_2. limit.
-  apply dominated_sum_distr_2. apply dominated_cst_limit_2. limit.
-  eapply dominated_max0_2.
-  eapply dominated_transitive.
-  apply Product.dominated_big_sum_bound.
-  { ultimately_greater. } { monotonic. }
-  simpl. eapply dominated_mul_cst_l_2_2. reflexivity.
+    apply_nary dominated_sum_distr_nary.
+    { dominated. }
+    { apply_nary dominated_sum_distr_nary.
+      { dominated. }
+      { dominated.
+        eapply dominated_transitive.
+        apply Product.dominated_big_sum_bound.
+        { ultimately_greater. } { monotonic. }
+        simpl. dominated. } } }
 Qed.
 
 Definition domain := (fun '(n,m) => m <= n ^ 2).
