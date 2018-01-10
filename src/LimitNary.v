@@ -28,6 +28,12 @@ Lemma limit_mul_nary domain M f g :
   limit (nFilterType domain M) Z_filterType (Fun' (fun p => (App f p) * (App g p))).
 Proof. prove_nary limit_mul. Qed.
 
+Lemma limit_sum_nary domain M f g :
+  limit (nFilterType domain M) Z_filterType (Uncurry f) ->
+  limit (nFilterType domain M) Z_filterType (Uncurry g) ->
+  limit (nFilterType domain M) Z_filterType (Fun' (fun p => (App f p) + (App g p))).
+Proof. prove_nary limit_sum. Qed.
+
 (******************************************************************************)
 
 (* Applying n-ary limit lemmas *)
@@ -56,3 +62,5 @@ Admitted.
 
 Hint Extern 2 (limit _ _ (fun '(_, _) => Z.mul _ _)) =>
   apply_nary limit_mul_nary : limit.
+Hint Extern 2 (limit _ _ (fun '(_, _) => Z.add _ _)) =>
+  apply_nary limit_sum_nary : limit.

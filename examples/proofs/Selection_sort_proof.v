@@ -13,7 +13,9 @@ Require Import Dominated.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 Require Import LibZExtra.
-Require Import Tmp.
+Require Import DominatedNary.
+Require Import LimitNary.
+Require Import Generic.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 (* Load the CF definitions. *)
@@ -106,10 +108,11 @@ Proof.
 
   etransitivity. eapply dominated_big_sum_bound'.
   Focus 3.
-  apply dominated_sum_distr_2. apply dominated_sum_distr_2.
-  apply dominated_mul_cst_l_1_2. apply dominated_reflexive.
-  simpl. apply dominated_cst_limit_2. limit.
-  simpl. apply dominated_cst_limit_2. limit.
+  apply_nary dominated_sum_distr_nary.
+  apply_nary dominated_sum_distr_nary.
+  dominated. apply dominated_reflexive.
+  simpl. dominated.
+  simpl. dominated.
 
   ultimately_greater. ultimately_greater.
   monotonic. intros ? ? H. destruct~ H.

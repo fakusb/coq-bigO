@@ -11,7 +11,6 @@ Require Import Dominated.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 Require Import LibZExtra.
-Require Import Tmp.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 (* Load the CF definitions. *)

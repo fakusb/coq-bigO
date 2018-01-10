@@ -12,7 +12,9 @@ Require Import Dominated.
 Require Import UltimatelyGreater.
 Require Import Monotonic.
 Require Import LibZExtra.
-Require Import Tmp.
+Require Import DominatedNary.
+Require Import LimitNary.
+Require Import Generic.
 (* Load the custom CFML tactics with support for big-Os *)
 Require Import CFMLBigO.
 (* Load the CF definitions. *)
@@ -126,9 +128,10 @@ Proof.
   cleanup_cost.
   admit.
 
-  apply dominated_sum_distr_2.
-  { apply dominated_max0_2. reflexivity. }
-  { apply dominated_cst_limit_2. apply product_positive_order_limit. }
+  apply_nary dominated_sum_distr_nary.
+  { dominated. }
+  { apply_nary dominated_cst_limit_nary.
+    apply product_positive_order_limit. }
 Qed.
 
 (* TODO: make xapp_spec work with a specO *)
@@ -207,9 +210,9 @@ Proof.
   cleanup_cost.
   admit.
 
-  apply dominated_sum_distr_a2.
-  { apply dominated_max0_a2. apply dominated_reflexive. }
-  { apply dominated_cst_limit_a2. apply asymproduct_positive_order_limit. }
+  apply_nary dominated_sum_distr_nary.
+  { dominated.  }
+  { apply_nary dominated_cst_limit_nary. apply asymproduct_positive_order_limit. }
 Qed.
 
 (* TODO: make xapp_spec work with a specO *)
@@ -287,17 +290,14 @@ Proof.
   cleanup_cost.
   admit.
 
-  apply dominated_sum_distr_2.
-  { apply dominated_max0_2. apply dominated_sum_distr_2.
-    { exists (Z.abs m). rewrite productP.
+  apply_nary dominated_sum_distr_nary.
+  { dominated. apply_nary dominated_sum_distr_nary.
+    { exists (Z.abs m). (*rewrite productP.*) (* FIXME *)
       exists (fun x => x = m) (fun x => 0 <= x). splits.
       rewrite onP. auto.
       apply ultimately_ge_Z.
       simpl. intros m' n E H. subst m'. math_nia. }
     apply dominated_reflexive.
   }
-  { apply dominated_cst_limit_2.
-    rewrite limitP. intros P UP. rewrite productP.
-    exists (fun x => x = m) P. splits~. rewrite~ onP.
-  }
+  { dominated. }
 Qed.
