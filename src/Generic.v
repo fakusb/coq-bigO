@@ -174,3 +174,55 @@ Ltac rew_generic_in_all :=
    is equivalent but does not use the combinators. *)
 Ltac prove_nary L :=
   intros; rew_generic_in_all; eapply L; eauto.
+
+(******************************************************************************)
+(* Applying n-ary lemmas stated using the combinators above *)
+
+Inductive Domain_goal_hint (G : Type) := Mk_domain_goal_hint : Domain_goal_hint G.
+Record Domain_of_goal := Mk_domain_of_goal {
+  Domain_of_goal_domain_ty : Type ;
+  Domain_of_goal_domain : Domain_of_goal_domain_ty ;
+ }.
+
+Arguments Mk_domain_of_goal [Domain_of_goal_domain_ty].
+
+Ltac mk_domain_getter tac :=
+  match goal with
+  | H : Domain_goal_hint ?G |- Domain_of_goal => tac G
+  end.
+
+Ltac get_domain :=
+  match goal with |- ?G =>
+    let packed_dom := constr:(ltac:(
+                         pose proof (Mk_domain_goal_hint G);
+                         typeclasses eauto with domain_of_goal
+                       ) : Domain_of_goal)
+    in
+    let dom := constr:(Domain_of_goal_domain packed_dom) in
+    let dom := eval cbv in dom in
+    dom
+  end.
+
+(* Simplify the type of t (by running the [simpl] tactic), then apply it *)
+Ltac simpl_apply t :=
+  let H := fresh in
+  pose proof t as H;
+  autounfold with generic in H;
+  simpl in H;
+  apply H;
+  clear H.
+
+Ltac apply_nary L :=
+  let D := get_domain in
+  simpl_apply (L D).
+
+(******************************************************************************)
+(* Utilities *)
+
+Ltac list_of_tuple ty :=
+  lazymatch ty with
+  | prod ?A ?B =>
+    let l := list_of_tuple A in
+    constr:(cons (B:Type) l)
+  | _ => constr:(cons (ty:Type) nil)
+  end.
