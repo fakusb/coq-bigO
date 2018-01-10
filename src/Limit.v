@@ -8,6 +8,7 @@ Require Import Filter.
 Require Import ZArith.
 Require Import Psatz.
 Require Import LibZExtra.
+Require Import LibRewrite.
 Local Open Scope Z_scope.
 
 (* A notion of limit, or convergence, or divergence -- it all depends on which
@@ -53,6 +54,18 @@ Qed.
 
 End Limit.
 Arguments limit : clear implicits.
+
+(******************************************************************************)
+(* Instance for rewriting under [limit] *)
+
+Program Instance Pw_eq_ultimately_proper (A B : filterType) :
+  Proper (pw eq ==> Basics.flip Basics.impl) (limit A B).
+Next Obligation.
+  intros. unfold respectful, pointwise_relation, Basics.flip, Basics.impl.
+  intros P1 P2 H U. eapply limit_eq; eauto.
+Qed.
+
+(******************************************************************************)
 
 Lemma limit_id:
   forall A : filterType,
@@ -386,6 +399,12 @@ Hint Resolve limit_log2_comp : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(a, _) => @?f a)) =>
   apply limit_lift1 : limit.
 Hint Extern 2 (limit (product_filterType _ _) _ (fun '(_, b) => @?f b)) =>
+  apply limit_lift2 : limit.
+(* FIXME? Required because [apply_nary] unfolds product_filterType *)
+Hint Extern 2 (limit (FilterType _ (product_filterMixin _ _)) _ (fun '(a, _) => @?f a)) =>
+  apply limit_lift1 : limit.
+(* FIXME? Required because [apply_nary] unfolds product_filterType *)
+Hint Extern 2 (limit (FilterType _ (product_filterMixin _ _)) _ (fun '(_, b) => @?f b)) =>
   apply limit_lift2 : limit.
 Hint Extern 2 (limit _ (product_filterType _ _) (fun _ => (_, _))) =>
   apply limit_product : limit.
