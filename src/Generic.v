@@ -50,17 +50,17 @@ Fixpoint Fun' {domain : list Type} {range : Type} {struct domain}
      end f
   end.
 
-Lemma Fun'_eqn_1 : forall range body t,
-  @Fun' [] range body t = body tt.
+Lemma Fun'_eqn_1 : forall range body,
+  @Fun' [] range body = (fun _ => body tt).
 Proof. intros. reflexivity. Qed.
 
-Lemma Fun'_eqn_2 : forall d range body t,
-  @Fun' [d] range body t = body t.
+Lemma Fun'_eqn_2 : forall d range body,
+  @Fun' [d] range body = body.
 Proof. intros. reflexivity. Qed.
 
-Lemma Fun'_eqn_3 : forall d d' ds range body t,
-  @Fun' (d :: d' :: ds) range body t =
-  let '(t', x) := t in @Fun' (d' :: ds) range (fun p' => body (p', x)) t'.
+Lemma Fun'_eqn_3 : forall d d' ds range body,
+  @Fun' (d :: d' :: ds) range body =
+  (fun '(t', x) => @Fun' (d' :: ds) range (fun p' => body (p', x)) t').
 Proof. intros. reflexivity. Qed.
 
 Hint Rewrite Fun'_eqn_1 : Fun'.
@@ -127,12 +127,50 @@ Qed.
 
 Hint Rewrite App_Const_simpl : generic.
 
-Definition Const' (domain : list Type) {range : Type} (cst : range) :=
+Definition Const' (domain : list Type) {range : Type}
+           (cst : range) : Rtuple domain -> range :=
   Fun' (App (Const domain cst)).
 
 Hint Unfold Const' : generic.
 
-Definition Uncurry {domain : list Type} {range : Type} (f : Rarrow domain range) :=
+Definition Uncurry {domain : list Type} {range : Type}
+           (f : Rarrow domain range) : Rtuple domain -> range :=
   Fun' (App f).
 
 Hint Unfold Uncurry : generic.
+
+(******************************************************************************)
+(* Rewriting with [generic] *)
+
+Create HintDb nary_prepare.
+
+(* XXX: workaround because [rewrite_strat] does not support [rewrite_strat ...
+   in *]. (See https://github.com/coq/coq/issues/6107) *)
+Ltac rew_generic :=
+  repeat (
+      autounfold with generic;
+      rewrite_strat (
+          try (hints nary_prepare);
+          bottomup (hints generic)
+        )
+    ).
+
+Ltac rew_generic_in H :=
+  repeat (
+      autounfold with generic in H;
+      rewrite_strat (
+          try (hints nary_prepare);
+          bottomup (hints generic)
+        ) in H
+    ).
+
+Ltac rew_generic_in_all :=
+  match goal with
+  | H : _ |- _ => rew_generic_in H; revert H; rew_generic_in_all
+  | _ => intros; rew_generic
+  end.
+
+(* Try to prove a goal stated using the combinators above from a lemma [L] that
+   is equivalent but does not use the combinators. *)
+Ltac prove_nary L :=
+  intros; rew_generic_in_all; eapply L; eauto.
