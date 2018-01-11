@@ -21,6 +21,7 @@ _cf
 *.vio
 *.vo
 *.vo.aux
+*.aux
 *.vq
 _CoqProject
 *.glob
