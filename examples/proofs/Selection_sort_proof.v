@@ -50,13 +50,13 @@ Proof.
   xspecO. xcf. xpay.
   xapps~.
   assert (1 <= length xs) by admit. (* fix the for-loop reasoning rule *)
-  xfor_inv (fun (_:int) =>
+  weaken. xfor_inv (fun (_:int) =>
     Hexists (xs':list int), a ~> Array xs' \* \[ length xs = length xs']
   ).
   { math. }
   { intros i Hi. xpull. intros xs' L.
     xpay. xapp. xseq.
-    { xfor_inv (fun (_:int) =>
+    { weaken. xfor_inv (fun (_:int) =>
         Hexists (xs'':list int) (k:int),
         a ~> Array xs'' \* p ~~> k \*
         \[index xs'' k /\ length xs = length xs'']).
@@ -77,7 +77,7 @@ Proof.
     xpull. intros xs'' k (? & ?). xapps. xapps~. apply~ int_index_prove.
     hsimpl. rewrite !LibListZ.length_update; auto.
   }
-  hsimpl~.
+  hsimpl~. hsimpl.
 
   clean_max0. sets len_xs: (length xs).
   assert (L: forall f g a b, f = g -> cumul a b f = cumul a b g) by admit.
@@ -87,7 +87,6 @@ Proof.
   asserts_rewrite~ ((len_xs - i) - 1 = (len_xs - 1) - i).
   reflexivity.
   ring_simplify ((len_xs - 2) + 1). reflexivity.
-  hsimpl.
 
   cleanup_cost.
   monotonic. admit. (* todo *)

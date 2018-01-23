@@ -169,7 +169,7 @@ Proof.
     xpay.
     xseq.
     xapp. xapp. }
-  hsimpl. reflexivity. hsimpl.
+  hsimpl. hsimpl.
 
   { cleanup_cost. }
 
@@ -210,7 +210,7 @@ Proof.
 
   xlet.
   { xseq. xapp. xret. }
-  { xpull. intro Hm. xapp. math.
+  { xpull. intro Hm. weaken. xapp. math.
     (* This sub-goal is produced by our custom [xlet], and requires the user to
     come up with a cost-function (hence the meta-variable) which only depends on
     [n]. *)
@@ -261,7 +261,7 @@ Proof.
 
   xlet.
   { xapp~. }
-  { xpull. intro Hm. xapp. math.
+  { xpull. intro Hm. weaken. xapp. math.
     apply (le_than (cost loop1_spec n)). apply cost_monotonic. math.
   }
 
@@ -294,20 +294,18 @@ Proof.
   xlet. { xapp~. }
   xpull. intros Hb.
 
-  xfor_inv (fun (i:int) => \[]). math.
+  weaken. xfor_inv (fun (i:int) => \[]). math.
   { intros i Hi. xpay. xapp. }
   { hsimpl. }
-  { simpl. clean_max0.
-    (* At this point, we can simply reduce [cumul] of a constant to a product.
+  { hsimpl. }
+  { (* At this point, we can simply reduce [cumul] of a constant to a product.
     *)
     rewrite cumulP. rewrite big_const_Z.
     (* Do some cleanup, and work around the fact that [ring_simplify] chokes on
     evars... *)
-    hide_evars_then ltac:(fun _ => ring_simplify).
-    apply (le_than (2 * n)).
+    clean_max0. hide_evars_then ltac:(fun _ => ring_simplify).
+    apply (le_than (2 * n)). clean_max0.
     math. }
-
-  hsimpl.
 
   cleanup_cost.
 
@@ -335,11 +333,11 @@ Proof.
   xapp~. intro Hb.
 
   xif.
-  { xapp. math.
+  { weaken. xapp. math.
     (* Bound the cost of the branch by something that only depends on [n], using
     the fact that [loop1_cost] is monotonic. *)
     apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
-  { xapp. math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
+  { weaken. xapp. math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
 
   cleanup_cost.
   monotonic.
@@ -365,13 +363,9 @@ Proof.
   { intros i I.
     xpay. xfor_inv (fun (j:int) => \[]). math.
     { intros j J. xpay. xapp. }
-    { hsimpl. }
-    { simpl. clean_max0.
-      (* reflexivity. *) (* fixme? *)
-      apply Z.le_refl. }
-    { hsimpl. }
+    { hsimpl. } { hsimpl. }
   }
-  { hsimpl. } { reflexivity. } { hsimpl. }
+  { hsimpl. } { hsimpl. }
 
   cleanup_cost.
   monotonic.
@@ -792,10 +786,10 @@ Lemma search_spec_balanced :
          POST (fun (_:Z) => \[])).
 Proof.
   xspecO. intros t HB.
-  xapply search_spec. hsimpl_credits.
+  weaken. xapply search_spec. hsimpl. hsimpl.
   apply cost_monotonic. (* apply tree_height_bound. *)
   rewrite tree_height_bound. sets sz: (size t). reflexivity.
   assumption.
 
-  hsimpl. cleanup_cost. monotonic. dominated.
+  cleanup_cost. monotonic. dominated.
 Qed.

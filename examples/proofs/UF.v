@@ -46,6 +46,7 @@ Theorem find_specO :
          POST (fun y => UF D R V \* \[ R x = y ])))
     alpha.
 Proof using.
-  xspecO. intros. xapply find_spec. apply H. hsimpl. sets cD: (card D). reflexivity.
-  hsimpl~. cleanup_cost. monotonic. dominated.
+  xspecO. intros. xapply find_spec. applys~ H.
+  (* workaround *) sets cD: (card D). hsimpl. { subst cD; auto with zarith. }
+  hsimpl. hsimpl~. cleanup_cost. monotonic. dominated.
 Qed.

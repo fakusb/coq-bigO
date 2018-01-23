@@ -112,18 +112,16 @@ Lemma g_spec :
 Proof.
   xspecO.
   xcf. xpay. xmatch.
-  xfor_inv (fun (_:int) => \[]). math.
+  weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i I. xpay.
-    xfor_inv (fun (_:int) => \[]). math.
-    intros j J. xpay. xret. hsimpl. hsimpl.
-    simpl. clean_max0. rewrite cumulP. rewrite big_const_Z. ring_simplify.
-    apply Z.le_refl.
-    hsimpl.
+    weaken. xfor_inv (fun (_:int) => \[]). math.
+    intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
+    { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+      hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
   }
-  hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z. rewrite !max0_eq by auto with zarith.
-  hide_evars_then ltac:(fun _ => ring_simplify). apply Z.le_refl.
-  hsimpl.
+  hsimpl. hsimpl.
+  { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+    hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
   admit.
@@ -194,18 +192,16 @@ Lemma g_spec' :
 Proof.
   xspecO.
   xcf. xpay. xmatch.
-  xfor_inv (fun (_:int) => \[]). math.
+  weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i I. xpay.
-    xfor_inv (fun (_:int) => \[]). math.
-    intros j J. xpay. xret. hsimpl. hsimpl.
-    simpl. clean_max0. rewrite cumulP. rewrite big_const_Z. ring_simplify.
-    apply Z.le_refl.
-    hsimpl.
+    weaken. xfor_inv (fun (_:int) => \[]). math.
+    intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
+    { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+      hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
   }
-  hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z. rewrite !max0_eq by auto with zarith.
-  hide_evars_then ltac:(fun _ => ring_simplify). apply Z.le_refl.
-  hsimpl.
+  hsimpl. hsimpl.
+  { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+    hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
   admit.
@@ -274,18 +270,16 @@ Lemma g_spec'' :
 Proof.
   intro m. xspecO.
   xcf. xpay. xmatch.
-  xfor_inv (fun (_:int) => \[]). math.
+  weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i I. xpay.
-    xfor_inv (fun (_:int) => \[]). math.
-    intros j J. xpay. xret. hsimpl. hsimpl.
-    simpl. clean_max0. rewrite cumulP. rewrite big_const_Z. ring_simplify.
-    apply Z.le_refl.
-    hsimpl.
+    weaken. xfor_inv (fun (_:int) => \[]). math.
+    intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
+    { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+      hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
   }
-  hsimpl.
-  simpl. rewrite cumulP. rewrite big_const_Z. rewrite !max0_eq by auto with zarith.
-  hide_evars_then ltac:(fun _ => ring_simplify). apply Z.le_refl.
-  hsimpl.
+  hsimpl. hsimpl.
+  { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+    hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
   admit.

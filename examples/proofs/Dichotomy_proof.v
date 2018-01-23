@@ -63,12 +63,12 @@ Proof.
     xrets. xif. { xret~. }
     xapps. { apply~ int_index_prove. }
     xif.
-    { xapp~ (m - i). subst m.
+    { weaken. xapp~ (m - i). subst m.
       (* tactique xcost? *)
       match goal with |- cost ?x <= _ => ring_simplify x end.
       reflexivity. }
     { (* forwards: IH __ (m+1) j. Focus 2. reflexivity. *)
-      xapp~ (j - (m+1)). subst m. reflexivity. }
+      weaken. xapp~ (j - (m+1)). subst m. reflexivity. }
 
     clean_max0. cases_if; ring_simplify.
     { rewrite~ costPneg. }
@@ -130,12 +130,12 @@ Proof.
     xrets. xif. { xret~. }
     xapps. { apply~ int_index_prove. }
     xif.
-    { xapp~ (m - i). subst m.
+    { weaken. xapp~ (m - i). subst m.
       (* tactique xcost? *)
       match goal with |- costf ?x <= _ => ring_simplify x end.
       reflexivity. }
     { (* forwards: IH __ (m+1) j. Focus 2. reflexivity. *)
-      xapp~ (j - (m+1)). subst m. reflexivity. }
+      weaken. xapp~ (j - (m+1)). subst m. reflexivity. }
 
     clean_max0. cases_if; ring_simplify.
     { assert (HH: n <= 0) by math. generalize n HH. procrastinate. }

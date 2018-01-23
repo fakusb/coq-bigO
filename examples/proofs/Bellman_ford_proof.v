@@ -41,30 +41,33 @@ Lemma bellman_ford2_spec :
         POST (fun (_: array int) => t ~> Array edges))
     (fun '(n,m) => n * m).
 Proof.
-  xspecO costf.
-  xcf. xpay.
+  xspecO. xcf.
+  xpay.
 
   xapp~. intros ds Hds. subst ds.
   xapp~. apply index_make. apply~ int_index_prove.
   xseq.
+
   { xfor_inv (fun (_:int) => Hexists (ds: list int), t ~> Array edges \* d ~> Array ds). math.
-    { intros i Hi. xpull. intros ds.
-      xpay. xapp as edges_nb. intro Hedges_nb.
-      xfor_inv (fun (_:int) => Hexists (ds: list int), t ~> Array edges \* d ~> Array ds). math.
+    { intros i Hi. xpay.
+      xpull. intros ds.
+
+      xapp as edges_nb. intro Hedges_nb.
+      weaken. xfor_inv (fun (_:int) => Hexists (ds: list int), t ~> Array edges \* d ~> Array ds). math.
       { intros j Hj. xpull. intros ds'.
         xpay. xapps. apply~ int_index_prove.
         xmatch.
         xapp as d1. admit. (* TODO *) intro Hd1.
         xapp as d2. admit. (* TODO *) intro Hd2.
         xapp. admit. (* TODO *) }
-      { hsimpl. }
+      { hsimpl. } { hsimpl. }
 
       { subst edges_nb. clean_max0.
         match goal with |- cumul _ _ (fun _ => ?x) <= _ => ring_simplify x end.
+        sets edges_nb: (LibListZ.length edges). (* workaround *)
         reflexivity. }
-      { hsimpl. }
     }
-    { hsimpl. } { sets edges_nb: (LibListZ.length edges). reflexivity. }
+    { hsimpl. }
   }
   { xpull. intros ds. xret. hsimpl. }
 

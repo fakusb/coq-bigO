@@ -27,18 +27,16 @@ Lemma f_spec :
        POST (fun (_:unit) => \[])).
 Proof.
   xspecO. intros n N. xcf. xpay.
-  xfor_inv (fun (_:int) => \[]). math.
+  weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i Hi. xpay.
-    xfor_inv (fun (_:int) => \[]). math.
-    intros j Hj. xpay. xret. hsimpl. hsimpl.
-    simpl. clean_max0. rewrite Z.add_0_r. reflexivity.
-    hsimpl. }
-  hsimpl.
-  simpl.
-  assert (L: forall f g a b, f = g -> cumul a b f = cumul a b g) by admit. (* FIXME *)
-  erewrite L; swap 1 2. extens. intro i.
-  clean_max0. rewrite max0_eq; [| admit]. reflexivity. reflexivity.
-  hsimpl.
+    weaken. xfor_inv (fun (_:int) => \[]). math.
+    intros j Hj. xpay. xret. hsimpl. hsimpl. hsimpl.
+    { simpl. clean_max0. rewrite Z.add_0_r. reflexivity. } }
+  hsimpl. hsimpl.
+  { simpl.
+    assert (L: forall f g a b, f = g -> cumul a b f = cumul a b g) by admit. (* FIXME *)
+    erewrite L; swap 1 2. extens. intro i.
+    clean_max0. rewrite max0_eq; [| admit]. reflexivity. reflexivity. }
 
   cleanup_cost.
   admit. (* TODO *)

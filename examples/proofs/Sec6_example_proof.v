@@ -59,7 +59,12 @@ Proof.
   xspecO_evar_cost costf (fun x => 0 <= x).
 
   intros n. induction_wf: (downto 1) n. intro N.
-  xcf. refine_credits. xpay.
+  xcf. refine_credits.   match goal with
+    |- _ (\$ max0 _) _ => apply refine_cost_setup_intro_emp
+  | |- _ (\$ max0 _ \* _) _ => idtac
+  end.
+
+is_refine_cost_goal. xpay.
   xif_guard.
   { xret~. }
   { xapp. xapp. xapp~. }
