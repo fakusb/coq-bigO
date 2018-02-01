@@ -32,6 +32,14 @@ Parameter Array : forall A, list A -> loc -> hprop.
      the ownership of single cells, each of which being
      described using heap_is_single. *)
 
+Parameter affine_Array : forall A t (L: list A), affine (t ~> Array L).
+  (* TODO: prove this *)
+Hint Resolve affine_Array : affine.
+
+(* Expose that [array A] (defined in Array_ml) is defined as [loc]. *)
+Hint Transparent array : affine.
+
+
 (* -------------------------------------------------------------------------- *)
 
 (* The length of an array is at most [Sys.max_array_length]. This could be

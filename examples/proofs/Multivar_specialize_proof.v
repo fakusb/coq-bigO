@@ -116,14 +116,15 @@ Proof.
   { intros i I. xpay.
     weaken. xfor_inv (fun (_:int) => \[]). math.
     intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
-    { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+    { simpl. rewrite cumulP. rewrite big_const_Z.
       hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
   }
   hsimpl. hsimpl.
-  { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+  { simpl. rewrite cumulP. rewrite big_const_Z.
     hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
+  admit.
   admit.
 
   apply_nary dominated_sum_distr_nary.
@@ -149,6 +150,7 @@ Lemma f_spec :
 Proof.
   xspecO. xcf. xpay. xapp~.
   cleanup_cost.
+  admit.
   admit.
   { dominated.
     eapply dominated_comp_eq. applys cost_dominated g_spec.
@@ -196,14 +198,15 @@ Proof.
   { intros i I. xpay.
     weaken. xfor_inv (fun (_:int) => \[]). math.
     intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
-    { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+    { simpl. rewrite cumulP. rewrite big_const_Z.
       hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
   }
   hsimpl. hsimpl.
-  { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+  { simpl. rewrite cumulP. rewrite big_const_Z.
     hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
+  admit.
   admit.
 
   apply_nary dominated_sum_distr_nary.
@@ -228,6 +231,7 @@ Lemma f_spec' :
 Proof.
   xspecO. xcf. xpay. xapp~.
   cleanup_cost.
+  admit.
   admit.
   { dominated.
     eapply dominated_comp_eq. applys cost_dominated g_spec'.
@@ -274,14 +278,15 @@ Proof.
   { intros i I. xpay.
     weaken. xfor_inv (fun (_:int) => \[]). math.
     intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
-    { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+    { simpl. rewrite cumulP. rewrite big_const_Z.
       hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
   }
   hsimpl. hsimpl.
-  { simpl. clean_max0. rewrite cumulP. rewrite big_const_Z.
+  { simpl. rewrite cumulP. rewrite big_const_Z.
     hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
+  admit.
   admit.
 
   apply_nary dominated_sum_distr_nary.

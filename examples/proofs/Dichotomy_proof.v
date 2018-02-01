@@ -54,7 +54,7 @@ Proof.
     introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
     intros i j Hn Hi Hj.
 
-    refine_credits. xcf. xpay.
+    weaken. xcf. xpay.
     (* xif_ifcost / xif_maxcost / xif = celui qui sert le plus souvent *)
     xif_guard as C. { xret~. }
     (* rewrite nle_as_gt in C. *) asserts~ C' : (i < j). clear C.
@@ -70,9 +70,10 @@ Proof.
     { (* forwards: IH __ (m+1) j. Focus 2. reflexivity. *)
       weaken. xapp~ (j - (m+1)). subst m. reflexivity. }
 
-    clean_max0. cases_if; ring_simplify.
+    cases_if; ring_simplify.
     { rewrite~ costPneg. }
-    { rewrite Z.max_l; swap 1 2.
+    { rewrite (Z.max_r 0); [| auto with zarith].
+      rewrite Z.max_l; swap 1 2.
       { apply cost_monotonic. forwards~: Zquot_mul_2 (j-i). }
       tests Hn1: (j - i = 1).
       + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
@@ -121,7 +122,7 @@ Proof.
   { introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
     intros i j Hn Hi Hj.
 
-    refine_credits. xcf. xpay.
+    weaken. xcf. xpay.
     (* xif_ifcost / xif_maxcost / xif = celui qui sert le plus souvent *)
     xif_guard as C. { xret~. }
     (* rewrite nle_as_gt in C. *) asserts~ C' : (i < j). clear C.
@@ -137,9 +138,10 @@ Proof.
     { (* forwards: IH __ (m+1) j. Focus 2. reflexivity. *)
       weaken. xapp~ (j - (m+1)). subst m. reflexivity. }
 
-    clean_max0. cases_if; ring_simplify.
+    cases_if; ring_simplify.
     { assert (HH: n <= 0) by math. generalize n HH. procrastinate. }
-    { rewrite Z.max_l; swap 1 2.
+    { rewrite (Z.max_r 0); [| auto with zarith].
+      rewrite Z.max_l; swap 1 2.
       { already procrastinated. (* monotonicity *)
         forwards~: Zquot_mul_2 (j-i). }
       tests Hn1: (j-i = 1).

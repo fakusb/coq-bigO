@@ -31,14 +31,15 @@ Proof.
   { intros i Hi. xpay.
     weaken. xfor_inv (fun (_:int) => \[]). math.
     intros j Hj. xpay. xret. hsimpl. hsimpl. hsimpl.
-    { simpl. clean_max0. rewrite Z.add_0_r. reflexivity. } }
+    { simpl. rewrite Z.add_0_r. reflexivity. } }
   hsimpl. hsimpl.
   { simpl.
     assert (L: forall f g a b, f = g -> cumul a b f = cumul a b g) by admit. (* FIXME *)
     erewrite L; swap 1 2. extens. intro i.
-    clean_max0. rewrite max0_eq; [| admit]. reflexivity. reflexivity. }
+    reflexivity. reflexivity. }
 
   cleanup_cost.
+  admit.
   admit. (* TODO *)
 
   dominated.

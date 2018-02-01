@@ -33,7 +33,7 @@ Lemma swap_spec :
 Proof.
   xspecO. introv Ii Ij. xcf. xpay.
   xapps~. xapps~. xapp~. xapp~. apply~ index_update.
-  cleanup_cost. monotonic. dominated.
+  cleanup_cost. admit. monotonic. dominated.
 Qed.
 
 Hint Extern 1 (RegisterSpec swap) => Provide (provide_specO swap_spec).
@@ -68,7 +68,8 @@ Proof.
       { xret. hsimpl. splits~. }
       hsimpl. splits~. apply~ int_index_prove.
 
-      clean_max0. match goal with |- cumul _ _ (fun _ => ?X) <= _ => ring_simplify X end.
+      match goal with |- cumul _ _ (fun _ => ?X) <= _ => ring_simplify X end.
+      asserts_rewrite (Z.max 0 0 = 0). reflexivity. (* FIXME? *)
       (* reflexivity. *)
       rewrite cumulP; rewrite big_const_Z.
         transitivity (3 * (length xs - i - 1)). math. reflexivity.
@@ -79,16 +80,16 @@ Proof.
   }
   hsimpl~. hsimpl.
 
-  clean_max0. sets len_xs: (length xs).
+  sets len_xs: (length xs).
   assert (L: forall f g a b, f = g -> cumul a b f = cumul a b g) by admit.
-  erewrite L; swap 1 2. extens. intro i. clean_max0.
+  erewrite L; swap 1 2. extens. intro i.
   hide_evars_then ltac:(fun _ => ring_simplify).
-  rewrite max0_eq; [| admit].
-  asserts_rewrite~ ((len_xs - i) - 1 = (len_xs - 1) - i).
+  asserts_rewrite~ (3 * len_xs - 3 * i = 3 * (len_xs - i)).
   reflexivity.
   ring_simplify ((len_xs - 2) + 1). reflexivity.
 
   cleanup_cost.
+  admit.
   monotonic. admit. (* todo *)
   dominated.
 
@@ -103,7 +104,9 @@ Proof.
   apply dominated_eq_l with (fun (x:Z_filterType) => cumul 1 (x-2) (fun i => 3 * i + cost swap_spec tt + 1)); swap 1 2.
   { intro x.
     rewrite LL with (a := 0) (f := fun i => 3 * i + cost swap_spec tt + 1); auto.
-    ring_simplify (((x-1) - 0) - 1). auto. }
+    ring_simplify (((x-1) - 0) - 1). auto.
+    intro. ring_simplify. reflexivity. (* fixme *)
+  }
 
   etransitivity. eapply dominated_big_sum_bound'.
   Focus 3.

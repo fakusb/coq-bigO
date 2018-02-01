@@ -119,6 +119,7 @@ Proof.
 
   cleanup_cost.
 
+  unfold costf; auto with zarith.
   monotonic.
   dominated.
 Qed.
@@ -139,6 +140,7 @@ Proof.
   xapp. (* big-O spec *)
 
   cleanup_cost.
+  unfold costf; auto with zarith.
   monotonic.
 
   dominated.
@@ -173,6 +175,7 @@ Proof.
 
   { cleanup_cost. }
 
+  { admit. }
   { monotonic. }
 
   { dominated.
@@ -221,6 +224,7 @@ Proof.
     reflexivity. }
 
   cleanup_cost.
+  admit.
   monotonic.
   dominated.
 Qed.
@@ -266,6 +270,7 @@ Proof.
   }
 
   cleanup_cost.
+  admit.
   monotonic.
   dominated.
 Qed.
@@ -303,12 +308,13 @@ Proof.
     rewrite cumulP. rewrite big_const_Z.
     (* Do some cleanup, and work around the fact that [ring_simplify] chokes on
     evars... *)
-    clean_max0. hide_evars_then ltac:(fun _ => ring_simplify).
-    apply (le_than (2 * n)). clean_max0.
+    hide_evars_then ltac:(fun _ => ring_simplify).
+    apply (le_than (2 * n)).
     math. }
 
   cleanup_cost.
 
+  admit.
   monotonic.
   dominated.
 Qed.
@@ -340,6 +346,7 @@ Proof.
   { weaken. xapp. math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
 
   cleanup_cost.
+  admit.
   monotonic.
   dominated.
 Qed.
@@ -368,7 +375,8 @@ Proof.
   { hsimpl. } { hsimpl. }
 
   cleanup_cost.
-  monotonic.
+  admit.
+  (* FIXME *) (* monotonic. *) admit.
 
   dominated.
   { rewrite dominated_big_sum_bound.
@@ -392,8 +400,8 @@ Qed.
 
 Lemma cutO_refine :
   forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),
-  forall S : specO A le (fun mycost => forall a, F a (\$ max0 (mycost a) \* H)) bound,
-  F a (\$ max0 ((cost S) a) \* H).
+  forall S : specO A le (fun mycost => forall a, F a (\$ (mycost a) \* H)) bound,
+  F a (\$ ((cost S) a) \* H).
 Proof.
   admit.
 Qed.
@@ -406,11 +414,11 @@ Lemma xfor_inv_lemma_pred_refine :
   (a <= b) ->
   forall S :
   specO Z_filterType Z.le (fun mycost =>
-    forall i, a <= i < b -> F i (\$ max0 (mycost i) \* I i) (# I(i+1))) bound,
+    forall i, a <= i < b -> F i (\$ (mycost i) \* I i) (# I(i+1))) bound,
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
-  (cumul a b (fun i => max0 (cost S i)) <= loop_cost) ->
-  (For i = a To (b - 1) Do F i Done_) (\$ max0 loop_cost \* H) (# I b \* H').
+  (cumul a b (fun i => (cost S i)) <= loop_cost) ->
+  (For i = a To (b - 1) Do F i Done_) (\$ loop_cost \* H) (# I b \* H').
 Proof.
   admit.
 Qed.
@@ -442,12 +450,6 @@ Proof.
   cleanup_cost.
   admit.
 *)
-
-(* XXX *)
-Lemma dominated_max0_product : forall A B f g,
-  dominated (product_filterType A B) (fun '(a, b) => f a b) g ->
-  dominated (product_filterType A B) (fun '(a, b) => max0 (f a b)) g.
-Proof. admit. Qed.
 
 (*
 Lemma looploop_spec :
@@ -533,10 +535,6 @@ Ltac unmaxify_step :=
 Ltac unmaxify := repeat unmaxify_step.
 Ltac zify_op ::= repeat zify_op_1; unmaxify.
 
-(* FIXME *)
-Ltac clean_max0_math ::=
-  try cases_if; auto with zarith; try math_lia; math_nia.
-
 (* NB: Adding the precondition [0 <= n] to the specification doesn't help
    simplifying the cost functions and getting rid of the Z.max. Indeed, [specO]
    requires that the provided cost function is always nonnegative — which is not
@@ -555,13 +553,13 @@ Proof.
   intro n.
   induction_wf: (downto 0) n.
 
-  xcf. refine_credits.
+  xcf. weaken.
   xpay.
   (* when the sub-cost functions for the branches of the if need to talk about of/depend on
   the condition... *)
   xif_guard. (* xif *) xret. hsimpl. (* xguard C *) xapp. math.
 
-  clean_max0. cases_if; math_lia.
+  cases_if; math_lia.
 
   math_lia.
   monotonic.
@@ -589,10 +587,10 @@ Proof.
   intro n.
   induction_wf: (wf_downto 0) n.
 
-  xcf. refine_credits.
+  xcf. weaken.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
-  clean_max0. cases_if.
+  cases_if.
   { generalize n C. procrastinate. }
   { generalize n C. procrastinate. }
 
@@ -622,10 +620,10 @@ Proof.
   intro n.
   induction_wf: (wf_downto 0) n.
 
-  xcf. refine_credits.
+  xcf. weaken.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
-  clean_max0. cases_if.
+  cases_if.
   { generalize n C. procrastinate. }
   { generalize n C. procrastinate. }
 
@@ -656,10 +654,10 @@ Proof.
   intros n.
   induction_wf: (wf_downto 0) n. intro N.
 
-  xcf. refine_credits.
+  xcf. weaken.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
-  clean_max0. cases_if.
+  cases_if.
   { generalize n N C. procrastinate. }
   { generalize n N C. procrastinate. }
 
@@ -690,10 +688,10 @@ Proof.
   xspecO_cost (fun n => a * n + b) on (fun n => 0 <= n).
   intro n. induction_wf: (wf_downto 0) n. intro N.
 
-  xcf. refine_credits.
+  xcf. weaken.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
-  clean_max0. cases_if.
+  cases_if.
   { generalize n N C. procrastinate. }
   { generalize n N C. procrastinate. }
 
@@ -734,10 +732,10 @@ Proof.
   xspecO_evar_cost rec_cost (fun x => 0 <= x).
   intro n. induction_wf: (wf_downto 0) n. intro N.
 
-  xcf. refine_credits.
+  xcf. weaken.
   xpay. xif_guard. xret. hsimpl. xapp. math. math.
 
-  clean_max0. cases_if; clean_max0.
+  cases_if.
   { ring_simplify. generalize n N. procrastinate. }
   { generalize n N C. procrastinate. }
 
@@ -751,7 +749,7 @@ Proof.
   { monotonic. }
   { dominated. }
   { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
-  { intros n N N'. rewrite max0_eq by (with procrastination; math_nia).
+  { intros n N N'.
     cut (1 <= a). math_nia. procrastinate. }
   { end procrastination.
     simpl. exists 1 1. splits; math. }
@@ -791,5 +789,5 @@ Proof.
   rewrite tree_height_bound. sets sz: (size t). reflexivity.
   assumption.
 
-  cleanup_cost. monotonic. dominated.
+  cleanup_cost. admit. monotonic. dominated.
 Qed.

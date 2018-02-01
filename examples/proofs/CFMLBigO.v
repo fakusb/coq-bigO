@@ -14,131 +14,6 @@ Require Import Generic.
 
 (********************************************************************)
 
-Definition max0 (x : Z) : Z :=
-  match x with
-  | Z0 => Z0
-  | Zpos p => Zpos p
-  | Zneg _ => Z0
-  end.
-  (* Z.max 0 x. *)
-
-Lemma max0_max_0 : forall x, max0 x = Z.max 0 x.
-Proof.
-  intro x. destruct x.
-  - reflexivity.
-  - simpl. auto with zarith.
-  - simpl. auto with zarith.
-Qed.
-
-Lemma max0_max_0' : forall x, max0 x = Z.max x 0.
-Proof.
-  intro x. destruct x.
-  - reflexivity.
-  - simpl. auto with zarith.
-  - simpl. auto with zarith.
-Qed.
-
-Lemma max0_pos : forall x, 0 <= max0 x.
-Proof. intros. rewrite max0_max_0. math_lia. Qed.
-
-Hint Resolve max0_pos : zarith.
-
-Lemma max0_eq : forall x, 0 <= x -> max0 x = x.
-Proof. intros. rewrite max0_max_0. math_lia. Qed.
-
-Lemma max0_add_eq : forall x y,
-    0 <= x ->
-    0 <= y ->
-    max0 (x + y) = max0 x + max0 y.
-Proof. intros. rewrite !max0_max_0. math_lia. Qed.
-
-Lemma max0_add_le : forall x y,
-  max0 (x + y) <= max0 x + max0 y.
-Proof. intros. rewrite !max0_max_0. math_lia. Qed.
-
-Lemma max0_max : forall x y,
-  max0 (Z.max x y) = Z.max (max0 x) (max0 y).
-Proof. intros. rewrite !max0_max_0. math_lia. Qed.
-
-Lemma max0_max0 : forall x, max0 (max0 x) = max0 x.
-Proof. intros. rewrite !max0_max_0. math_lia. Qed.
-
-Lemma max0_max0_add : forall x y, max0 (max0 x + max0 y) = max0 x + max0 y.
-Proof.
-  intros x y.
-  rewrite max0_add_eq; try apply max0_pos.
-  rewrite !max0_max0. reflexivity.
-Qed.
-
-Lemma max0_ge_nonpos :
-  forall x y, x <= 0 -> x <= max0 y.
-Proof.
-  intros x y.
-  rewrite !max0_max_0. math_lia.
-Qed.
-
-Hint Resolve max0_ge_nonpos : zarith.
-
-Lemma max0_ge :
-  forall x y, x <= y -> x <= max0 y.
-Proof.
-  intros. rewrite !max0_max_0. math_lia.
-Qed.
-
-Hint Resolve max0_ge : zarith.
-
-Lemma monotonic_max0 : monotonic Z.le Z.le max0.
-Proof.
-  intros x1 x2 H. rewrite !max0_max_0. math_lia.
-Qed.
-
-Lemma monotonic_max0_comp : forall A leA (f : A -> Z),
-  monotonic leA Z.le f ->
-  monotonic leA Z.le (fun x => max0 (f x)).
-Proof.
-  introv M. intros x1 x2 H.
-  forwards: M x1 x2 H.
-  rewrite !max0_max_0. math_lia.
-Qed.
-
-Hint Resolve monotonic_max0 : monotonic.
-Hint Resolve monotonic_max0_comp : monotonic.
-
-Lemma ultimately_ge_max0 :
-  forall k f,
-  ultimately Z_filterType (fun x => k <= f x) ->
-  ultimately Z_filterType (fun x => k <= max0 (f x)).
-Proof.
-  introv. filter_closed_under_intersection.
-  auto with zarith.
-Qed.
-
-Hint Resolve ultimately_ge_max0 : ultimately_greater.
-
-Lemma dominated_max0 : forall A f g,
-    dominated A f g ->
-    dominated A (fun x => max0 (f x)) g.
-Proof.
-  introv (c & U). exists c.
-  revert U; filter_closed_under_intersection.
-  intros.
-  assert (I: Z.abs (max0 (f a)) <= Z.abs (f a)). {
-    rewrite max0_max_0. math_lia.
-  }
-  rewrite I. assumption.
-Qed.
-
-Hint Resolve dominated_max0 : dominated.
-
-(* FIXME: "Generic.App" clashes with CFML's "App" notation *)
-Lemma dominated_max0_nary : forall domain M f g,
-  dominated (nFilterType domain M) (Uncurry f) (Uncurry g) ->
-  dominated (nFilterType domain M) (Fun' (fun p => max0 (Generic.App f p))) (Uncurry g).
-Proof. prove_nary dominated_max0. Qed.
-
-Hint Extern 1 (dominated _ (fun '(_, _) => max0 _) _) =>
-  apply_nary dominated_max0_nary : dominated.
-
 (* TODO: prove & move *)
 
 Lemma monotonic_cumul_Z : forall (f : Z -> Z) (lo : Z),
@@ -255,20 +130,17 @@ Ltac intro_destructs :=
   let x := fresh "x" in
   intro x; repeat (destruct x as [x ?]).
 
-Ltac prove_refined_nonneg :=
-  intro_destructs; simpl; apply max0_pos.
-
 Ltac xspecO_refine_base cost_name :=
   match goal with
     |- specO ?A ?le _ _ =>
     let cost_clean_eq := fresh "cost_clean_eq" in
     let cost_clean := fresh "cost_clean" in
-    intro_cost_expr A cost_name uconstr:(max0 _);
+    intro_cost_expr A cost_name uconstr:(_);
     intro_cost_expr A cost_clean uconstr:(_);
     intro_cost_expr A cost_clean_eq uconstr:(_);
     eapply (@specO_refine_prove A le cost_name cost_clean_eq cost_clean);
     subst cost_clean cost_clean_eq;
-    [ unfold cost_name | | prove_refined_nonneg
+    [ unfold cost_name | |
       | subst cost_name | subst cost_name ]
   end.
 
@@ -333,8 +205,7 @@ Tactic Notation "xspecO_cost" uconstr(cost_fun) "on" uconstr(domain) :=
 
 Ltac dominated_cleanup_cost :=
   first [
-      apply dominated_max0; dominated_cleanup_cost
-    | apply dominated_sum;
+      apply dominated_sum;
       [ | | dominated_cleanup_cost | dominated_cleanup_cost];
       simpl;
       solve [ ultimately_greater_trysolve ]
@@ -366,30 +237,11 @@ Ltac hide_evars_then cont :=
     cont tt
   end.
 
-Ltac clean_max0_math :=
-  try cases_if; auto with zarith.
-
-(* Simple tactic to eliminate occurences of [max0 x] when x is proved
-   nonnegative by [clean_max0_math].
-
-   We explicitely match the occurencies we want to rewrite before effectively
-   rewriting, otherwise rewrite messes with the evars that may appear in the
-   goal...
-*)
-Ltac clean_max0 :=
-  repeat match goal with
-  | |- context[ Z.max 0 ?x ] =>
-    rewrite <-(@max0_max_0 x); rewrite (@max0_eq x) by clean_max0_math
-  | |- context[ Z.max ?x 0 ] =>
-    rewrite <-(@max0_max_0' x); rewrite (@max0_eq x) by clean_max0_math
-  | |- context[ max0 ?x ] => rewrite (@max0_eq x) by clean_max0_math
-  end.
-
 Ltac simple_cleanup_cost :=
   simpl; hide_evars_then ltac:(fun _ => ring_simplify).
 
 Ltac simple_cleanup_cost_eq :=
-  simpl; clean_max0; simple_cleanup_cost.
+  simpl; simple_cleanup_cost.
 
 Ltac unfold_cost_lhs :=
   match goal with
@@ -423,7 +275,7 @@ Notation "'specZ' [ X '\in_O' f ] E" :=
 (* Ugly hack. See https://github.com/coq/coq/issues/6643 *)
 Ltac refine_credits_preprocess_eta :=
   match goal with
-    |- PRE (\$ max0 (?c _) \* _) POST _ CODE _ =>
+    |- PRE (\$ (?c _) \* _) POST _ CODE _ =>
     is_evar c;
     let x := fresh in
     pose (x := c);
@@ -468,56 +320,39 @@ Proof.
   introv H. rewrite star_neutral_r in H. auto.
 Qed.
 
+(* TODO: Improve is_evar handling *)
 Ltac is_refine_cost_goal :=
   match goal with
-    |- _ (\$ max0 _) _ => apply refine_cost_setup_intro_emp
-  | |- _ (\$ max0 _ \* _) _ => idtac
+    |- _ (\$ ?c) _ => is_evar c; apply refine_cost_setup_intro_emp
+  | |- _ (\$ (?c _)) _ => is_evar c; apply refine_cost_setup_intro_emp
+  | |- _ (\$ ?c \* _) _ => is_evar c; idtac
+  | |- _ (\$ (?c _) \* _) _ => is_evar c; idtac
   end;
   refine_credits_preprocess.
 
-(* refine_credits
+(* weaken
 
    Applies to a goal with some credit cost, and turns it into a goal where the
    number of credits is an evar (so that the _refine tactics can apply).
    Produces a side-condition requiring that the evar cost is less than the
    original cost.
-*)
 
-Lemma refine_credits :
-  forall A (cost_refined cost : int) (F: ~~A) H Q,
-  F (\$ max0 cost_refined \* H) Q ->
-  (max0 cost_refined <= cost) ->
+   Is also useful if the original number of credits _is_ an evar, but with a
+   context that doesn't allow directly instanting it. Calling this tactic
+   introduces a new evar in the local context, plus a subgoal where the user can
+   explain how to instantiate the evar with the restricted context.
+*)
+Lemma weaken_credits :
+  forall A (cost_weakened cost : int) (F: ~~A) H Q,
+  F (\$ cost_weakened \* H) Q ->
+  (cost_weakened <= cost) ->
   is_local F ->
   F (\$ cost \* H) Q.
 Proof.
   introv HH Hcost L.
   xapply HH.
-  { hsimpl_credits. math. forwards: max0_pos cost_refined. math. }
-  { hsimpl. }
-Qed.
-
-(* Here the number of credits is typically *not* an evar. We're applying
-   refine_credits to introduce one. *)
-Ltac refine_credits :=
-  match goal with
-    |- _ (\$ _) _ => apply refine_cost_setup_intro_emp
-  | |- _ (\$ _ \* _) _ => idtac
-  end;
-  eapply refine_credits;
-  [ | | xlocal ].
-
-Lemma weaken_credits :
-  forall A (cost_weakened cost : int) (F: ~~A) H Q,
-  F (\$ max0 cost_weakened \* H) Q ->
-  (cost_weakened <= cost) ->
-  is_local F ->
-  F (\$ max0 cost \* H) Q.
-Proof.
-  introv HH Hcost L.
-  xapply HH.
-  { hsimpl_credits. rewrite !max0_max_0 in *. math_lia.
-    forwards: max0_pos cost_weakened. math. }
-  { hsimpl. }
+  { hsimpl_credits. }
+  { hsimpl. math. }
 Qed.
 
 Ltac weaken :=
@@ -543,7 +378,6 @@ Qed.
 Ltac is_credits H :=
   match H with
   | \$ _ => idtac
-  | \$_nat _ => idtac
   | _ => fail 1
   end.
 
@@ -555,20 +389,14 @@ Ltac bring_credits_to_head H :=
   | context [?A \* \$ ?x] =>
     tryif is_credits A then fail
     else rewrite (star_comm A (\$ x))
-  | context [?A \* \$_nat ?x \* _] =>
-    tryif is_credits A then fail
-    else rewrite (star_comm_assoc A (\$_nat x))
-  | context [?A \* \$_nat ?x] =>
-    tryif is_credits A then fail
-    else rewrite (star_comm A (\$_nat x))
   end.
 
 Ltac bring_credits_to_head_of_pre tt :=
   repeat on_formula_pre bring_credits_to_head.
 
 Goal forall H1 H2 H3 H' p n m,
-    \$ p \* \$ n \* \$_nat m \* H1 \* H2 \* H3 ==> H' ->
-    \$ p \* H1 \* H2 \* \$ n \* H3 \* \$_nat m ==> H'.
+    \$ p \* \$ n \* \$ m \* H1 \* H2 \* H3 ==> H' ->
+    \$ p \* H1 \* H2 \* \$ n \* H3 \* \$ m ==> H'.
 Proof.
   intros. dup.
   (* detailed *)
@@ -599,26 +427,24 @@ Ltac hclean_main tt ::=
 
 Lemma inst_credits_cost :
   forall (credits : int) H H' H'',
-  (0 <= credits) ->
   H ==> H' \* H'' ->
-  \$ max0 credits \* H ==> H' \* \$ credits \* H''.
+  \$ credits \* H ==> H' \* \$ credits \* H''.
 Proof.
-  introv P HH.
-  rewrite max0_eq; auto.
+  introv HH.
   xchange HH. hsimpl_credits.
 Qed.
 
 Ltac inst_credits_cost cont :=
   (first [ eapply inst_credits_cost
          | fail 100 "Evar instantiation failed" ]);
-  [ auto with zarith | cont tt ].
+  cont tt.
 
 Lemma intro_zero_credits_right : forall H H' H'',
   H ==> H' \* \$ 0 \* H'' ->
   H ==> H' \* H''.
 Proof.
   introv.
-  rewrite credits_int_zero_eq. rewrite star_neutral_l.
+  rewrite credits_zero_eq. rewrite star_neutral_l.
   auto.
 Qed.
 
@@ -644,14 +470,13 @@ Lemma hsimpl_assoc_right_3 : forall H H1 H2 H3 H4,
   H ==> (H1 \* H2 \* H3) \* H4.
 Proof. admit. Qed.
 
-(* \$_nat ? *)
 Ltac hsimpl_inst_credits_cost_setup tt :=
   match goal with
-  | |- \$ max0 ?cost ==> _ => is_evar cost; apply hsimpl_start_1
-  | |- \$ max0 ?cost \* _ ==> _ => is_evar cost
-  (* | |- \$ max0 (?cost _) ==> _ => is_evar cost; apply hsimpl_start_1 *)
-  (* | |- \$ max0 (?cost _) \* _ ==> _ => is_evar cost *)
-  (* these case should not be necessary, because of refine_credits_preprocess? *)
+  | |- \$ ?cost ==> _ => is_evar cost; apply hsimpl_start_1
+  | |- \$ ?cost \* _ ==> _ => is_evar cost
+  (* | |- \$ (?cost _) ==> _ => is_evar cost; apply hsimpl_start_1 *)
+  (* | |- \$ (?cost _) \* _ ==> _ => is_evar cost *)
+  (* these cases should not be necessary, because of refine_credits_preprocess? *)
   end;
   match goal with
   | |- _ ==> _ \* \$ _ => apply hsimpl_starify
@@ -692,16 +517,13 @@ Lemma xpay_refine :
   forall A (cost : Z)
          (F: hprop -> (A -> hprop) -> Prop) H Q,
   is_local F ->
-  F (\$ max0 cost \* H) Q ->
-  (Pay_ ;; F) (\$ max0 (1 + max0 cost) \* H) Q.
+  F (\$ cost \* H) Q ->
+  (Pay_ ;; F) (\$ (1 + cost) \* H) Q.
 Proof.
   introv L HH.
   xpay_start tt.
-  { unfold pay_one.
-    rewrite max0_eq; [| forwards: max0_pos cost0; math_lia ].
-    credits_split.
-    hsimpl_credits. math. forwards~: max0_pos cost0. }
-  xapply HH. hsimpl_credits. hsimpl.
+  { unfold pay_one. hsimpl_credits. }
+  xapply HH. hsimpl_credits. hsimpl. math.
 Qed.
 
 Ltac xpay_core tt ::=
@@ -714,10 +536,10 @@ Ltac xpay_core tt ::=
 
 Lemma xret_refine : forall A (x : A) H (Q : A -> hprop),
   local (fun H' Q' => H' ==> Q' x) H Q ->
-  local (fun H' Q' => H' ==> Q' x) (\$ max0 0 \* H) Q.
+  local (fun H' Q' => H' ==> Q' x) (\$ 0 \* H) Q.
 Proof.
   introv HH.
-  rewrite max0_eq; [| math]. rewrite credits_int_zero_eq. rewrite star_neutral_l.
+  rewrite credits_zero_eq. rewrite star_neutral_l.
   assumption.
 Qed.
 
@@ -738,15 +560,13 @@ Lemma xseq_refine :
   is_local F1 ->
   is_local F2 ->
   (exists Q',
-    F1 (\$ max0 cost1 \* H) Q' /\
-    F2 (\$ max0 cost2 \* Q' tt) Q) ->
-  (F1 ;; F2) (\$ max0 (max0 cost1 + max0 cost2) \* H) Q.
+    F1 (\$ cost1 \* H) Q' /\
+    F2 (\$ cost2 \* Q' tt) Q) ->
+  (F1 ;; F2) (\$ (cost1 + cost2) \* H) Q.
 Proof.
   introv L1 L2 (Q' & H1 & H2).
   xseq_pre tt. apply local_erase. eexists. split.
-  { xapply H1. rewrite max0_add_eq; try apply max0_pos. repeat rewrite max0_max0.
-    forwards: max0_pos cost1. forwards: max0_pos cost2.
-    credits_split. hsimpl. math. math. }
+  { xapply H1. credits_split. hsimpl. }
   { xapply H2. hsimpl. hsimpl. }
 Qed.
 
@@ -770,16 +590,14 @@ Lemma xlet_refine :
   is_local F1 ->
   (forall x, is_local (F2 x)) ->
   (exists (Q' : A -> hprop),
-    F1 (\$ max0 cost1 \* H) Q' /\
-    (forall r, F2 r (\$ max0 cost2 \* Q' r) Q)) ->
-  cf_let F1 F2 (\$ max0 (max0 cost1 + max0 cost2) \* H) Q.
+    F1 (\$ cost1 \* H) Q' /\
+    (forall r, F2 r (\$ cost2 \* Q' r) Q)) ->
+  cf_let F1 F2 (\$ (cost1 + cost2) \* H) Q.
 Proof.
   introv L1 L2 (Q' & H1 & H2).
   unfold cf_let.
   eexists. split.
-  { xapply H1. rewrite max0_add_eq; try apply max0_pos. repeat rewrite max0_max0.
-    forwards: max0_pos cost1. forwards: max0_pos cost2.
-    credits_split. hsimpl. math. math. }
+  { xapply H1. credits_split. hsimpl. }
   { intro r. specializes L2 r. xapply H2; hsimpl. }
 Qed.
 
@@ -800,15 +618,13 @@ Ltac xlet_core cont0 cont1 cont2 ::=
 Lemma xif_refine : forall (A: Type) cost1 cost2 cond (F1 F2: ~~A) H Q,
   is_local F1 ->
   is_local F2 ->
-  ((cond = true -> F1 (\$ max0 cost1 \* H) Q) /\
-   (cond = false -> F2 (\$ max0 cost2 \* H) Q)) ->
-  (If_ cond Then F1 Else F2) (\$ max0 (Z.max (max0 cost1) (max0 cost2)) \* H) Q.
+  ((cond = true -> F1 (\$ cost1 \* H) Q) /\
+   (cond = false -> F2 (\$ cost2 \* H) Q)) ->
+  (If_ cond Then F1 Else F2) (\$ (Z.max cost1 cost2) \* H) Q.
 Proof.
   introv L1 L2 (H1 & H2).
   apply local_erase.
-  forwards: max0_pos cost1. forwards: max0_pos cost2.
-  split; intro; [xapply~ H1 | xapply~ H2];
-  hsimpl_credits; try math; rewrite max0_max; rewrite !max0_max0;
+  split; intro; [xapply~ H1 | xapply~ H2]; hsimpl_credits;
   math_lia.
 Qed.
 
@@ -837,15 +653,13 @@ Lemma xif_guard_refine : forall (A: Type) cost1 cost2 (cond cond': bool) (F1 F2:
   (cond = cond') ->
   is_local F1 ->
   is_local F2 ->
-  ((cond = true -> F1 (\$ max0 cost1 \* H) Q) /\
-   (cond = false -> F2 (\$ max0 cost2 \* H) Q)) ->
-  (If_ cond Then F1 Else F2) (\$ max0 (If cond' then cost1 else cost2) \* H) Q.
+  ((cond = true -> F1 (\$ cost1 \* H) Q) /\
+   (cond = false -> F2 (\$ cost2 \* H) Q)) ->
+  (If_ cond Then F1 Else F2) (\$ (If cond' then cost1 else cost2) \* H) Q.
 Proof.
-  introv condEq L1 L2 (H1 & H2).
-  apply local_erase. rewrite condEq.
-  forwards: max0_pos cost1. forwards: max0_pos cost2.
-  split; intro C; rewrite C; cases_if; [xapply~ H1 | xapply~ H2];
-  hsimpl_credits; try math; rewrite !max0_max0; math.
+  introv costE L1 L2 (H1 & H2).
+  apply local_erase. rewrite costE.
+  split; intro C; rewrite C; cases_if; [xapply~ H1 | xapply~ H2].
 Qed.
 
 Ltac xif_guard_base cont :=
@@ -867,8 +681,8 @@ Tactic Notation "xif_guard" :=
 Lemma xguard_refine :
   forall A (cost : int) (F: ~~A) (G: Prop) H Q,
   G ->
-  F (\$ max0 cost \* H) Q ->
-  F (\$ max0 (If G then cost else 0) \* H) Q.
+  F (\$ cost \* H) Q ->
+  F (\$ (If G then cost else 0) \* H) Q.
 Proof.
   introv HG HH. cases_if. trivial.
 Qed.
@@ -887,14 +701,15 @@ Lemma xfor_inv_lemma_pred_refine :
     (cost_body : int -> int)
     (a : int) (b : int) (F : int-> ~~unit) H H',
   (a <= b) ->
-  (forall i, a <= i < b -> F i (\$ max0 (cost_body i) \* I i) (# I(i+1))) ->
+  (forall i, a <= i < b -> F i (\$ (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
   (For i = a To (b - 1) Do F i Done_)
-    (\$ max0 (cumul a b (fun i => max0 (cost_body i))) \* H)
+    (\$ (cumul a b cost_body) \* H)
     (# I b \* H').
 Proof.
 Admitted. (* TODO *)
+
 
 Lemma xfor_inv_case_lemma_refine : forall (I:int->hprop),
    forall (cost : int) (cost_body : int -> int),
@@ -902,13 +717,13 @@ Lemma xfor_inv_case_lemma_refine : forall (I:int->hprop),
    ((a <= b) -> exists H',
           (H ==> I a \* H')
        /\ (forall i, is_local (F i))
-       /\ (forall i, a <= i <= b -> F i (\$ max0 (cost_body i) \* I i) (# I(i+1)))
-       /\ (cost = cumul a b (fun i => max0 (cost_body i)))
+       /\ (forall i, a <= i <= b -> F i (\$ (cost_body i) \* I i) (# I(i+1)))
+       /\ (cost = cumul a b cost_body)
        /\ (I (b+1) \* H' ==> Q tt \* \GC)) ->
    ((a > b) ->
           (cost = 0)
        /\ (H ==> Q tt \* \GC)) ->
-   (For i = a To b Do F i Done_) (\$ max0 cost \* H) Q.
+   (For i = a To b Do F i Done_) (\$ cost \* H) Q.
 Proof.
 Admitted. (* TODO *)
 
@@ -916,21 +731,21 @@ Lemma xfor_inv_lemma_refine : forall (I:int->hprop),
   forall (cost_body : int -> int),
   forall (a:int) (b:int) (F:int->~~unit) H H',
   (a <= b+1) ->
-  (forall i, a <= i <= b -> F i (\$ max0 (cost_body i) \* I i) (# I(i+1))) ->
+  (forall i, a <= i <= b -> F i (\$ (cost_body i) \* I i) (# I(i+1))) ->
   (H ==> I a \* H') ->
   (forall i, is_local (F i)) ->
   (For i = a To b Do F i Done_)
-    (\$ max0 (cumul a (b + 1) (fun i => max0 (cost_body i))) \* H)
+    (\$ (cumul a (b + 1) cost_body) \* H)
     (# I (b+1) \* H').
 Proof using.
-Admitted.
+Admitted. (* TODO *)
 
 Lemma xfor_inv_void_lemma_refine :
   forall (a:int) (b:int) (F:int->~~unit) H (cost : int),
   (a > b) ->
-  (For i = a To b Do F i Done_) (\$ max0 0 \* H) (# H).
+  (For i = a To b Do F i Done_) (\$ 0 \* H) (# H).
 Proof using.
-Admitted.
+Admitted. (* TODO *)
 
 Ltac xfor_inv_core I ::=
   xfor_pre_ensure_evar_post ltac:(fun _ =>

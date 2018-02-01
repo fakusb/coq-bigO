@@ -23,7 +23,7 @@ Parameter UnionFind_ml_find : func.
 
 Parameter alpha : Z -> Z.
 
-Hypothesis alpha_nonneg : forall (x: Z), 0 <= x -> 0 <= alpha x.
+Hypothesis alpha_nonneg : forall (x: Z), 0 <= alpha x.
 Hint Resolve alpha_nonneg : zarith.
 
 Hypothesis alpha_monotonic : monotonic Z.le Z.le alpha.
@@ -47,6 +47,6 @@ Theorem find_specO :
     alpha.
 Proof using.
   xspecO. intros. xapply find_spec. applys~ H.
-  (* workaround *) sets cD: (card D). hsimpl. { subst cD; auto with zarith. }
-  hsimpl. hsimpl~. cleanup_cost. monotonic. dominated.
+  (* workaround *) sets cD: (card D). hsimpl. hsimpl. hsimpl~.
+  cleanup_cost. unfold costf; auto with zarith. monotonic. dominated.
 Qed.

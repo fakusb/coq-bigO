@@ -43,11 +43,10 @@ Proof.
   intro n. induction_wf: (downto 0) n. intro N.
 
   xcf. xpay. hsimpl_credits.
-  (* math_debug. auto with zarith. *) (* XXX *) admit. math.
   xrets. xif.
   { xret~. }
-  { xapp~. hsimpl_credits. admit. admit.
-    xapp~. hsimpl_credits. admit. admit. }
+  { xapp~. hsimpl_credits.
+    xapp~. hsimpl_credits. admit. }
 
   admit.
   monotonic.
@@ -65,7 +64,7 @@ Proof.
   xspecO_cost (fun n => 2^(n+1) - 1) on (fun n => 0 <= n).
   intro n. induction_wf: (downto 0) n. intro N.
 
-  refine_credits. xcf. xpay.
+  weaken. xcf. xpay.
   (* Using xrets here results in a loss of information in the infered cost
   function; as the xret in the first subcase records "n" as the cost instead of
   "0"... *)
@@ -75,7 +74,7 @@ Proof.
   { xret~. }
   { xapp~. xapp~. }
 
-  clean_max0. ring_simplify. ring_simplify ((n-1)+1).
+  ring_simplify. ring_simplify ((n-1)+1).
   case_if.
   { subst n. reflexivity. }
   { ring_simplify. rewrite~ <-pow2_succ. }
@@ -105,15 +104,15 @@ Proof.
   xspecO_cost cost on (fun n => 0 <= n).
   intro n. induction_wf: (downto 0) n. intro N.
 
-  refine_credits. xcf. xpay. xrets.
+  weaken. xcf. xpay. xrets.
   xif_guard.
   { xret. hsimpl. }
   { xapp~. xapp~. }
 
-  clean_max0. ring_simplify.
+  ring_simplify.
   cases_if; ring_simplify.
   { subst n. subst cost. ring_simplify. procrastinate. }
-  { rewrite~ max0_eq. unfold cost.
+  { unfold cost.
     transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
     rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
     math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
@@ -152,12 +151,12 @@ Lemma f_spec4 :
 Proof.
   xspecO_evar_cost costf (fun n => 0 <= n).
   intros n. induction_wf: (downto 0) n. intro N.
-  refine_credits. xcf. xpay. xrets.
+  weaken. xcf. xpay. xrets.
   xif_guard.
   { xret. hsimpl. }
   { xapp~. xapp~. }
 
-  clean_max0. ring_simplify. generalize n N. procrastinate.
+  ring_simplify. generalize n N. procrastinate.
   end procrastination.
 
   begin procrastination assuming a b.
@@ -173,7 +172,7 @@ Proof.
   { unfold cost. dominated. }
   { intros n N. cases_if; ring_simplify.
     { subst n. unfold cost. ring_simplify. procrastinate. }
-    { rewrite~ max0_eq. unfold cost.
+    { unfold cost.
       transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
       rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
       math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.

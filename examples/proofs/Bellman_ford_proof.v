@@ -62,7 +62,7 @@ Proof.
         xapp. admit. (* TODO *) }
       { hsimpl. } { hsimpl. }
 
-      { subst edges_nb. clean_max0.
+      { subst edges_nb.
         match goal with |- cumul _ _ (fun _ => ?x) <= _ => ring_simplify x end.
         sets edges_nb: (LibListZ.length edges). (* workaround *)
         reflexivity. }
@@ -73,24 +73,21 @@ Proof.
 
   cleanup_cost.
 
+  admit.
   admit. (* TODO monotonic *)
 
   apply_nary dominated_sum_distr_nary; swap 1 2.
   dominated.
 
   apply_nary dominated_sum_distr_nary.
-  { dominated.
-    apply_nary dominated_sum_distr_nary.
-    { apply dominated_transitive with (fun '(x, y) => x * 1).
-      - (* TODO: improve using some setoid rewrite instances? *)
-        apply dominated_eq. intros [? ?]. math.
-      - apply_nary dominated_mul_nary; dominated. }
-    { dominated. } }
-  { dominated.
-    eapply dominated_transitive.
+  { apply dominated_transitive with (fun '(x, y) => x * 1).
+    - (* TODO: improve using some setoid rewrite instances? *)
+      apply dominated_eq. intros [? ?]. math.
+    - apply_nary dominated_mul_nary; dominated. }
+  { eapply dominated_transitive.
     apply dominated_product_swap.
     apply Product.dominated_big_sum_bound_with.
-    { ultimately_greater. }
+    { (* ultimately_greater. *) (* FIXME *) admit. }
     { monotonic. }
     { limit. (* FIXME *) apply limit_sum_cst_r. limit. }
 
@@ -180,8 +177,7 @@ Proof.
     cost bellman_ford2_spec (n', m)).
   { introv Hnodes Hedges. intros; xapply~ (spec bellman_ford2_spec).
     hsimpl_credits; swap 1 2;
-    (asserts_rewrite (forall (x y : Z), ge x y <-> y <= x); [math|..]).
-    apply (cost_nonneg bellman_ford2_spec).
+    (asserts_rewrite (forall (x y : Z), le 0 (x - y) <-> y <= x); [math|..]).
     apply (cost_monotonic bellman_ford2_spec).
     unfolds ZZle. splits~. cases_if~. cases_if~.
   }

@@ -59,17 +59,12 @@ Proof.
   xspecO_evar_cost costf (fun x => 0 <= x).
 
   intros n. induction_wf: (downto 1) n. intro N.
-  xcf. refine_credits.   match goal with
-    |- _ (\$ max0 _) _ => apply refine_cost_setup_intro_emp
-  | |- _ (\$ max0 _ \* _) _ => idtac
-  end.
-
-is_refine_cost_goal. xpay.
+  xcf. weaken. xpay.
   xif_guard.
   { xret~. }
   { xapp. xapp. xapp~. }
 
-  { clean_max0. generalize n N. procrastinate. }
+  { generalize n N. procrastinate. }
   end procrastination.
 
   begin procrastination assuming a b.
@@ -81,8 +76,7 @@ is_refine_cost_goal. xpay.
   { dominated. }
   { intros n N. cases_if; ring_simplify.
     - cut (1 <= b). math_nia. procrastinate.
-    - rewrite max0_eq by (with procrastination; math_nia).
-      ring_simplify.
+    - ring_simplify.
 
       cut (cost g1_spec tt + cost g2_spec tt + 1 <= a). admit.
       procrastinate. }
