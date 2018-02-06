@@ -26,7 +26,7 @@ Lemma f_spec :
        PRE (\$ cost n)
        POST (fun (_:unit) => \[])).
 Proof.
-  xspecO. intros n N. xcf. xpay.
+  xspecO_refine straight_line. intros n N. xcf. xpay.
   weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i Hi. xpay.
     weaken. xfor_inv (fun (_:int) => \[]). math.
@@ -39,7 +39,6 @@ Proof.
     reflexivity. reflexivity. }
 
   cleanup_cost.
-  admit.
   admit. (* TODO *)
 
   dominated.

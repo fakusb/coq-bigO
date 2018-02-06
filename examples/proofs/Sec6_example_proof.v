@@ -34,20 +34,6 @@ Parameter g2_spec :
 
 Hint Extern 1 (RegisterSpec g2) => Provide (provide_specO g2_spec).
 
-Ltac xspecO_evar_cost cost_name domain :=
-  match goal with
-  | |- specO ?A _ _ _ =>
-    begin procrastination assuming cost_name;
-    [ let Hnonneg := fresh "cost_nonneg" in
-      assert (forall (x : A), domain x -> 0 <= cost_name x)
-        as Hnonneg
-        by (simpl; procrastinate);
-      simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
-      xspecO_cost cost_name on domain;
-      [ | apply Hnonneg | procrastinate | procrastinate ]
-    | ..]
-  end.
-
 Lemma f_spec :
   specZ [cost \in_O (fun n => n)]
     (forall (n: Z),
@@ -56,30 +42,30 @@ Lemma f_spec :
            PRE (\$ cost n)
            POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_evar_cost costf (fun x => 0 <= x).
+  xspecO_refine recursive. intros costf ? ? ? n.
 
-  intros n. induction_wf: (downto 1) n. intro N.
+  induction_wf: (downto 1) n. intro N.
   xcf. weaken. xpay.
   xif_guard.
   { xret~. }
   { xapp. xapp. xapp~. }
 
   { generalize n N. procrastinate. }
-  end procrastination.
+  close cost.
 
   begin procrastination assuming a b.
   assert (A: 0 <= a) by procrastinate.
-  exists (fun (n:Z_filterType) => a * n + b). splits.
-
-  { intro. cut (0 <= b). math_nia. procrastinate. }
-  { monotonic. }
-  { dominated. }
+  exists (fun (n:Z_filterType) => a * n + b). split.
   { intros n N. cases_if; ring_simplify.
     - cut (1 <= b). math_nia. procrastinate.
     - ring_simplify.
 
       cut (cost g1_spec tt + cost g2_spec tt + 1 <= a). admit.
       procrastinate. }
+
+  cleanup_cost.
+  { monotonic. }
+  { dominated. }
 
   end procrastination.
   simpl. exists (cost g1_spec tt + cost g2_spec tt + 1) 1.

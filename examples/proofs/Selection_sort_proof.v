@@ -31,9 +31,9 @@ Lemma swap_spec :
       POST (fun (_:unit) => a ~> Array (xs[i := xs[j]][j := xs[i]])))
     (fun (_:unit) => 1).
 Proof.
-  xspecO. introv Ii Ij. xcf. xpay.
+  xspecO_refine straight_line. introv Ii Ij. xcf. xpay.
   xapps~. xapps~. xapp~. xapp~. apply~ index_update.
-  cleanup_cost. admit. monotonic. dominated.
+  cleanup_cost. monotonic. dominated.
 Qed.
 
 Hint Extern 1 (RegisterSpec swap) => Provide (provide_specO swap_spec).
@@ -47,7 +47,7 @@ Lemma selection_sort_spec :
       PRE (\$ cost (length xs) \* a ~> Array xs)
       POST (fun (_:unit) => Hexists (xs' : list int), a ~> Array xs')).
 Proof.
-  xspecO. xcf. xpay.
+  xspecO_refine straight_line. xcf. xpay.
   xapps~.
   assert (1 <= length xs) by admit. (* fix the for-loop reasoning rule *)
   weaken. xfor_inv (fun (_:int) =>
@@ -89,7 +89,6 @@ Proof.
   ring_simplify ((len_xs - 2) + 1). reflexivity.
 
   cleanup_cost.
-  admit.
   monotonic. admit. (* todo *)
   dominated.
 

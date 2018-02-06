@@ -49,7 +49,7 @@ Proof.
     { rewrite <-Z.log2_nonneg. ring_simplify. procrastinate. } }
 
 
-  { xspecO_cost cost.
+  { xspecO cost.
 
     introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
     intros i j Hn Hi Hj.
@@ -84,7 +84,7 @@ Proof.
         ring_simplify. cuts~: (3 <= a). procrastinate.
     }
 
-    assumption. assumption.
+    assumption.
     { unfold cost. rewrite dominated_ultimately_eq; swap 1 2.
       rewrite ZP. exists 1. intros. cases_if~. reflexivity.
       apply dominated_sum_distr; dominated. (* FIXME; dominated alone should work *)
@@ -95,20 +95,6 @@ Proof.
   simpl. exists~ 3 4.
 Qed.
 
-(* TEMPORARY: this is slightly ad-hoc *)
-Ltac xspecO_evar_cost cost_name :=
-  match goal with
-  | |- specO ?A _ _ _ =>
-    begin procrastination assuming cost_name;
-    [ let Hnonneg := fresh "cost_nonneg" in
-      assert (forall (x : A), 0 <= cost_name x)
-        as Hnonneg
-        by procrastinate;
-      xspecO_cost cost_name;
-      [ | apply Hnonneg | procrastinate | procrastinate ]
-    | ..]
-  end.
-
 Lemma bsearch_spec2 :
   specZ [cost \in_O Z.log2]
     (forall t (xs : list int) (v : int) (i j : int),
@@ -118,7 +104,7 @@ Lemma bsearch_spec2 :
         PRE (\$ (cost (j - i)) \* t ~> Array xs)
         POST (fun (k:int) => t ~> Array xs)).
 Proof.
-  xspecO_evar_cost costf.
+  xspecO_refine recursive. intros costf M D ?.
   { introv. gen_eq n: (j-i). gen i j. induction_wf IH: (downto 0) n.
     intros i j Hn Hi Hj.
 
@@ -140,9 +126,10 @@ Proof.
 
     cases_if; ring_simplify.
     { assert (HH: n <= 0) by math. generalize n HH. procrastinate. }
-    { rewrite (Z.max_r 0); [| auto with zarith].
+    { assert (forall n, 0 <= costf n) by procrastinate.
+      rewrite (Z.max_r 0); [| auto with zarith].
       rewrite Z.max_l; swap 1 2.
-      { already procrastinated. (* monotonicity *)
+      { apply M.
         forwards~: Zquot_mul_2 (j-i). }
       tests Hn1: (j-i = 1).
       + rewrite Hn1. asserts_rewrite~ (1 `/` 2 = 0).
@@ -151,13 +138,23 @@ Proof.
         generalize n HH. procrastinate. }
   }
 
-  end procrastination.
+  close cost.
 
   begin procrastination assuming a b.
   assert (0 <= a) as Ha by procrastinate.
-  exists (fun (n:Z_filterType) => If 0 < n then a * Z.log2 n + b else 1). splits.
+  exists (fun (n:Z_filterType) => If 0 < n then a * Z.log2 n + b else 1).
+  (* FIXME *)
+  repeat (match goal with |- _ * _ => split
+                     | |- _ /\ _ => split end).
+  { intros. cases_if~. }
   { intros. cases_if~. rewrite <-Z.log2_nonneg. ring_simplify.
     procrastinate. }
+  { cases_if~. cases_if~. simpl. ring_simplify. procrastinate. }
+  { intros n N. cases_if~; [| exfalso; admit]. cases_if~.
+    rewrite~ <-(@Zlog2_step n). ring_simplify.
+    cuts~: (3 <= a). procrastinate. }
+
+  cleanup_cost.
   { intros x y H. cases_if; case_if~.
     { monotonic. }
     { rewrite <-Z.log2_nonneg. ring_simplify. procrastinate. } }
@@ -166,11 +163,6 @@ Proof.
       apply dominated_sum_distr; dominated.
       (* FIXME; dominated alone should work *)
   }
-  { intros. cases_if~. }
-  { cases_if~. cases_if~. simpl. ring_simplify. procrastinate. }
-  { intros n N. cases_if~; [| exfalso; admit]. cases_if~.
-    rewrite~ <-(@Zlog2_step n). ring_simplify.
-    cuts~: (3 <= a). procrastinate. }
 
   end procrastination.
   simpl. exists~ 3 4.

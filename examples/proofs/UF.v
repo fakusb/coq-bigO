@@ -42,11 +42,11 @@ Theorem find_specO :
     (fun cost =>
       (forall D R V x, x \in D ->
        app UnionFind_ml_find [x]
-         PRE  (UF D R V \* \$(cost (card D)))
+         PRE  (\$(cost (card D)) \* UF D R V)
          POST (fun y => UF D R V \* \[ R x = y ])))
     alpha.
 Proof using.
-  xspecO. intros. xapply find_spec. applys~ H.
+  xspecO_refine straight_line. intros. xapply find_spec. applys~ H.
   (* workaround *) sets cD: (card D). hsimpl. hsimpl. hsimpl~.
-  cleanup_cost. unfold costf; auto with zarith. monotonic. dominated.
+  cleanup_cost. monotonic. dominated.
 Qed.

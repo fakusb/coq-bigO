@@ -70,7 +70,7 @@ Lemma tick3_spec :
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
-  xspecO_cost (fun _ => 4).
+  xspecO (fun _ => 4).
 
   { xcf.
     xpay.
@@ -82,9 +82,8 @@ Proof.
     xapp. hsimpl_credits; math.
     xapp. hsimpl_credits; math. }
 
-  (* Justify that the cost function is nonnegative, monotonic and dominated by
+  (* Justify that the cost function is monotonic and dominated by
      the bound given in the specification ([fun tt => 1]). *)
-  { math. }
   { monotonic. }
   { dominated. }
 Qed.
@@ -111,7 +110,7 @@ Lemma tick3_spec2 :
            POST (fun (tt:unit) => \[]))
     (fun tt => 1).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   xcf.
   xpay.
   xseq. xapp.
@@ -119,7 +118,6 @@ Proof.
 
   cleanup_cost.
 
-  unfold costf; auto with zarith.
   monotonic.
   dominated.
 Qed.
@@ -134,15 +132,14 @@ Lemma tick31_spec :
            POST (fun (tt:unit) => \[]))
     (fun _ => 1).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   xcf. xpay.
   xapp. (* usual spec *)
   xapp. (* big-O spec *)
 
   cleanup_cost.
-  unfold costf; auto with zarith.
-  monotonic.
 
+  monotonic.
   dominated.
 Qed.
 
@@ -161,7 +158,7 @@ Lemma loop1_spec :
            PRE (\$ cost n)
            POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n N.
   xcf.
   xpay.
@@ -173,9 +170,8 @@ Proof.
     xapp. xapp. }
   hsimpl. hsimpl.
 
-  { cleanup_cost. }
+  cleanup_cost.
 
-  { admit. }
   { monotonic. }
 
   { dominated.
@@ -205,7 +201,7 @@ Lemma let1_spec :
          POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n N.
 
   xcf.
@@ -224,7 +220,6 @@ Proof.
     reflexivity. }
 
   cleanup_cost.
-  admit.
   monotonic.
   dominated.
 Qed.
@@ -257,7 +252,7 @@ Lemma let2_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n N.
 
   xcf.
@@ -270,7 +265,6 @@ Proof.
   }
 
   cleanup_cost.
-  admit.
   monotonic.
   dominated.
 Qed.
@@ -289,7 +283,7 @@ Lemma loop2_spec :
              POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n N.
 
   xcf. xpay.
@@ -314,7 +308,6 @@ Proof.
 
   cleanup_cost.
 
-  admit.
   monotonic.
   dominated.
 Qed.
@@ -332,7 +325,7 @@ Lemma if1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n cond N.
   xcf. xpay.
   xapp~. intro Ha.
@@ -346,7 +339,6 @@ Proof.
   { weaken. xapp. math. apply (le_than (cost loop1_spec n)). apply cost_monotonic. math. }
 
   cleanup_cost.
-  admit.
   monotonic.
   dominated.
 Qed.
@@ -362,7 +354,7 @@ Lemma looploop_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n ^ 2).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n N.
   xcf. xpay.
 
@@ -375,7 +367,6 @@ Proof.
   { hsimpl. } { hsimpl. }
 
   cleanup_cost.
-  admit.
   (* FIXME *) (* monotonic. *) admit.
 
   dominated.
@@ -549,7 +540,7 @@ Lemma rec1_spec :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_cost (fun n => Z.max 0 n + 1).
+  xspecO (fun n => Z.max 0 n + 1).
   intro n.
   induction_wf: (downto 0) n.
 
@@ -561,7 +552,6 @@ Proof.
 
   cases_if; math_lia.
 
-  math_lia.
   monotonic.
   dominated.
 Qed.
@@ -583,7 +573,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by procrastinate.
   assert (b_nonneg : 0 <= b) by procrastinate.
 
-  xspecO_cost (fun n => a * Z.max 0 n + b).
+  xspecO (fun n => a * Z.max 0 n + b).
   intro n.
   induction_wf: (wf_downto 0) n.
 
@@ -594,7 +584,6 @@ Proof.
   { generalize n C. procrastinate. }
   { generalize n C. procrastinate. }
 
-  math_nia.
   monotonic.
   dominated.
   end procrastination.
@@ -616,7 +605,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by procrastinate.
   assert (b_nonneg : 0 <= b) by procrastinate.
 
-  xspecO_cost (fun n => a * Z.max 0 n + b).
+  xspecO (fun n => a * Z.max 0 n + b).
   intro n.
   induction_wf: (wf_downto 0) n.
 
@@ -627,7 +616,6 @@ Proof.
   { generalize n C. procrastinate. }
   { generalize n C. procrastinate. }
 
-  math_nia.
   monotonic.
   dominated.
   end procrastination.
@@ -650,7 +638,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by procrastinate.
   assert (b_nonneg : 0 <= b) by procrastinate.
 
-  xspecO_cost (fun n => Z.max 0 (a * n + b)).
+  xspecO (fun n => Z.max 0 (a * n + b)).
   intros n.
   induction_wf: (wf_downto 0) n. intro N.
 
@@ -661,7 +649,6 @@ Proof.
   { generalize n N C. procrastinate. }
   { generalize n N C. procrastinate. }
 
-  math_nia.
   monotonic.
   dominated.
   end procrastination.
@@ -685,7 +672,7 @@ Proof.
   assert (a_nonneg : 0 <= a) by procrastinate.
   assert (b_nonneg : 0 <= b) by procrastinate.
 
-  xspecO_cost (fun n => a * n + b) on (fun n => 0 <= n).
+  xspecO (fun n => a * n + b).
   intro n. induction_wf: (wf_downto 0) n. intro N.
 
   xcf. weaken.
@@ -695,7 +682,6 @@ Proof.
   { generalize n N C. procrastinate. }
   { generalize n N C. procrastinate. }
 
-  math_nia.
   monotonic.
   dominated.
   end procrastination.
@@ -703,21 +689,6 @@ Proof.
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
 Qed.
-
-(* TEMPORARY: this is slightly ad-hoc *)
-Ltac xspecO_evar_cost cost_name domain :=
-  match goal with
-  | |- specO ?A _ _ _ =>
-    begin procrastination assuming cost_name;
-    [ let Hnonneg := fresh "cost_nonneg" in
-      assert (forall (x : A), domain x -> 0 <= cost_name x)
-        as Hnonneg
-        by (simpl; procrastinate);
-      simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
-      xspecO_cost cost_name on domain;
-      [ | apply Hnonneg | procrastinate | procrastinate ]
-    | ..]
-  end.
 
 Lemma rec1_spec6 :
   specO
@@ -729,7 +700,7 @@ Lemma rec1_spec6 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  xspecO_evar_cost rec_cost (fun x => 0 <= x).
+  xspecO_refine recursive. intros rec_cost ? ? ?.
   intro n. induction_wf: (wf_downto 0) n. intro N.
 
   xcf. weaken.
@@ -739,20 +710,22 @@ Proof.
   { ring_simplify. generalize n N. procrastinate. }
   { generalize n N C. procrastinate. }
 
-  end procrastination.
+  close cost.
 
   simpl.
   begin procrastination assuming a b. exists (fun (n:Z_filterType) => a * n + b).
   assert (a_nonneg : 0 <= a) by procrastinate.
-  splits.
-  { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
-  { monotonic. }
-  { dominated. }
+  (* FIXME *)
+  repeat (match goal with |- _ /\ _ => split | |- _ * _ => split end).
   { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
   { intros n N N'.
     cut (1 <= a). math_nia. procrastinate. }
-  { end procrastination.
-    simpl. exists 1 1. splits; math. }
+
+  cleanup_cost.
+  { monotonic. }
+  { dominated. }
+  end procrastination.
+  { simpl. exists 1 1. splits; math. }
 Qed.
 
 
@@ -783,11 +756,11 @@ Lemma search_spec_balanced :
          PRE (\$ cost (size t))
          POST (fun (_:Z) => \[])).
 Proof.
-  xspecO. intros t HB.
+  xspecO_refine straight_line. intros t HB.
   weaken. xapply search_spec. hsimpl. hsimpl.
   apply cost_monotonic. (* apply tree_height_bound. *)
   rewrite tree_height_bound. sets sz: (size t). reflexivity.
   assumption.
 
-  cleanup_cost. admit. monotonic. dominated.
+  cleanup_cost.  monotonic. dominated.
 Qed.

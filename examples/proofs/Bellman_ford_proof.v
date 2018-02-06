@@ -41,7 +41,7 @@ Lemma bellman_ford2_spec :
         POST (fun (_: array int) => t ~> Array edges))
     (fun '(n,m) => n * m).
 Proof.
-  xspecO. xcf.
+  xspecO_refine straight_line. xcf.
   xpay.
 
   xapp~. intros ds Hds. subst ds.
@@ -70,10 +70,8 @@ Proof.
     { hsimpl. }
   }
   { xpull. intros ds. xret. hsimpl. }
-
   cleanup_cost.
 
-  admit.
   admit. (* TODO monotonic *)
 
   apply_nary dominated_sum_distr_nary; swap 1 2.
@@ -171,7 +169,7 @@ Lemma bellman_ford2_spec_derived :
         POST (fun (_: array int) => t ~> Array edges))
     (fun n => n ^ 3).
 Proof.
-  xspecO_cost (fun n =>
+  xspecO (fun n =>
     let m := If 0 < n then n^2 else 0 in
     let n' := If 0 < n then n else 1 in
     cost bellman_ford2_spec (n', m)).
@@ -181,7 +179,6 @@ Proof.
     apply (cost_monotonic bellman_ford2_spec).
     unfolds ZZle. splits~. cases_if~. cases_if~.
   }
-  { ultimately_greater. }
   { eapply monotonic_comp. monotonic.
     intros x1 x2 H. unfold ZZle. splits~.
     - cases_if; cases_if~.

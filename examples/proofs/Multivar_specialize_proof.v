@@ -110,7 +110,7 @@ Lemma g_spec :
          POST (fun (_:unit) => \[])))
     (fun '(m, n) => n * m + n).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   xcf. xpay. xmatch.
   weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i I. xpay.
@@ -124,7 +124,6 @@ Proof.
     hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
-  admit.
   admit.
 
   apply_nary dominated_sum_distr_nary.
@@ -148,9 +147,8 @@ Lemma f_spec :
          POST (fun (_:unit) => \[])))
     (fun n => n).
 Proof.
-  xspecO. xcf. xpay. xapp~.
+  xspecO_refine straight_line. xcf. xpay. xapp~.
   cleanup_cost.
-  admit.
   admit.
   { dominated.
     eapply dominated_comp_eq. applys cost_dominated g_spec.
@@ -192,7 +190,7 @@ Lemma g_spec' :
          POST (fun (_:unit) => \[])))
     (fun '(m, n) => n * m + n).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   xcf. xpay. xmatch.
   weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i I. xpay.
@@ -206,7 +204,6 @@ Proof.
     hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
-  admit.
   admit.
 
   apply_nary dominated_sum_distr_nary.
@@ -229,9 +226,8 @@ Lemma f_spec' :
          POST (fun (_:unit) => \[])))
     (fun n => n).
 Proof.
-  xspecO. xcf. xpay. xapp~.
+  xspecO_refine straight_line. xcf. xpay. xapp~.
   cleanup_cost.
-  admit.
   admit.
   { dominated.
     eapply dominated_comp_eq. applys cost_dominated g_spec'.
@@ -272,7 +268,7 @@ Lemma g_spec'' :
          POST (fun (_:unit) => \[])))
     (fun '(m, n) => n).
 Proof.
-  intro m. xspecO.
+  intro m. xspecO_refine straight_line.
   xcf. xpay. xmatch.
   weaken. xfor_inv (fun (_:int) => \[]). math.
   { intros i I. xpay.
@@ -286,7 +282,6 @@ Proof.
     hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
 
   cleanup_cost.
-  admit.
   admit.
 
   apply_nary dominated_sum_distr_nary.

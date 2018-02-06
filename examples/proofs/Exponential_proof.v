@@ -39,7 +39,7 @@ Lemma f_spec :
         PRE (\$ (cost n))
         POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_cost (fun n => 2^(n+1) - 1) on (fun n => 0 <= n).
+  xspecO (fun n => 2^(n+1) - 1).
   intro n. induction_wf: (downto 0) n. intro N.
 
   xcf. xpay. hsimpl_credits.
@@ -48,7 +48,6 @@ Proof.
   { xapp~. hsimpl_credits.
     xapp~. hsimpl_credits. admit. }
 
-  admit.
   monotonic.
   dominated.
 Qed.
@@ -61,7 +60,7 @@ Lemma f_spec2 :
         PRE (\$ (cost n))
         POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_cost (fun n => 2^(n+1) - 1) on (fun n => 0 <= n).
+  xspecO (fun n => 2^(n+1) - 1).
   intro n. induction_wf: (downto 0) n. intro N.
 
   weaken. xcf. xpay.
@@ -79,7 +78,6 @@ Proof.
   { subst n. reflexivity. }
   { ring_simplify. rewrite~ <-pow2_succ. }
 
-  (* ultimately_greater. *) auto with zarith.
   monotonic.
   dominated.
 Qed.
@@ -101,7 +99,7 @@ Proof.
     asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
     ring_simplify. procrastinate. }
 
-  xspecO_cost cost on (fun n => 0 <= n).
+  xspecO cost.
   intro n. induction_wf: (downto 0) n. intro N.
 
   weaken. xcf. xpay. xrets.
@@ -118,7 +116,6 @@ Proof.
     math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
     procrastinate. }
 
-  apply cost_nonneg.
   unfold cost. monotonic.
   unfold cost. dominated.
 
@@ -126,20 +123,6 @@ Proof.
 
   simpl. exists~ 2 (-1).
 Qed.
-
-Ltac xspecO_evar_cost cost_name domain :=
-  match goal with
-  | |- specO ?A _ _ _ =>
-    begin procrastination assuming cost_name;
-    [ let Hnonneg := fresh "cost_nonneg" in
-      assert (forall (x : A), domain x -> 0 <= cost_name x)
-        as Hnonneg
-        by (simpl; procrastinate);
-      simpl in Hnonneg; (* [domain x] is likely a beta-redex *)
-      xspecO_cost cost_name on domain;
-      [ | apply Hnonneg | procrastinate | procrastinate ]
-    | ..]
-  end.
 
 Lemma f_spec4 :
   specZ [cost \in_O (fun n => 2 ^ n)]
@@ -149,7 +132,7 @@ Lemma f_spec4 :
         PRE (\$ (cost n))
         POST (fun (tt:unit) => \[])).
 Proof.
-  xspecO_evar_cost costf (fun n => 0 <= n).
+  xspecO_refine recursive. intros ? ? ? ?.
   intros n. induction_wf: (downto 0) n. intro N.
   weaken. xcf. xpay. xrets.
   xif_guard.
@@ -157,7 +140,7 @@ Proof.
   { xapp~. xapp~. }
 
   ring_simplify. generalize n N. procrastinate.
-  end procrastination.
+  close cost.
 
   begin procrastination assuming a b.
   assert (0 <= a) as Ha by procrastinate.
@@ -167,9 +150,7 @@ Proof.
     asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
     ring_simplify. procrastinate. }
 
-  exists cost. splits~.
-  { unfold cost. monotonic. }
-  { unfold cost. dominated. }
+  exists cost. split.
   { intros n N. cases_if; ring_simplify.
     { subst n. unfold cost. ring_simplify. procrastinate. }
     { unfold cost.
@@ -177,6 +158,9 @@ Proof.
       rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
       math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
       procrastinate. } }
+  cleanup_cost.
+  { monotonic. }
+  { dominated. }
 
   end procrastination.
 

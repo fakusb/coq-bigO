@@ -2,6 +2,9 @@ Set Implicit Arguments.
 Require Import TLC.LibTactics.
 (* Load the CFML library, with time credits. *)
 Require Import CFML.CFLibCredits.
+(* We re-use the methodology of Procrastination, and thus some of the definition
+   and tactics *)
+Require Export Procrastination.Procrastination.
 (* Load the BigO library. *)
 Require Import Dominated.
 Require Import DominatedNary.
@@ -37,7 +40,9 @@ Record specO
       cost_dominated : dominated A cost bound
     }.
 
-(** *)
+(********************************************************************)
+
+(** Properties of the cost function in a specO, as separate lemmas. *)
 
 Lemma monotonic_specO_cost :
   forall A le spec bound (S : @specO A le spec bound),
@@ -74,135 +79,106 @@ Inductive pack_provide_specO (A:Type) (V:A) : Prop :=
 
 (** *)
 
-Definition cleanup_cost (A : filterType) (cost cost_clean_eq cost_clean : A -> Z) :=
-  (forall (x : A), cost x = cost_clean_eq x) /\
-  dominated A cost_clean_eq cost_clean.
+(********************************************************************)
 
-Lemma specO_refine_prove :
-  forall (A : filterType) (le : A -> A -> Prop)
-         (cost cost_clean_eq cost_clean bound : A -> Z)
-         (spec : (A -> Z) -> Prop),
-    spec cost ->
-    cleanup_cost A cost cost_clean_eq cost_clean ->
-    (forall x, 0 <= cost x) ->
-    monotonic le Z.le cost_clean_eq ->
-    dominated A cost_clean bound ->
-    specO A le spec bound.
-Proof.
-  intros ? le cost cost_clean_eq cost_clean bound.
-  introv S D1 N M D2.
-  econstructor; eauto.
-  - apply Monotonic.monotonic_eq with cost_clean_eq; auto.
-    intro. rewrite~ (proj1 D1).
-  - apply dominated_eq_l with cost_clean_eq.
-    rewrite~ (proj2 D1). intro. rewrite~ (proj1 D1).
-Qed.
+(* Contravariant specs (wrt the cost function).
 
-(* body is expected to be a uconstr *)
-Ltac intro_cost_expr_1 A cost_name body :=
-  refine (let cost_name := (fun (x:A) => body) : A -> Z in _).
+   If the spec can be proved contravariant, then the [cost_nonneg] field of
+   [specO] can be proved automatically. *)
 
-(* body is expected to be a uconstr *)
-Ltac intro_cost_expr_2 A cost_name body :=
-  (* Ugly hack. See https://github.com/coq/coq/issues/6643 *)
-  (* Was:
-     refine (let cost_name := (fun '(x, y) => body) : A -> Z in _).
-   *)
-  let pat := fresh "pat" in
-  match goal with |- ?G =>
-    simple refine (let cost_name := (fun pat => let '(x,y) := pat in body) : A -> Z in _);
-    try clear pat;
-    match goal with |- G => idtac | _ => shelve end
-  end.
+Definition spec_is_contravariant {A} (spec : (A -> Z) -> Prop) :=
+  forall (cost1 cost2 : A -> Z),
+  (forall x, cost1 x <= cost2 x) ->
+  (spec cost1 -> spec cost2).
 
-(* body is expected to be a uconstr *)
-Ltac intro_cost_expr A cost_name body :=
-  let A_sort := constr:(Filter.sort A) in
-  let A_sort' := (eval compute in A_sort) in
-  (* TODO: handle more arities *)
-  match A_sort' with
-  | (_ * _)%type => intro_cost_expr_2 A cost_name body
-  | _ => intro_cost_expr_1 A cost_name body
-  end.
+(* Tactic that tries to prove that a CFML spec is contravariant.
 
-(* TODO: make it more robust *)
-Ltac intro_destructs :=
-  let x := fresh "x" in
-  intro x; repeat (destruct x as [x ?]).
+   It is generally the case for the specs with credits we consider, where the
+   cost functions is used once and only in the precondition.
 
-Ltac xspecO_refine_base cost_name :=
-  match goal with
-    |- specO ?A ?le _ _ =>
-    let cost_clean_eq := fresh "cost_clean_eq" in
-    let cost_clean := fresh "cost_clean" in
-    intro_cost_expr A cost_name uconstr:(_);
-    intro_cost_expr A cost_clean uconstr:(_);
-    intro_cost_expr A cost_clean_eq uconstr:(_);
-    eapply (@specO_refine_prove A le cost_name cost_clean_eq cost_clean);
-    subst cost_clean cost_clean_eq;
-    [ unfold cost_name | |
-      | subst cost_name | subst cost_name ]
-  end.
-
-Tactic Notation "xspecO" ident(cost_name) :=
-  xspecO_refine_base cost_name.
-
-Tactic Notation "xspecO" :=
-  let cost_name := fresh "costf" in
-  xspecO_refine_base cost_name.
-
-Tactic Notation "xspecO_cost" uconstr(cost_fun) :=
-  match goal with
-  | |- specO ?A _ _ _ =>
-    apply (@SpecO A _ _ _ cost_fun)
-  end.
-
-(* This allows us to prove that the provided [cost] is non-negative only on the
-   provided [domain].
-
-  TODO: What if we also wanted to prove monicity/dominated only on [domain]?
+   More precisely, this tactic works with specifications of the form:
+   [fun cost -> forall ...., app _ (\$cost (..) \* _) _] or
+   [fun cost -> forall ...., app _ (\$cost (..)) _]
 *)
-Lemma xspecO_cost_on_domain :
-  forall (A: filterType) le
-         (domain : A -> Prop)
-         (spec: (A -> int) -> Prop)
-         bound cost,
-  (forall cost_max_0,
-      (forall x, domain x -> cost_max_0 x = cost x) ->
-      spec cost_max_0) ->
-  (forall (x:A), domain x -> 0 <= cost x) ->
-  monotonic le Z.le cost ->
-  dominated A cost bound ->
-  specO A le spec bound.
-Proof.
-  intros ? ? ? ? ? costf S Pos Mon Dom.
-  pose (cost_max_0 := fun (n:A) => Z.max 0 (costf n)).
 
-  apply SpecO with (cost := cost_max_0); subst cost_max_0; simpl.
-  - apply S. intros x D. specialize (Pos _ D). math_lia.
-  - intros x. math_lia.
-  - Monotonic.monotonic.
-  - apply dominated_max_distr.
-    exists 0. apply filter_universe_alt. intros. rewrite Z.abs_0. math_lia. auto. (* xx *)
+Lemma spec_is_contravariant_lemma1 :
+  forall A (cost cost' : int) (F: ~~A) Q,
+  F (\$ cost') Q ->
+  (cost' <= cost) ->
+  is_local F ->
+  F (\$ cost) Q.
+Proof.
+  introv HH Hcost L. xapply HH. hsimpl_credits. hsimpl. math.
 Qed.
 
-Ltac rewrite_cost_domain :=
-  let cost' := fresh "cost'" in
-  let E := fresh "E" in
-  pose ltac_mark;
-  intros cost' E;
-  repeat intro;
-  (rewrite E; [| solve [auto]]);
-  clear E cost';
-  gen_until_mark.
+Lemma spec_is_contravariant_lemma2 :
+  forall A (cost cost' : int) (F: ~~A) H Q,
+  F (\$ cost' \* H) Q ->
+  (cost' <= cost) ->
+  is_local F ->
+  F (\$ cost \* H) Q.
+Proof.
+  introv HH Hcost L. xapply HH. hsimpl_credits. hsimpl. math.
+Qed.
 
-Tactic Notation "xspecO_cost" uconstr(cost_fun) "on" uconstr(domain) :=
+Ltac spec_is_contravariant :=
   match goal with
-  | |- specO ?A _ _ _ =>
-    apply (@xspecO_cost_on_domain A _ domain _ _ cost_fun)
-  end;
-  try rewrite_cost_domain.
+  | |- spec_is_contravariant _ =>
+    let cost1 := fresh "cost" in
+    let cost2 := fresh "cost" in
+    let Hcosts := fresh "Hcosts" in
+    let spec_cost1 := fresh "spec_cost1" in
+    intros cost1 cost2 Hcosts spec_cost1;
+    intros;
+    (first [
+        eapply spec_is_contravariant_lemma1; [ | | xlocal]
+      | eapply spec_is_contravariant_lemma2; [ | | xlocal]
+      ]);
+    [ apply spec_cost1; auto
+    | apply Hcosts ]
+  end.
 
+(********************************************************************)
+Definition cleanup_cost
+           {A : filterType} (le : A -> A -> Prop)
+           (cost : A -> Z)
+           (bound : A -> Z) (spec : (A -> Z) -> Prop)
+  :=
+  sigT (fun cost_clean_eq =>
+  sigT (fun cost_clean =>
+    monotonic le Z.le cost_clean_eq *
+    dominated A cost_clean bound *
+    (spec_is_contravariant spec + (forall x, 0 <= cost_clean_eq x)) *
+    dominated A cost_clean_eq cost_clean *
+    (forall x, cost x = cost_clean_eq x)))%type.
+
+Lemma cleanup_cost_alt :
+  forall (A: filterType) le cost bound spec,
+  @cleanup_cost A le cost bound spec ->
+  monotonic le Z.le cost *
+  dominated A cost bound *
+  (spec cost -> specO A le spec bound).
+Proof.
+  intros ? ? cost.
+  introv (cost_clean_eq & cost_clean & H).
+  repeat (destruct H as (H & ?)).
+  assert (monotonic le Z.le cost).
+  { eapply Monotonic.monotonic_eq; eauto. }
+  assert (dominated A cost bound).
+  { eapply dominated_eq_l. eapply dominated_transitive; eauto. auto. }
+
+  repeat split; auto; []. intro S.
+  match goal with H : _ + _ |- _ => destruct H as [contra | N] end.
+  { eapply SpecO with (fun x => Z.max 0 (cost x)).
+    - eapply contra with cost; auto with zarith.
+    - auto with zarith.
+    - Monotonic.monotonic.
+    - dominated. (* FIXME *) admit. }
+  { eapply SpecO with cost; auto.
+    intros. match goal with H : _ |- _ => rewrite H end. auto. }
+Qed.
+
+(* TODO: implement using setoid-rewrite? *)
 Ltac dominated_cleanup_cost :=
   first [
       apply dominated_sum;
@@ -243,23 +219,174 @@ Ltac simple_cleanup_cost :=
 Ltac simple_cleanup_cost_eq :=
   simpl; simple_cleanup_cost.
 
-Ltac unfold_cost_lhs :=
-  match goal with
-  | |- ?cost ?x = ?rhs => unfold cost
+(* TODO: make it more robust *)
+Ltac intro_destructs :=
+  let x := fresh "x" in
+  intro x; repeat (destruct x as [x ?]).
+
+(********************************************************************)
+
+(* body is expected to be a uconstr *)
+Ltac intro_cost_expr_1 A cost_name body :=
+  simple refine (let cost_name := (fun (x:A) => body) : A -> Z in _); [ shelve .. | ].
+
+(* body is expected to be a uconstr *)
+Ltac intro_cost_expr_2 A cost_name body :=
+  (* Ugly hack. See https://github.com/coq/coq/issues/6643 *)
+  (* Was:
+     refine (let cost_name := (fun '(x, y) => body) : A -> Z in _).
+   *)
+  let pat := fresh "pat" in
+  match goal with |- ?G =>
+    simple refine (let cost_name := (fun pat => let '(x,y) := pat in body) : A -> Z in _);
+    try clear pat;
+    [ shelve .. | ]
   end.
 
+(* body is expected to be a uconstr *)
+Ltac intro_cost_expr A cost_name body :=
+  let A_sort := constr:(Filter.sort A) in
+  let A_sort' := (eval compute in A_sort) in
+  (* TODO: handle more arities *)
+  lazymatch A_sort' with
+  | (_ * _)%type => intro_cost_expr_2 A cost_name body
+  | _ => intro_cost_expr_1 A cost_name body
+  end.
+
+Ltac eexists_cost_expr A :=
+  let cost_name := fresh in
+  intro_cost_expr A cost_name uconstr:(_);
+  exists cost_name;
+  subst cost_name.
+
+(********************************************************************)
+Definition close_cost (P : Type) := P.
+Definition hide_spec {A} (spec : (A -> Z) -> Prop) := spec.
+(********************************************************************)
+
+Ltac try_prove_nonnegative :=
+  first [
+      solve [ left; unfold hide_spec; spec_is_contravariant ]
+    | right
+    ].
+
 Ltac cleanup_cost :=
-  unfold cleanup_cost;
-  split; [
-    intro_destructs; unfold_cost_lhs;
-    simple_cleanup_cost_eq;
-    reflexivity
-  | eapply dominated_eq_r;
-    [ dominated_cleanup_cost |];
-    intro_destructs;
-    simple_cleanup_cost;
-    reflexivity
-  ].
+  match goal with |- @cleanup_cost ?A _ ?cost _ _ =>
+    unfold cleanup_cost; do 2 (eexists_cost_expr A);
+    try subst cost;
+    split; [| intro_destructs;
+              simple_cleanup_cost_eq;
+              reflexivity ];
+    split; [| eapply dominated_eq_r;
+              [ dominated_cleanup_cost |];
+              intro_destructs;
+              simple_cleanup_cost;
+              reflexivity ];
+    split; [ split | try_prove_nonnegative ]
+  end.
+
+(********************************************************************)
+
+Lemma specO_prove :
+  forall (A : filterType) (le : A -> A -> Prop)
+         (cost : A -> Z)
+         (bound : A -> Z)
+         (spec : (A -> Z) -> Prop),
+    spec cost ->
+    (spec_is_contravariant spec + (forall x, 0 <= cost x)) ->
+    monotonic le Z.le cost ->
+    dominated A cost bound ->
+    specO A le spec bound.
+Proof.
+  introv S N M D.
+  destruct N as [spec_contra | N].
+  { pose (cost' := fun x => Z.max 0 (cost0 x)).
+    apply SpecO with (cost := cost'); subst cost'.
+    - eapply spec_contra with cost0; auto. math_lia.
+    - math_lia.
+    - Monotonic.monotonic.
+    - dominated.  (* FIXME *) admit. }
+  { apply SpecO with (cost := cost0); auto. }
+Qed.
+
+Lemma specO_refine_straight_line :
+  forall (A : filterType) (le : A -> A -> Prop)
+         (cost bound : A -> Z)
+         (spec : (A -> Z) -> Prop),
+    spec cost ->
+    cleanup_cost le cost bound (hide_spec spec) ->
+    specO A le spec bound.
+Proof.
+  introv H1 H2.
+  forwards [[? ?] H]: cleanup_cost_alt H2.
+  unfold hide_spec in *. apply~ H.
+Qed.
+
+Lemma specO_refine_recursive :
+  forall (A : filterType) (le : A -> A -> Prop)
+         (bound : A -> Z)
+         (spec : (A -> Z) -> Prop)
+         P P',
+    (forall cost,
+       monotonic le Z.le cost ->
+       dominated A cost bound ->
+       Marker.group (P cost) ->
+       spec cost) ->
+    close_cost
+      ((forall cost, P' cost -> P cost) *
+       sigT (fun cost =>
+         P' cost *
+         cleanup_cost le cost bound (hide_spec spec)))%type ->
+    specO A le spec bound.
+Proof.
+  introv H1 H2.
+  unfold close_cost in H2.
+  destruct H2 as (? & cost & ? & c).
+  forwards [[? ?] H]: cleanup_cost_alt c.
+  unfold hide_spec, Marker.group in *. apply~ H.
+Qed.
+
+Ltac close_cost :=
+  unfold close_cost;
+  split; [ solve [ introv_rec; hnf; cleanup_conj_goal_core ] |];
+  hnf.
+
+Ltac xspecO_explicit_cost cost_expr :=
+  match goal with |- specO ?A _ _ _ =>
+    apply (@specO_prove A _ (cost_expr : A -> Z) _ _);
+    [ | try_prove_nonnegative | .. ]
+  end.
+
+Ltac xspecO_refine_recursive :=
+  eapply specO_refine_recursive.
+
+(** Straight-line case *)
+
+Ltac xspecO_refine_straight_line cost_name :=
+  match goal with
+    |- specO ?A ?le _ _ =>
+    intro_cost_expr A cost_name uconstr:(_);
+    eapply (@specO_refine_straight_line A le cost_name);
+    [ unfold cost_name | ]
+  end.
+
+Tactic Notation "xspecO" uconstr(cost_expr) :=
+  xspecO_explicit_cost cost_expr.
+
+Tactic Notation "xspecO_refine" "straight_line" ident(cost_name) :=
+  xspecO_refine_straight_line cost_name.
+
+Tactic Notation "xspecO_refine" "straight_line" :=
+  let costf := fresh "costf" in
+  xspecO_refine_straight_line costf.
+
+Tactic Notation "xspecO_refine" "recursive" :=
+  xspecO_refine_recursive.
+
+Notation "'close'  'cost'" := (close_cost _) (at level 0).
+Tactic Notation "close" "cost" := close_cost.
+
+Notation "'(...)'" := (hide_spec _) (at level 0).
 
 (* Notations for common [specO]s *)
 
