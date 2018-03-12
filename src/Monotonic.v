@@ -3,7 +3,7 @@ Require Import Psatz.
 Require Import Coq.Classes.RelationClasses.
 Require Import TLC.LibTactics.
 Require Import TLC.LibOrder.
-Require Import LibFunOrd.
+Require Import LibFunOrd LibZExtra.
 Require Import Filter.
 
 (* todo: move *)
@@ -157,6 +157,14 @@ Proof.
   intros b a1 a2 H. apply~ Z.pow_le_mono_r.
 Qed.
 
+Lemma monotonic_Z_to_ZZ : forall f g,
+  monotonic Z.le Z.le f ->
+  monotonic Z.le Z.le g ->
+  monotonic Z.le ZZle (fun x => (f x, g x)).
+Proof.
+  intros f g Hf Hg x y H. unfold ZZle. auto.
+Qed.
+
 End Z_facts.
 
 Section Ultimately_Z_facts.
@@ -209,6 +217,7 @@ Hint Extern 2 (monotonic _ _ (Z.pow ?b)) =>
   apply monotonic_comp with (leB := Z.le);
   [ apply monotonic_pow_r | ].
 (* todo: Z.pow _ ?e *)
+Hint Resolve monotonic_Z_to_ZZ : monotonic.
 
 Hint Extern 1 (monotonic _ _ (fun _ => ?f _)) =>
   match goal with

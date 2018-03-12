@@ -34,6 +34,18 @@ Lemma limit_sum_nary domain M f g :
   limit (nFilterType domain M) Z_filterType (Fun' (fun p => (App f p) + (App g p))).
 Proof. prove_nary limit_sum. Qed.
 
+Lemma limit_sum_ultimately_ge_l_nary lo domain M f1 f2 :
+  ultimately (nFilterType domain M) (Fun' (fun p => lo <= App f1 p)) ->
+  limit (nFilterType domain M) Z_filterType (Uncurry f2) ->
+  limit (nFilterType domain M) Z_filterType (Fun' (fun p => (App f1 p) + (App f2 p))).
+Proof. prove_nary limit_sum_ultimately_ge_l. Qed.
+
+Lemma limit_sum_ultimately_ge_r_nary lo domain M f1 f2 :
+  ultimately (nFilterType domain M) (Fun' (fun p => lo <= App f2 p)) ->
+  limit (nFilterType domain M) Z_filterType (Uncurry f1) ->
+  limit (nFilterType domain M) Z_filterType (Fun' (fun p => (App f1 p) + (App f2 p))).
+Proof. prove_nary limit_sum_ultimately_ge_r. Qed.
+
 (******************************************************************************)
 
 (* Applying n-ary limit lemmas *)

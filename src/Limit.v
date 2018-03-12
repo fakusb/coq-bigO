@@ -182,6 +182,24 @@ Proof.
   intros. lia.
 Qed.
 
+Lemma limit_sum_ultimately_ge_l lo f1 f2 :
+  ultimately A (fun x => lo <= f1 x) ->
+  limit A Z_filterType f2 ->
+  limit A Z_filterType (fun x => f1 x + f2 x).
+Proof.
+  intros U L. rewrite limitPZ in *. intro y; specialize (L (y-lo)).
+  revert U L; filter_closed_under_intersection. intros. lia.
+Qed.
+
+Lemma limit_sum_ultimately_ge_r lo f1 f2 :
+  ultimately A (fun x => lo <= f2 x) ->
+  limit A Z_filterType f1 ->
+  limit A Z_filterType (fun x => f1 x + f2 x).
+Proof.
+  intros U L. rewrite limitPZ in *. intro y; specialize (L (y-lo)).
+  revert U L; filter_closed_under_intersection. intros. lia.
+Qed.
+
 Lemma limit_mul f g :
   limit A Z_filterType f ->
   limit A Z_filterType g ->

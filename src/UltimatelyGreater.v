@@ -117,6 +117,26 @@ Proof.
   intros; auto with zarith.
 Qed.
 
+Lemma ultimately_lift1 (A B : filterType) :
+  forall f lo,
+  ultimately A (fun x => lo <= f x) ->
+  ultimately (product_filterType A B) (fun '(x, _) => lo <= f x).
+Proof.
+  intros f lo U.
+  rewrite productP. do 2 eexists. splits; try apply U. apply filter_universe.
+  tauto.
+Qed.
+
+Lemma ultimately_lift2 (A B : filterType) :
+  forall f lo,
+  ultimately B (fun y => lo <= f y) ->
+  ultimately (product_filterType A B) (fun '(_, y) => lo <= f y).
+Proof.
+  intros f lo U.
+  rewrite productP. do 2 eexists. splits; try apply U. apply filter_universe.
+  tauto.
+Qed.
+
 (******************************************************************************)
 (* Put lemmas into a base of hints [ultimately_greater] *)
 
@@ -138,6 +158,8 @@ Hint Extern 1 (ultimately Z_filterType (fun _ => 0 <= cumul _ _ _)) =>
 Hint Extern 2 (ultimately Z_filterType (fun _ => _ <= cumul _ _ _)) =>
   simple apply ultimately_ge_cumul_Z.
 Hint Resolve filter_universe_alt | 50 : ultimately_greater.
+Hint Resolve ultimately_lift1 : ultimately_greater.
+Hint Resolve ultimately_lift2 : ultimately_greater.
 
 Hint Extern 100 => try (intros; omega) : ultimately_greater_sidegoals.
 

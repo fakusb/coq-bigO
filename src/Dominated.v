@@ -428,6 +428,28 @@ Proof.
   introv (? & ?). nia.
 Qed.
 
+Lemma dominated_sum_r_nonneg_1 A f g1 g2 :
+  ultimately A (fun x => 0 <= g1 x) ->
+  ultimately A (fun x => 0 <= g2 x) ->
+  dominated A f g1 ->
+  dominated A f (fun x => g1 x + g2 x).
+Proof.
+  intros g1P g2P D. forwards (c & cP & U): dominated_nonneg_const D. exists c.
+  revert U g1P g2P; filter_closed_under_intersection.
+  intros a [H1 H2]. nia.
+Qed.
+
+Lemma dominated_sum_r_nonneg_2 A f g1 g2 :
+  ultimately A (fun x => 0 <= g1 x) ->
+  ultimately A (fun x => 0 <= g2 x) ->
+  dominated A f g2 ->
+  dominated A f (fun x => g1 x + g2 x).
+Proof.
+  intros g1P g2P D. forwards (c & cP & U): dominated_nonneg_const D. exists c.
+  revert U g1P g2P; filter_closed_under_intersection.
+  intros a [H1 H2]. nia.
+Qed.
+
 (* This lemma offers a general mechanism for transforming the parameters
    of the asymptotic analysis. *)
 

@@ -113,6 +113,22 @@ Lemma dominated_sum_nary domain M f1 f2 g1 g2 :
     (Fun' (fun p => Z.add (App f1 p) (App f2 p))) (Fun' (fun p => Z.add (App g1 p) (App g2 p))).
 Proof. prove_nary dominated_sum. Qed.
 
+Lemma dominated_sum_r_nonneg_1_nary domain M f g1 g2 :
+  ultimately (nFilterType domain M) (Fun' (fun p => 0 <= App g1 p)) ->
+  ultimately (nFilterType domain M) (Fun' (fun p => 0 <= App g2 p)) ->
+  dominated (nFilterType domain M) (Uncurry f) (Uncurry g1) ->
+  dominated (nFilterType domain M) (Uncurry f)
+    (Fun' (fun p => Z.add (App g1 p) (App g2 p))).
+Proof. prove_nary dominated_sum_r_nonneg_1. Qed.
+
+Lemma dominated_sum_r_nonneg_2_nary domain M f g1 g2 :
+  ultimately (nFilterType domain M) (Fun' (fun p => 0 <= App g1 p)) ->
+  ultimately (nFilterType domain M) (Fun' (fun p => 0 <= App g2 p)) ->
+  dominated (nFilterType domain M) (Uncurry f) (Uncurry g2) ->
+  dominated (nFilterType domain M) (Uncurry f)
+    (Fun' (fun p => Z.add (App g1 p) (App g2 p))).
+Proof. prove_nary dominated_sum_r_nonneg_2. Qed.
+
 (* ... *)
 
 (******************************************************************************)

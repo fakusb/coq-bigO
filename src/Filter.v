@@ -370,6 +370,20 @@ Proof. reflexivity. Qed.
 End On.
 
 (* ---------------------------------------------------------------------------- *)
+(* As an instance of [on_filterType], the filter of positive elements on Z. *)
+
+Definition positive_filterType : filterType.
+  refine (@on_filterType Z (fun x => Z.le 0 x) _).
+  abstract (exists 0%Z; apply Z.le_refl).
+Defined.
+
+Lemma positiveP:
+  forall P : pred Z,
+  ultimately positive_filterType P =
+  forall x, (0 <= x)%Z -> P x.
+Proof. reflexivity. Qed.
+
+(* ---------------------------------------------------------------------------- *)
 
 (* If the type A is inhabited, then the singleton set that contains just the set
    [A] is a filter. We call this modality [everywhere]. *)

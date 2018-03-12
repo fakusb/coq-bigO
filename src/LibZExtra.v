@@ -5,16 +5,40 @@ Require Import ZArith.
 Open Scope Z_scope.
 Require Import Psatz.
 
+(************************************************************)
+(* A preorder on Z*Z *)
+
+Definition ZZle : Z * Z -> Z * Z -> Prop :=
+  fun '(m,n) '(m', n') => m <= m' /\ n <= n'.
+
+(************************************************************)
+(* * max *)
+
 Hint Resolve Z.le_max_l : zarith.
 Hint Resolve Z.le_max_r : zarith.
 
-Lemma Zmax_rub : forall a b c,
+Lemma Zmax_ub_l : forall a b c,
   c <= a ->
+  c <= Z.max a b.
+Proof. intros. lia. Qed.
+
+Lemma Zmax_ub_r : forall a b c,
   c <= b ->
   c <= Z.max a b.
 Proof. intros. lia. Qed.
 
-Hint Resolve Zmax_rub : zarith.
+Hint Resolve Zmax_ub_l Zmax_ub_r : zarith.
+
+Lemma Zmax_0_l :
+  forall x, 0 <= x -> Z.max 0 x = x.
+Proof. intros. lia. Qed.
+
+Lemma Zmax_0_r :
+  forall x, 0 <= x -> Z.max x 0 = x.
+Proof. intros. lia. Qed.
+
+(************************************************************)
+(* * quotient *)
 
 Lemma Zquot_mul_2 : forall x,
   0 <= x ->
@@ -66,6 +90,14 @@ Lemma pow2_succ : forall n,
 Proof using.
   intros.
   rewrite pow_succ; auto with zarith.
+Qed.
+
+Lemma pow_succ_quot : forall k n,
+  0 < k ->
+  0 <= n ->
+  k ^ (n+1) ÷ k = k ^ n.
+Proof using.
+  intros. rewrite pow_succ, Z.mul_comm, Z.quot_mul; auto with zarith.
 Qed.
 
 (* A tactic that helps dealing with goals containing "b^m" for multiple m *)
