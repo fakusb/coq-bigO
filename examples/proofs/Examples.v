@@ -390,11 +390,20 @@ Qed.
  *)
 
 Lemma cutO_refine :
-  forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H (a: A),
+  forall (A : filterType) le (bound : A -> Z) (F: A -> hprop -> Prop) H,
   forall S : specO A le (fun mycost => forall a, F a (\$ (mycost a) \* H)) bound,
+  forall (a:A),
   F a (\$ ((cost S) a) \* H).
 Proof.
-  admit.
+  intros. destruct S. simpl. eauto.
+Qed.
+
+Lemma cutO_refine' :
+  forall (A : filterType) le (bound : A -> Z) (spec: (A -> Z) -> Prop),
+  forall S : specO A le spec bound,
+  spec (cost S).
+Proof.
+  intros. destruct S. simpl in *. auto.
 Qed.
 
 Lemma xfor_inv_lemma_pred_refine :
@@ -414,7 +423,15 @@ Proof.
   admit.
 Qed.
 
-(*
+(* ... *)
+Hypothesis dominated_big_sum_Z_alt :
+  forall (f g : Z -> Z) (lo : Z),
+  (forall i, lo <= i -> 0 <= f i) ->
+  (forall i, lo <= i -> 0 <= g i) ->
+  dominated Z_filterType f g ->
+  monotonic (le_after lo Z.le) Z.le f ->
+  dominated Z_filterType (fun n => cumul lo n f) (fun n => cumul lo n g).
+
 Lemma looploop_spec' :
   specO
     Z_filterType Z.le
@@ -425,7 +442,7 @@ Lemma looploop_spec' :
            POST (fun (tt:unit) => \[]))
     (fun n => n ^ 2).
 Proof.
-  xspecO.
+  xspecO_refine straight_line.
   intros n N.
   xcf. xpay.
 
@@ -433,14 +450,107 @@ Proof.
   math. intros i Hi.
   Set Printing Existential Instances.
 
+  match goal with |- PRE (\$ ?f i \* _) POST _ CODE _ =>
+    set (mycost := f)
+  end.
+  revert i Hi.
 
-  unshelve eapply cutO_refine with (A := Z_filterType) (a := i) (le := Z.le)
-  (bound := fun (i:int) => n). simpl.
+  unshelve eapply cutO_refine'
+    with (A := Z_filterType) (le := Z.le) (bound := fun (i:int) => i).
+  (* { xspecO_refine straight_line. intros. xpay. *)
+  (*   xfor_inv (fun (_:int) => \[]). math. intros. xpay. xapp~. hsimpl. hsimpl. *)
+  (*   cleanup_cost. monotonic. dominated. admit. (* ok *) } *)
 
-  admit. hsimpl. hsimpl.
+  (*
+  x : Z_filterType
+  ============================
+  specZ [mycost \in_O (fun i : int => i)]
+   (forall i : int,
+    0 <= i < x ->
+    PRE \$mycost i \* \[]
+    POST fun _ : unit => \[]
+    CODE Pay_ ;; (For _ = 0 To (i - 1) Do
+                  Pay_ ;; App tick tt;
+                   Done_)  )
+  *)
+  { abstract admit. }
+  hsimpl. hsimpl.
+
   cleanup_cost.
-  admit.
-*)
+  { admit. }
+  { cut (dominated Z_filterType
+           (fun x => x * (cost (looploop_spec'_subproof x)) x)
+           (fun n => n * n)). { admit. (* monotonicity *) }
+    cut (dominated Z_filterType
+           (fun x => cost (looploop_spec'_subproof x) x) (fun x => x)).
+    { intro. dominated. }
+    (* ... *)
+    admit.
+  }
+Qed.
+
+Lemma looploop_spec'_alt :
+  specO
+    Z_filterType Z.le
+    (fun cost => forall n,
+       0 <= n ->
+       app looploop [n]
+           PRE (\$ cost n)
+           POST (fun (tt:unit) => \[]))
+    (fun n => n ^ 2).
+Proof.
+  xspecO_refine straight_line.
+  intros n N.
+  xcf. xpay.
+
+  xfor_inv (fun (i:int) => \[]).
+  math. intros i Hi.
+  Set Printing Existential Instances.
+
+  unshelve eapply cutO_refine
+    with (A := Z_filterType) (a := i) (le := Z.le) (bound := fun (i:int) => i).
+  simpl.
+
+  (*
+  x : Z_filterType
+  i : int
+  ============================
+  specZ [mycost \in_O (fun i0 : int => i0)]
+   (forall a : int,
+    PRE \$mycost a \* \[]
+    POST fun _ : unit => \[]
+    CODE Pay_ ;; (For _ = 0 To (a - 1) Do
+                  Pay_ ;; App tick tt;
+                   Done_)  )
+  *)
+
+  (* { simpl. xspecO_refine straight_line. intros. xpay. *)
+  (*   xfor_inv (fun (_:int) => \[]). admit. (* fixme *) intros. xpay. xapp. hsimpl. hsimpl. *)
+  (*   cleanup_cost. simpl. monotonic. admit. (* ok *) } *)
+  { abstract admit. }
+
+  hsimpl. hsimpl.
+  cleanup_cost.
+  { monotonic. }
+  { dominated. dup.
+    { etransitivity.
+      (* apply dominated_big_sum. *) (* ... *)
+      apply dominated_big_sum_Z_alt.
+      { auto with zarith. }
+      Focus 2. apply cost_dominated.
+      { auto with zarith. }
+      { monotonic.
+        apply monotonic_after_of_monotonic. monotonic. }
+      { admit. } }
+
+    { cut (dominated Z_filterType
+                     (fun x => x * cost looploop_spec'_alt_subproof x)
+                     (fun n => n^2)). { admit. (* monotonicity *) }
+      (* .. *) eapply dominated_eq_r.
+      Focus 2. intro. (* argh *) hide_evars_then ltac:(fun _ => rewrite Z.pow_2_r).
+      reflexivity.
+      dominated. } }
+Qed.
 
 (*
 Lemma looploop_spec :
