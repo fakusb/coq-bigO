@@ -20,6 +20,13 @@ Require Import CFMLBigO.
 (* Load the CF definitions. *)
 Require Import Multivar_specialize_ml.
 
+Close Scope Int_scope.
+Bind Scope Z_scope with Z.
+Open Scope Z_scope.
+Undelimit Scope Int_scope.
+
+Notation "'int'" := Z.
+
 Ltac auto_tilde ::= try solve [ auto with maths | false; math ].
 
 (*----------------------------------------------------------------------------*)
@@ -326,3 +333,143 @@ Proof.
   dominated.
 Qed.
 
+(* --------------------------------------------------------------------------
+   --------------------------------------------------------------------------
+   -------------------------------------------------------------------------- *)
+
+Definition f2_spec_forallF :=
+  forall (M : Filter.mixin_of (Z * Z)%type),
+  ultimately (FilterType _ M) (fun '(m,n) => 0 <= m /\ 0 <= n) ->
+  specO (FilterType _ M) eq (* dummy *)
+    (fun cost =>
+      forall m n,
+      0 <= m -> 0 <= n ->
+      app f2 [m n]
+        PRE (\$ cost (m, n))
+        POST (fun (_:unit) => \[]))
+    (fun '(m,n) => m + n + 1).
+
+Definition positive_ZZ_filterType : filterType.
+  refine (@on_filterType (Z*Z) (fun '(m,n) => 0 <= m /\ 0 <= n) _).
+  abstract (exists (0,0)%Z; simpl; math).
+Defined.
+
+Definition f2_spec_on_positives :=
+  specO positive_ZZ_filterType eq (* dummy *)
+    (fun cost =>
+      forall m n,
+      0 <= m -> 0 <= n ->
+      app f2 [m n]
+        PRE (\$ cost (m, n))
+        POST (fun (_:unit) => \[]))
+    (fun '(m,n) => m + n + 1).
+
+(* [f2_spec_forallF] and [f2_spec_on_positives] are equivalent *)
+
+Goal f2_spec_forallF -> f2_spec_on_positives.
+  unfold f2_spec_forallF, f2_spec_on_positives.
+  intro S. apply S. hnf. intros [m n]. auto.
+Qed.
+
+Goal f2_spec_on_positives -> f2_spec_forallF.
+  unfold f2_spec_forallF, f2_spec_on_positives.
+  intro S.
+  intros M U. destruct S. simpl in cost.
+  apply (@SpecO (FilterType (int * int) M) _ _ _ cost); auto.
+
+  destruct cost_dominated as [c UD]. exists c.
+  simpl in *.
+  revert U. filter_closed_under_intersection. apply UD.
+Qed.
+
+Lemma f2_spec_1 : f2_spec_forallF.
+Proof.
+  unfold f2_spec_forallF. intros M U.
+  xspecO_refine recursive. intros ? ? ? ?.
+  intros m n.
+  pose (p := (n,m)).
+  change n with (fst p). change m with (snd p).
+  induction_wf IH: (lexico2 (downto 0) (downto 0)) p. (* ugh *)
+  clear m n. destruct p as [n m]. simpl.
+
+  intros Hm Hn. weaken. xcf.
+  xpay. xif_guard as C1.
+  { forwards IH': IH ((n-1), (m+1)); try (simpl; math).
+    { simpl. left~. }
+    xapplys IH'. }
+  xif_guard as C2.
+  { forwards IH': IH (0, (m-1)); try (simpl; math).
+    { simpl. right~. }
+    xapplys IH'. }
+  xret. hsimpl.
+
+  generalize n m Hm Hn. procrastinate.
+  close cost.
+
+  begin procrastination assuming a b c. exists (fun '(m,n) => a * m + b * n + c).
+  split.
+  { intros n m Hm Hn. repeat cases_if; ring_simplify.
+    - cut (a - b + 1 <= 0). math. procrastinate.
+    - cut (-a + 1 <= b*n). math. rewrite <-Hn. ring_simplify.
+      cut (1 <= a). math. procrastinate. procrastinate.
+    - rewrite <-Hm. rewrite <-Hn. ring_simplify.
+      procrastinate. procrastinate. procrastinate. }
+  cleanup_cost.
+  admit.
+  { apply_nary dominated_sum_nary.
+    { revert U; filter_closed_under_intersection. intros [? ?]. math. }
+    { apply filter_universe_alt. intros [_ _]. math. }
+    { apply_nary dominated_sum_nary.
+      { revert U; filter_closed_under_intersection. intros [? ?]. math. }
+      { revert U; filter_closed_under_intersection. intros [? ?]. math. }
+      { dominated. }
+      { dominated. } }
+    { dominated. } }
+
+  end procrastination.
+  exists 1 2 1. math.
+Qed.
+
+(* -------------------------------------------------------------------------- *)
+
+Definition f2_spec_asym_1 :=
+  specO (asymproduct_filterType positive_filterType positive_filterType) eq (* dummy *)
+    (fun cost =>
+      forall m n,
+      0 <= m -> 0 <= n ->
+      app f2 [m n]
+        PRE (\$ cost (m, n))
+        POST (fun (_:unit) => \[]))
+    (fun '(m, n) => m + n + 1).
+
+Goal f2_spec_forallF -> f2_spec_asym_1.
+Proof.
+  intro S. apply S.
+  setoid_rewrite asymproductP. repeat (rewrite positiveP; intro). math.
+Qed.
+
+Definition f2_spec_specialize_m :=
+  forall m, 0 <= m ->
+  specO positive_filterType eq (* dummy *)
+    (fun cost =>
+      forall n,
+      0 <= n ->
+      app f2 [m n]
+        PRE (\$ cost n)
+        POST (fun (_:unit) => \[]))
+    (fun n => n + 1).
+
+Goal f2_spec_asym_1 -> f2_spec_specialize_m.
+Proof.
+  unfold f2_spec_specialize_m. intros S m M.
+  destruct S. simpl in cost.
+  apply (@SpecO positive_filterType _ _ _ (fun n => cost (m, n))); auto.
+  admit.
+  { etransitivity. eapply dominated_comp_eq. eapply cost_dominated.
+    Focus 2. intro. reflexivity.
+    Focus 2. intro. simpl. reflexivity.
+    admit. (* ok *)
+    setoid_rewrite <-Z.add_assoc. apply dominated_sum_distr.
+    { (* TODO: lemma *) exists m. rewrite positiveP. math_nia. }
+    { reflexivity. } }
+Qed.
