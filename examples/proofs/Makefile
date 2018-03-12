@@ -49,6 +49,7 @@ SOURCES := \
   sec6_example.ml \
   multivar_specialize.ml \
   dependent_nested.ml \
+  BinaryRandomAccessList.ml \
 #	merge_sort.ml
 
 CF := $(PWD)/_cf
