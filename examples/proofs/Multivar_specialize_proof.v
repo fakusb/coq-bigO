@@ -127,7 +127,7 @@ Proof.
   admit.
 
   apply_nary dominated_sum_distr_nary.
-  { dominated. }
+  { (* FIXME *) (*dominated.*) admit. }
   { apply_nary dominated_cst_limit_nary.
     apply product_positive_order_limit. }
 Qed.
@@ -207,7 +207,7 @@ Proof.
   admit.
 
   apply_nary dominated_sum_distr_nary.
-  { dominated.  }
+  { (* FIXME dominated. *) admit. }
   { apply_nary dominated_cst_limit_nary. apply asymproduct_positive_order_limit. }
 Qed.
 
@@ -250,6 +250,7 @@ Qed.
    properties?...
 *)
 
+(* We can do this... or directly have a univariate specO, as below. *)
 Definition product_singleton_order (m : Z) : filterType.
   refine (product_filterType (@on_filterType _ (fun x => x = m) _) Z_filterType).
   abstract (exists m; reflexivity).
@@ -295,3 +296,33 @@ Proof.
   }
   { dominated. }
 Qed.
+
+Lemma g_spec''' :
+  forall (m:Z), 0 <= m ->
+  specO Z_filterType Z.le
+    (fun cost =>
+      (forall n,
+         0 <= n -> (* FIXME (need more xfor lemmas) *)
+         app g [(m, n)]
+         PRE (\$ cost n)
+         POST (fun (_:unit) => \[])))
+    (fun n => n).
+Proof.
+  intros m M. xspecO_refine straight_line.
+  xcf. xpay. xmatch.
+  weaken. xfor_inv (fun (_:int) => \[]). math.
+  { intros i I. xpay.
+    weaken. xfor_inv (fun (_:int) => \[]). math.
+    intros j J. xpay. xret. hsimpl. hsimpl. hsimpl.
+    { simpl. rewrite cumulP. rewrite big_const_Z.
+      hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
+  }
+  hsimpl. hsimpl.
+  { simpl. rewrite cumulP. rewrite big_const_Z.
+    hide_evars_then ltac:(fun _ => ring_simplify). reflexivity. }
+
+  cleanup_cost.
+  monotonic.
+  dominated.
+Qed.
+
