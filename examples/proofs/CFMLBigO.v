@@ -72,12 +72,36 @@ Qed.
 
 Hint Resolve monotonic_specO_nonneg : zarith.
 
+Hint Resolve cost_dominated : dominated.
+
+(* to debug, should work but doesn't seem to. Maybe try later with typeclasses
+   eauto? *)
+(* Hint Extern 2 (dominated _ (fun _ => cost ?S _) _) => *)
+(*       eapply dominated_transitive; *)
+(*       [ apply dominated_comp with (f := cost S); *)
+(*         [ apply cost_dominated | .. ] *)
+(*       | ]. *)
+
 (** *)
 
 Inductive pack_provide_specO (A:Type) (V:A) : Prop :=
   | provide_specO : pack_provide_specO V.
 
 (** *)
+
+(********************************************************************)
+(** rew_cost *)
+
+Ltac rew_cost :=
+  (* rew_int: FIXME *)
+  repeat (
+    rewrite
+      ?Z.max_id,
+      ?Z.add_0_l, ?Z.add_0_r,
+      ?Z.mul_0_l, ?Z.mul_0_r,
+      ?Zmax_0_l, ?Zmax_0_r
+    by (solve [auto with zarith])
+  ).
 
 (********************************************************************)
 
@@ -134,8 +158,8 @@ Ltac spec_is_contravariant :=
         eapply spec_is_contravariant_lemma1; [ | | xlocal]
       | eapply spec_is_contravariant_lemma2; [ | | xlocal]
       ]);
-    [ apply spec_cost1; auto
-    | apply Hcosts ]
+    [ | solve [ apply Hcosts ] ];
+    apply spec_cost1; auto
   end.
 
 (********************************************************************)
@@ -193,6 +217,8 @@ Ltac dominated_cleanup_cost :=
       [ | | dominated_cleanup_cost ];
       simpl;
       solve [ ultimately_greater_trysolve ]
+    | apply dominated_mul_cst_l_1; dominated_cleanup_cost
+    | apply dominated_mul_cst_l_2; dominated_cleanup_cost
     | apply cost_dominated; dominated_cleanup_cost
     | eapply dominated_comp;
       [ apply cost_dominated | limit ]
@@ -395,6 +421,11 @@ Notation "'specZ' [ X '\in_O' f ] E" :=
     (X ident, f at level 90, E at level 0,
      format "'[v' 'specZ'  [ X  '\in_O'  f ]  '/'  E ']'", at level 60).
 
+Notation "'spec1' [ X ] E" :=
+  (specO unit_filterType eq (fun X => E) (fun tt => 1))
+    (X ident, E at level 0,
+     format "'[v' 'spec1'  [ X ]  '/'  E ']'", at level 60).
+
 (* Custom CF rules and tactics ************************************************)
 
 (** *)
@@ -407,7 +438,8 @@ Ltac refine_credits_preprocess_eta :=
     let x := fresh in
     pose (x := c);
     unshelve instantiate (1 := _) in (Value of x);
-    [ refine (fun _ => _); shelve | hnf ]
+    [ refine (fun _ => _); shelve | hnf ];
+    clear x
   end.
 
 (* Must be called before any tactic that refines the credits evar found in the
@@ -661,9 +693,9 @@ Ltac xpay_core tt ::=
 
 (* xret *******************************)
 
-Lemma xret_refine : forall A (x : A) H (Q : A -> hprop),
-  local (fun H' Q' => H' ==> Q' x) H Q ->
-  local (fun H' Q' => H' ==> Q' x) (\$ 0 \* H) Q.
+Lemma refine_zero_credits : forall A (F:~~A) H (Q : A -> hprop),
+  local F H Q ->
+  local F (\$ 0 \* H) Q.
 Proof.
   introv HH.
   rewrite credits_zero_eq. rewrite star_neutral_l.
@@ -671,12 +703,12 @@ Proof.
 Qed.
 
 Ltac xret_apply_lemma tt ::=
-  (tryif is_refine_cost_goal then apply xret_refine else idtac);
+  (tryif is_refine_cost_goal then apply refine_zero_credits else idtac);
   first [ apply xret_lemma_unify
         | apply xret_lemma ].
 
 Ltac xret_no_gc_core tt ::=
-  (tryif is_refine_cost_goal then apply xret_refine else idtac);
+  (tryif is_refine_cost_goal then apply refine_zero_credits else idtac);
   first [ apply xret_lemma_unify
         | eapply xret_no_gc_lemma ].
 
@@ -894,3 +926,139 @@ Ltac xfor_inv_void_core tt ::=
       apply (@xfor_inv_void_lemma)).
 
 (* TODO: xfor_inv_case *)
+
+(* xcase ****************************************)
+
+Lemma cf_max_credits_weaken_l :
+  forall B (F : ~~B) H Q c1 c2,
+    is_local F ->
+    F (\$ c1 \* H) Q ->
+    F (\$ Z.max c1 c2 \* H) Q.
+Proof.
+  introv ? HH. xapply HH. hsimpl_credits. hsimpl. math_lia.
+Qed.
+
+Lemma cf_max_credits_weaken_r :
+  forall B (F : ~~B) H Q c1 c2,
+    is_local F ->
+    F (\$ c2 \* H) Q ->
+    F (\$ Z.max c1 c2 \* H) Q.
+Proof.
+  introv ? HH. xapply HH. hsimpl_credits. hsimpl. math_lia.
+Qed.
+
+Lemma xcase_refine :
+  forall (B:Type) (Case1 Case2: ~~B) c1 c2 H (Q: B -> hprop),
+    (Case1 (\$ (Z.max c1 c2) \* H) Q) ->
+    (Case2 (\$ (Z.max c1 c2) \* H) Q) ->
+    (tag tag_case (local (fun H Q => Case1 H Q /\ Case2 H Q))) (\$ (Z.max c1 c2) \* H) Q.
+Proof.
+  introv HT HF. unfold tag. apply local_erase. auto.
+Qed.
+
+Ltac xcase_refine_sidecondition_1 :=
+  eapply cf_max_credits_weaken_l; [ xlocal |].
+
+Ltac xcase_refine_sidecondition_2 :=
+  eapply cf_max_credits_weaken_r; [ xlocal |].
+
+Ltac xcase_core H cont1 cont2 ::=
+  tryif is_refine_cost_goal then (
+    eapply xcase_refine; [
+      introv H; xcase_refine_sidecondition_1; cont1 tt
+    | introv H; xcase_refine_sidecondition_2; xtag_negpat H; cont2 tt ];
+    xtag_pre_post
+  ) else (
+    (* original CFML implementation *)
+    xuntag tag_case; apply local_erase; split;
+    [ introv H; cont1 tt
+    | introv H; xtag_negpat H; cont2 tt ];
+    xtag_pre_post
+  ).
+
+Ltac xcase_no_intros_core cont1 cont2 ::=
+  tryif is_refine_cost_goal then (
+    eapply xcase_refine; [
+      pose ltac_mark; introv ?; xcase_refine_sidecondition_1; gen_until_mark;
+      cont1 tt
+    | pose ltac_mark; introv ?; xcase_refine_sidecondition_2; gen_until_mark;
+      cont2 tt
+    ];
+    xtag_pre_post
+  ) else (
+    (* original CFML implementation *)
+    xuntag tag_case; apply local_erase; split;
+    [ cont1 tt
+    | cont2 tt ];
+    xtag_pre_post
+  ).
+
+Ltac xcase_post_cfml H :=
+  (* original CFML implementation *)
+  try solve [ discriminate | false; congruence ];
+  try (symmetry in H; inverts H; xclean_trivial_eq tt).
+
+(* Use backtracking to instantiate the goal with zero credits only if we manage
+   to prove it afterwards *)
+Ltac xcase_post H ::=
+  tryif is_refine_cost_goal then (
+    first [ apply refine_zero_credits; solve [ xcase_post_cfml H ]
+          | xcase_post_cfml H ]
+  ) else (
+    xcase_post_cfml H
+  ).
+
+(* xfail ****************************************)
+
+Ltac xfail_core tt ::=
+  xpull_check_not_needed tt;
+  xuntag tag_fail;
+  (tryif is_refine_cost_goal then apply refine_zero_credits else idtac);
+  apply local_erase;
+  xtag_pre_post.
+
+(* xdone ****************************************)
+
+(* Unfortunately, this is not enough: we cannot override the previous uses of
+   the notation. This is why we also need to redefine the tactics that were
+   using xdone... (see below). *)
+
+Tactic Notation "xdone" :=
+  xuntag tag_done;
+  (tryif is_refine_cost_goal then apply refine_zero_credits else idtac);
+  apply local_erase; split.
+
+Ltac xmatch_case_core cont_case ::=
+  match cfml_get_tag tt with
+  | tag_done => xdone
+  | tag_fail => xfail
+  | tag_case => cont_case tt
+  | _ => fail 100 "unexpected tag in xmatch_case"
+  end.
+
+Ltac xstep_once tt :=
+  match cfml_get_tag tt with
+  | tag_ret => xret
+  | tag_apply => xapp
+  | tag_none_app => xapp
+  | tag_record_new => xapp
+  | tag_val => xval
+  | tag_fun => xfun
+  | tag_let => xlet
+  | tag_match => xmatch
+  | tag_case => xcase
+  | tag_fail => xfail
+  | tag_done => xdone
+  | tag_alias => xalias
+  | tag_seq => xseq
+  | tag_if => xif
+  | tag_for => fail 1
+  | tag_while => fail 1
+  | tag_assert => xassert
+  | tag_pay => xpay
+  | _ =>
+     match goal with
+     | |- _ ==> _ => first [ xsimpl | fail 2 ]
+     | |- _ ===> _ => first [ xsimpl | fail 2 ]
+     end
+  end.
