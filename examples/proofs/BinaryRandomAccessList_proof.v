@@ -51,8 +51,8 @@ Definition Rlist (s: rlist_ a) (L: list a) :=
 
 End Polymorphic.
 
-Implicit Arguments btree [a].
-Implicit Arguments inv [a].
+Arguments btree [a].
+Arguments inv [a].
 
 (** Automation *)
 
