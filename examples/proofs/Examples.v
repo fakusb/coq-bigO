@@ -80,7 +80,7 @@ Proof.
     xseq.
     xapp. hsimpl_credits; math.
     xapp. hsimpl_credits; math.
-    xapp. hsimpl_credits; math. }
+    xapp. }
 
   (* Justify that the cost function is monotonic and dominated by
      the bound given in the specification ([fun tt => 1]). *)

@@ -47,6 +47,6 @@ Theorem find_specO :
     alpha.
 Proof using.
   xspecO_refine straight_line. intros. xapply find_spec. applys~ H.
-  (* workaround *) sets cD: (card D). hsimpl. hsimpl. hsimpl~.
+  (* workaround *) sets cD: (card D). hsimpl. hsimpl~.
   cleanup_cost. monotonic. dominated.
 Qed.
