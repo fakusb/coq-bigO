@@ -466,8 +466,8 @@ Proof.
   apply (@SpecO positive_filterType _ _ _ (fun n => cost (m, n))); auto.
   admit.
   { etransitivity. eapply dominated_comp_eq. eapply cost_dominated.
-    Focus 2. intro. reflexivity.
-    Focus 2. intro. simpl. reflexivity.
+    2: intro; reflexivity.
+    2: intro; simpl; reflexivity.
     admit. (* ok *)
     setoid_rewrite <-Z.add_assoc. apply dominated_sum_distr.
     { (* TODO: lemma *) exists m. rewrite positiveP. math_nia. }

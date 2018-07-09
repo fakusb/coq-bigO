@@ -217,6 +217,7 @@ Set Printing Existential Instances.
 Goal forall (a b : nat -> nat), exists (f : nat -> nat),
       (forall x, a x <= f x) /\ (forall x, b x <= f x).
 Proof.
+  Set Warnings "-undo-batch-mode".
   intros a b.
   exists_big_fun f nat nat.
   split.
