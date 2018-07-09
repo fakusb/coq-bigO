@@ -5,9 +5,6 @@ Asymptotic Complexity Claims via Deductive Program Verification" (at
 ESOP'18:
 [preprint](http://gallium.inria.fr/~agueneau/publis/gueneau-chargueraud-pottier-coq-bigO.pdf)).
 
-[This page](http://gallium.inria.fr/~agueneau/bigO/) describes quick setup
-instructions for building the examples presented.
-
 -----------
 
 Installation instructions (using [opam](https://opam.ocaml.org) and
