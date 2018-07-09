@@ -10,10 +10,10 @@ instructions for building the examples presented.
 
 -----------
 
-Installation instructions (using [opam](https://opam.ocaml.org)):
+Installation instructions (using [opam](https://opam.ocaml.org) and
+the [opam coq repository](https://github.com/coq/opam-coq-archive)):
 
-- Install Coq 8.6
-- Install TLC: `opam pin add coq-tlc https://gitlab.inria.fr/charguer/tlc.git#coq-8.6`
-- Install CFML (required to build the examples): `opam pin add coq-cfml https://gitlab.inria.fr/charguer/cfml.git#coq-8.6`
+- Install Coq >= 8.6
+- Install TLC, CFML, and Procrastination: `opam install coq-tlc coq-cfml coq-procrastination`
 - Run `make` to compile the library
 - Run `make examples` to compile the examples
