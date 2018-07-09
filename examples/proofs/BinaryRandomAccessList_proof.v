@@ -5,6 +5,9 @@ Require Import TLC.LibListZ LibZExtra TLC.LibIntTactics.
 Require Import Filter Monotonic Dominated CFMLBigO.
 Require Import Procrastination.Procrastination.
 
+Require Import Generic DominatedNary LimitNary.
+Require Import UltimatelyGreater.
+
 Close Scope Int_scope.
 Bind Scope Z_scope with Z.
 Open Scope Z_scope.
@@ -588,9 +591,6 @@ Proof.
 Qed.
 
 Hint Extern 1 (RegisterSpec update_tree) => Provide (provide_specO update_tree_spec).
-
-Require Import Generic DominatedNary LimitNary.
-Require Import UltimatelyGreater.
 
 Definition product_positive_order :=
   product_filterType positive_filterType Z_filterType.
