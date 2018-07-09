@@ -90,14 +90,14 @@ Lemma f_spec3 :
         PRE (\$ (cost n))
         POST (fun (tt:unit) => \[])).
 Proof.
-  begin procrastination assuming a b.
-  assert (0 <= a) as Ha by procrastinate.
+  begin defer assuming a b.
+  defer Ha: (0 <= a).
 
   sets cost: (fun (n:Z_filterType) => a * 2^n + b).
   asserts cost_nonneg: (forall n, 0 <= n -> 0 <= cost n).
   { intros. unfold cost. (* rewrite~ <-Z.pow_pos_nonneg. *) (* TODO *)
     asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
-    ring_simplify. procrastinate. }
+    ring_simplify. defer. }
 
   xspecO cost.
   intro n. induction_wf: (downto 0) n. intro N.
@@ -109,17 +109,17 @@ Proof.
 
   ring_simplify.
   cases_if; ring_simplify.
-  { subst n. subst cost. ring_simplify. procrastinate. }
+  { subst n. subst cost. ring_simplify. defer. }
   { unfold cost.
     transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
     rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
     math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
-    procrastinate. }
+    defer. }
 
   unfold cost. monotonic.
   unfold cost. dominated.
 
-  end procrastination.
+  end defer.
 
   simpl. exists~ 2 (-1).
 Qed.
@@ -139,30 +139,30 @@ Proof.
   { xret. hsimpl. }
   { xapp~. xapp~. }
 
-  ring_simplify. generalize n N. procrastinate.
+  ring_simplify. generalize n N. defer.
   close cost.
 
-  begin procrastination assuming a b.
-  assert (0 <= a) as Ha by procrastinate.
+  begin defer assuming a b.
+  defer Ha: (0 <= a).
   sets cost: (fun (n:Z_filterType) => a * 2^n + b).
   assert (cost_nonneg: forall n, 0 <= n -> 0 <= cost n).
   { intros n N. unfold cost.
     asserts_rewrite <-(1 <= 2^n). { forwards~: Z.pow_pos_nonneg 2 n. }
-    ring_simplify. procrastinate. }
+    ring_simplify. defer. }
 
   exists cost. split.
   { intros n N. cases_if; ring_simplify.
-    { subst n. unfold cost. ring_simplify. procrastinate. }
+    { subst n. unfold cost. ring_simplify. defer. }
     { unfold cost.
       transitivity (2 * 2 ^ (n-1) * a + 2 * b + 1). { ring_simplify. reflexivity. }
       rewrite~ <-pow2_succ. ring_simplify ((n-1)+1).
       math_rewrite (forall a b, (a <= b) <-> (a - b <= 0)). ring_simplify.
-      procrastinate. } }
+      defer. } }
   cleanup_cost.
   { monotonic. }
   { dominated. }
 
-  end procrastination.
+  end defer.
 
   simpl. exists~ 2 (-1).
 Qed.

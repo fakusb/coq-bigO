@@ -221,7 +221,7 @@ Proof.
 Qed.
 
 (* move to tlc? *)
-Lemma Zdiv_le : forall a b: Z, (0 <= a) -> (1 <= b) -> (Zdiv a b <= a).
+Lemma Zdiv_le : forall a b: Z, (0 <= a) -> (1 <= b) -> (Z.div a b <= a).
 Proof. admit. Qed.
 
 Lemma ts_bound : forall a ts p L,
@@ -330,7 +330,7 @@ Proof.
     - weaken.
       xpay. xgo~.
       { constructors~. constructors~. }
-      { rew_list. rewrite !Z.max_id. rewrite Z.add_0_r. procrastinate. }
+      { rew_list. rewrite !Z.max_id. rewrite Z.add_0_r. defer. }
     - weaken. xpay.
       xmatch; unpack; subst.
       { xret. hsimpl. constructors~. }
@@ -338,22 +338,22 @@ Proof.
         xret. hsimpl. constructors~. rew_list~. }
 
     (* XXX *)
-    procrastinate: (forall n, 0 <= n -> 0 <= cost n).
+    defer: (forall n, 0 <= n -> 0 <= cost n).
     forwards: length_nonneg ts. rew_cost. rew_list.
-    generalize (length ts); procrastinate. }
+    generalize (length ts); defer. }
 
-  close cost. begin procrastination assuming a b.
+  close cost. begin defer assuming a b.
   exists (fun n => a * n + b). repeat split.
-  { ring_simplify. procrastinate. }
-  { introv HH. rewrite <-HH; ring_simplify; procrastinate. }
-  { intro n. ring_simplify.
-    cut (cost link_spec tt + 1 <= a). (* XX *) math. procrastinate. }
+  { ring_simplify. defer. }
+  { introv HH. rewrite <-HH; ring_simplify; defer. }
+  { intros n Hn. ring_simplify.
+    cut (cost link_spec tt + 1 <= a). (* XX *) (* math. ?? FIXME *) admit. defer. }
 
   cleanup_cost.
-  { already procrastinated: (0 <= a). monotonic. }
+  { deferred ?: (0 <= a). monotonic. }
   { dominated. }
 
-  end procrastination.
+  end defer.
   exists (cost link_spec tt + 1) 1. auto with zarith.
 Qed.
 
@@ -365,13 +365,13 @@ Lemma cons_tree_spec_aux' :
        PRE (\$ cost (length ts))
        POST (fun ts' => \[inv p ts' (T ++ L)])).
 Proof.
-  begin procrastination assuming a b.
+  begin defer assuming a b.
   xspecO (fun n => a * n + b). intros A t ts. revert t.
   { induction ts; introv Rt Rts; inverts Rts; xcf.
     - weaken.
       xpay. xgo~.
       { constructors~. constructors~. }
-      { rew_list. rew_cost. procrastinate. }
+      { rew_list. rew_cost. defer. }
     - weaken. xpay.
       xmatch; unpack; subst.
       { xret. hsimpl. constructors~. }
@@ -381,13 +381,13 @@ Proof.
       rew_list. rew_cost.
       rewrite Z.max_l; swap 1 2.
       { rewrite <-cost_nonneg, <-length_nonneg. ring_simplify.
-        procrastinate. procrastinate. }
-      cut (cost link_spec tt + 1 <= a). (* XX *) math_lia. procrastinate. }
+        defer. defer. }
+      cut (cost link_spec tt + 1 <= a). (* XX *) math_lia. defer. }
 
-  { already procrastinated: (0 <= a). monotonic. }
+  { deferred: (0 <= a). monotonic. }
   { dominated. }
 
-  end procrastination.
+  end defer.
   exists (cost link_spec tt + 1) 1. auto with zarith.
 Qed.
 
@@ -432,7 +432,7 @@ Lemma uncons_tree_spec_aux :
        POST (fun '(t', ts') =>
          \[exists T' L', btree p t' T' /\ inv p ts' L' /\ L = T' ++ L'])).
 Proof.
-  begin procrastination assuming a b. xspecO (fun n => a * n + b).
+  begin defer assuming a b. xspecO (fun n => a * n + b).
   induction ts as [| t ts']; introv Rts Ne; inverts Rts as.
   { xcf; xgo. }
   { introv ? I. intros. xcf. weaken. xpay. xmatch.
@@ -456,13 +456,13 @@ Proof.
         { math. } { jauto. } }
 
     rew_cost. rew_list. rewrite Z.max_l; swap 1 2.
-    { rewrite <-length_nonneg. rew_cost. procrastinate. procrastinate. }
-    (* XX *) cut (1 <= a). math_lia. procrastinate. }
+    { rewrite <-length_nonneg. rew_cost. defer. defer. }
+    (* XX *) cut (1 <= a). math_lia. defer. }
 
-  { already procrastinated: (0 <= a). monotonic. }
+  { deferred ?: (0 <= a). monotonic. }
   { dominated. }
 
-  end procrastination. exists 1 0. omega.
+  end defer. exists 1 0. omega.
   Grab Existential Variables.  apply heap_is_gc. (* XXX *)
 Qed.
 
@@ -528,11 +528,11 @@ Lemma lookup_tree_spec :
        PRE (\$ cost p)
        POST (fun x => \[Nth (abs i) L x])).
 Proof.
-  begin procrastination assuming a b. xspecO (fun n => a * n + b).
+  begin defer assuming a b. xspecO (fun n => a * n + b).
   intros a_ i t. revert i.
   induction t; introv BT Bi; inverts BT; xcf.
   { weaken. xgo. subst. apply~ Nth_zero. rew_list~ in *.
-    rew_cost. procrastinate. }
+    rew_cost. defer. }
   { weaken. xpay. xmatch. subst.
     match goal with B1: btree ?p _ _, B2: btree ?p _ _ |- _ =>
       forwards~: btree_length_correct B1; forwards~: btree_length_correct B2
@@ -542,10 +542,10 @@ Proof.
     { xapp_spec~ IHt2. hsimpl. apply~ Nth_app_r'. math_lia. }
 
     rew_cost. subst. rewrite Z.max_l; swap 1 2.
-    { forwards~ Hp: btree_size_pos. rewrite <-Hp. rew_cost. procrastinate. procrastinate. }
-    (* XX *) cut (1 <= a). math_lia. procrastinate. }
-  { already procrastinated: (0 <= a). monotonic. } { dominated. }
-  end procrastination. exists 1 1; omega.
+    { forwards~ Hp: btree_size_pos. rewrite <-Hp. rew_cost. defer. defer. }
+    (* XX *) cut (1 <= a). math_lia. defer. }
+  { deferred ?: (0 <= a). monotonic. } { dominated. }
+  end defer. exists 1 1; omega.
 Qed.
 
 Hint Extern 1 (RegisterSpec lookup_tree) => Provide (provide_specO lookup_tree_spec).
@@ -566,10 +566,10 @@ Lemma update_tree_spec :
        PRE (\$ cost p)
        POST (fun t' => \[exists L', btree p t' L' /\ Update (abs i) x L L'])).
 Proof.
-  begin procrastination assuming a b. xspecO (fun n => a * n + b).
+  begin defer assuming a b. xspecO (fun n => a * n + b).
   intros a_ i x t. revert i x. induction t; introv BT Bi; inverts BT; xcf.
   { weaken. xgo~. subst. exists. splits~. constructors. admit. rew_list~ in *.
-    rew_cost. procrastinate. }
+    rew_cost. defer. }
   { weaken. xpay. xmatch. subst. xcleanpat.
     match goal with B1: btree ?p _ _, B2: btree ?p _ _ |- _ =>
       forwards~: btree_length_correct B1; forwards~: btree_length_correct B2
@@ -581,10 +581,10 @@ Proof.
       xret. hsimpl. exists. split. constructors~. admit. }
 
     rew_cost. subst. rewrite Z.max_l; swap 1 2.
-    { forwards~ Hp: btree_size_pos. rewrite <-Hp. rew_cost. procrastinate. procrastinate. }
-    { (* XX *) cut (1 <= a). math_lia. procrastinate. } }
-  { already procrastinated: (0 <= a). monotonic. } { dominated. }
-  end procrastination. exists 1 1; omega.
+    { forwards~ Hp: btree_size_pos. rewrite <-Hp. rew_cost. defer. defer. }
+    { (* XX *) cut (1 <= a). math_lia. defer. } }
+  { deferred ?: (0 <= a). monotonic. } { dominated. }
+  end defer. exists 1 1; omega.
 Qed.
 
 Hint Extern 1 (RegisterSpec update_tree) => Provide (provide_specO update_tree_spec).
@@ -695,7 +695,7 @@ Proof.
   { monotonic. }
   { etransitivity.
     eapply dominated_comp_eq. apply cost_dominated.
-    Focus 2. intros. reflexivity.
+    2: intros; reflexivity.
     { rewrite limitP. intros P UP. unfold product_positive_order in UP.
       rewrite productP in UP. destruct UP as (P1 & P2 & UP1 & UP2 & HH).
       rewrite positiveP, ZP in *. destruct UP2 as (n0 & HP2).
@@ -739,7 +739,7 @@ Proof.
 
     rew_list. rew_cost.
     asserts~ [HH1 HH2]: (0 <= p /\ 0 <= length ts).
-    repeat cases_max; generalize p (length ts) HH1 HH2; procrastinate. }
+    repeat cases_max; generalize p (length ts) HH1 HH2; defer. }
 
   close cost.
 
@@ -750,30 +750,30 @@ Proof.
      Mais on ne voit pas bien comment faire mieux.
    *)
 
-  begin procrastination assuming a b c d.
+  begin defer assuming a b c d.
   exists (fun '(m,n) => a * m + b * n + c * cost lookup_tree_spec (m+n) + d).
   repeat split.
   { intros m n Hm Hn. ring_simplify.
     rewrite Z.add_assoc.
-    cut (2 * cost size_spec tt + a + 1 <= b). math_lia. procrastinate. }
+    cut (2 * cost size_spec tt + a + 1 <= b). math_lia. defer. }
   { intros m n Hm Hn. ring_simplify.
-    assert (HH: 0 <= a * m). { apply~ Z.mul_nonneg_nonneg. procrastinate. } rewrite <-HH.
-    assert (HHH: 0 <= b * n). { apply~ Z.mul_nonneg_nonneg. procrastinate. } rewrite <-HHH.
+    assert (HH: 0 <= a * m). { apply~ Z.mul_nonneg_nonneg. defer. } rewrite <-HH.
+    assert (HHH: 0 <= b * n). { apply~ Z.mul_nonneg_nonneg. defer. } rewrite <-HHH.
     assert (H: cost lookup_tree_spec m <= c * cost lookup_tree_spec (m + (1 + n))).
-    { procrastinate: (1 <= c).
+    { defer: (1 <= c).
       forwards~: cost_monotonic lookup_tree_spec m (m + (1 + n)).
       forwards~: cost_nonneg lookup_tree_spec (m + (1 + n)).
       math_nia. } rewrite <-H.
-    cut (cost size_spec tt + 1 <= b + d). math_lia. procrastinate. }
+    cut (cost size_spec tt + 1 <= b + d). math_lia. defer. }
   { intros m n Hm Hn. ring_simplify.
     rewrite Z.add_assoc.
-    cut (a + 1 <= b). math_nia. procrastinate. }
+    cut (a + 1 <= b). math_nia. defer. }
 
   cleanup_cost.
   { intros [m n] [m' n'] [Hm Hn].
-    already procrastinated: (0 <= a).
-    already procrastinated: (0 <= b).
-    already procrastinated: (1 <= c).
+    deferred ?: (0 <= a).
+    deferred ?: (0 <= b).
+    deferred ?: (1 <= c).
     forwards~ M: cost_monotonic lookup_tree_spec (m + n) (m' + n').
     (* math_nia *) (* fixme? *)
     rewrite~ M. rewrite~ Hm. rewrite~ Hn. apply Z.le_refl. }
@@ -801,7 +801,7 @@ Proof.
       intros [? ?]. reflexivity. intros [? ?]. reflexivity. } }
 
   dominated.
-  end procrastination.
+  end defer.
   exists 0 (2 * cost size_spec tt + 1) 1 0. splits; auto with zarith; try math.
   { forwards~: cost_nonneg size_spec tt. }
 Qed.

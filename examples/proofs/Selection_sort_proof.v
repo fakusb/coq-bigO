@@ -107,17 +107,15 @@ Proof.
     intro. ring_simplify. reflexivity. (* fixme *)
   }
 
-  etransitivity. eapply dominated_big_sum_bound'.
-  Focus 3.
-  apply_nary dominated_sum_distr_nary.
-  apply_nary dominated_sum_distr_nary.
-  dominated. apply dominated_reflexive.
-  simpl. dominated.
-  simpl. dominated.
+  etransitivity. eapply dominated_big_sum_bound'; swap 1 3.
+  { apply_nary dominated_sum_distr_nary.
+    apply_nary dominated_sum_distr_nary.
+    dominated. apply dominated_reflexive.
+    simpl. dominated.
+    simpl. dominated. }
 
-  ultimately_greater. ultimately_greater.
-  monotonic. intros ? ? H. destruct~ H.
-  apply limit_sum_cst_r. limit.
-
-  apply dominated_mul. dominated. dominated.
+  { ultimately_greater. } { ultimately_greater. }
+  { monotonic. intros ? ? H. destruct~ H. }
+  { apply limit_sum_cst_r. limit. }
+  { apply dominated_mul. dominated. dominated. }
 Qed.

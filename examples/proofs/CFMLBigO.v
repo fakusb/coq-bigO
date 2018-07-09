@@ -369,7 +369,9 @@ Proof.
   unfold close_cost in H2.
   destruct H2 as (? & cost & ? & c).
   forwards [[? ?] H]: cleanup_cost_alt c.
-  unfold hide_spec, Marker.group in *. apply~ H.
+  unfold hide_spec in *.
+  pose proof Marker.group_fold.
+  apply~ H.
 Qed.
 
 Ltac close_cost :=

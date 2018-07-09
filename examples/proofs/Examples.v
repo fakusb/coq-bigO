@@ -536,7 +536,7 @@ Proof.
       (* apply dominated_big_sum. *) (* ... *)
       apply dominated_big_sum_Z_alt.
       { auto with zarith. }
-      Focus 2. apply cost_dominated.
+      2: apply cost_dominated.
       { auto with zarith. }
       { monotonic.
         apply monotonic_after_of_monotonic. monotonic. }
@@ -545,9 +545,9 @@ Proof.
     { cut (dominated Z_filterType
                      (fun x => x * cost looploop_spec'_alt_subproof x)
                      (fun n => n^2)). { admit. (* monotonicity *) }
-      (* .. *) eapply dominated_eq_r.
-      Focus 2. intro. (* argh *) hide_evars_then ltac:(fun _ => rewrite Z.pow_2_r).
-      reflexivity.
+      (* .. *) eapply dominated_eq_r; swap 1 2.
+      { intro. (* argh *) hide_evars_then ltac:(fun _ => rewrite Z.pow_2_r).
+        reflexivity. }
       dominated. } }
 Qed.
 
@@ -676,11 +676,11 @@ Lemma rec1_spec2 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  begin procrastination.
+  begin defer.
 
   evar (a : int). evar (b : int).
-  assert (a_nonneg : 0 <= a) by procrastinate.
-  assert (b_nonneg : 0 <= b) by procrastinate.
+  defer a_nonneg: (0 <= a).
+  defer b_nonneg: (0 <= b).
 
   xspecO (fun n => a * Z.max 0 n + b).
   intro n.
@@ -690,12 +690,12 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
   cases_if.
-  { generalize n C. procrastinate. }
-  { generalize n C. procrastinate. }
+  { generalize n C. defer. }
+  { generalize n C. defer. }
 
   monotonic.
   dominated.
-  end procrastination.
+  end defer.
 
   (* XX *)
 Abort.
@@ -709,10 +709,10 @@ Lemma rec1_spec3 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  begin procrastination assuming a b.
+  begin defer assuming a b.
 
-  assert (a_nonneg : 0 <= a) by procrastinate.
-  assert (b_nonneg : 0 <= b) by procrastinate.
+  defer a_nonneg: (0 <= a).
+  defer b_nonneg: (0 <= b).
 
   xspecO (fun n => a * Z.max 0 n + b).
   intro n.
@@ -722,12 +722,12 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math.
 
   cases_if.
-  { generalize n C. procrastinate. }
-  { generalize n C. procrastinate. }
+  { generalize n C. defer. }
+  { generalize n C. defer. }
 
   monotonic.
   dominated.
-  end procrastination.
+  end defer.
 
   simpl. exists 1 1. splits; math_nia.
 Qed.
@@ -742,10 +742,10 @@ Lemma rec1_spec4 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  begin procrastination assuming a b.
+  begin defer assuming a b.
 
-  assert (a_nonneg : 0 <= a) by procrastinate.
-  assert (b_nonneg : 0 <= b) by procrastinate.
+  defer a_nonneg: (0 <= a).
+  defer b_nonneg: (0 <= b).
 
   xspecO (fun n => Z.max 0 (a * n + b)).
   intros n.
@@ -755,12 +755,12 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
   cases_if.
-  { generalize n N C. procrastinate. }
-  { generalize n N C. procrastinate. }
+  { generalize n N C. defer. }
+  { generalize n N C. defer. }
 
   monotonic.
   dominated.
-  end procrastination.
+  end defer.
 
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
@@ -776,10 +776,10 @@ Lemma rec1_spec5 :
            POST (fun (tt:unit) => \[]))
     (fun n => n).
 Proof.
-  begin procrastination assuming a b.
+  begin defer assuming a b.
 
-  assert (a_nonneg : 0 <= a) by procrastinate.
-  assert (b_nonneg : 0 <= b) by procrastinate.
+  defer a_nonneg: (0 <= a).
+  defer b_nonneg: (0 <= b).
 
   xspecO (fun n => a * n + b).
   intro n. induction_wf: (wf_downto 0) n. intro N.
@@ -788,12 +788,12 @@ Proof.
   xpay. xif. xret. hsimpl. xguard C. xapp. math. math.
 
   cases_if.
-  { generalize n N C. procrastinate. }
-  { generalize n N C. procrastinate. }
+  { generalize n N C. defer. }
+  { generalize n N C. defer. }
 
   monotonic.
   dominated.
-  end procrastination.
+  end defer.
 
   simpl. exists 1 1. splits.
   math. math. math_nia. math_nia.
@@ -816,24 +816,24 @@ Proof.
   xpay. xif_guard. xret. hsimpl. xapp. math. math.
 
   cases_if.
-  { ring_simplify. generalize n N. procrastinate. }
-  { generalize n N C. procrastinate. }
+  { ring_simplify. generalize n N. defer. }
+  { generalize n N C. defer. }
 
   close cost.
 
   simpl.
-  begin procrastination assuming a b. exists (fun (n:Z_filterType) => a * n + b).
-  assert (a_nonneg : 0 <= a) by procrastinate.
+  begin defer assuming a b. exists (fun (n:Z_filterType) => a * n + b).
+  defer a_nonneg: (0 <= a).
   (* FIXME *)
   repeat (match goal with |- _ /\ _ => split | |- _ * _ => split end).
-  { intros ? H. rewrite <-H. ring_simplify. procrastinate. }
+  { intros ? H. rewrite <-H. ring_simplify. defer. }
   { intros n N N'.
-    cut (1 <= a). math_nia. procrastinate. }
+    cut (1 <= a). math_nia. defer. }
 
   cleanup_cost.
   { monotonic. }
   { dominated. }
-  end procrastination.
+  end defer.
   { simpl. exists 1 1. splits; math. }
 Qed.
 

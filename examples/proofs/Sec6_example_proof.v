@@ -50,24 +50,23 @@ Proof.
   { xret~. }
   { xapp. xapp. xapp~. }
 
-  { generalize n N. procrastinate. }
+  { generalize n N. defer. }
   close cost.
 
-  begin procrastination assuming a b.
-  assert (A: 0 <= a) by procrastinate.
+  begin defer assuming a b.
+  defer A: (0 <= a).
   exists (fun (n:Z_filterType) => a * n + b). split.
   { intros n N. cases_if; ring_simplify.
-    - cut (1 <= b). math_nia. procrastinate.
+    - cut (1 <= b). math_nia. defer.
     - ring_simplify.
-
       cut (cost g1_spec tt + cost g2_spec tt + 1 <= a). admit.
-      procrastinate. }
+      defer. }
 
   cleanup_cost.
   { monotonic. }
   { dominated. }
 
-  end procrastination.
+  end defer.
   simpl. exists (cost g1_spec tt + cost g2_spec tt + 1) 1.
   splits; auto with zarith.
 Qed.

@@ -189,7 +189,7 @@ Proof.
     { exists 1. intros. cases_if~. reflexivity. }
     eapply dominated_comp_eq.
     apply (cost_dominated bellman_ford2_spec).
-    Focus 2. intro. reflexivity.
-    Focus 2. intro. reflexivity.
+    2: intro; reflexivity.
+    2: intro; reflexivity.
     limit. }
 Qed.

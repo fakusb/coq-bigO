@@ -159,8 +159,8 @@ Proof.
   admit.
   { dominated.
     eapply dominated_comp_eq. applys cost_dominated g_spec.
-    Focus 2. intros. reflexivity.
-    Focus 2. intros. simpl. math.
+    2: intros; reflexivity.
+    2: intros; simpl; math.
     rewrite limitP. simpl. intros P UP. rewrite productP in UP. simpl in UP.
     destruct UP as (P1 & P2 & UP1 & UP2 & H). rewrite onP in UP1. revert UP2.
     filter_closed_under_intersection. auto with zarith. }
@@ -238,8 +238,8 @@ Proof.
   admit.
   { dominated.
     eapply dominated_comp_eq. applys cost_dominated g_spec'.
-    Focus 2. intros. reflexivity.
-    Focus 2. intros. simpl. math.
+    2: intros; reflexivity.
+    2: intros; simpl; math.
     rewrite limitP. simpl. intros P UP.
     unfold asymproduct_positive_order in UP. rewrite asymproductP in UP. simpl in UP.
     rewrite onP in UP. apply~ UP. }
@@ -403,17 +403,17 @@ Proof.
     xapplys IH'. }
   xret. hsimpl.
 
-  generalize n m Hm Hn. procrastinate.
+  generalize n m Hm Hn. defer.
   close cost.
 
-  begin procrastination assuming a b c. exists (fun '(m,n) => a * m + b * n + c).
+  begin defer assuming a b c. exists (fun '(m,n) => a * m + b * n + c).
   split.
   { intros n m Hm Hn. repeat cases_if; ring_simplify.
-    - cut (a - b + 1 <= 0). math. procrastinate.
+    - cut (a - b + 1 <= 0). math. defer.
     - cut (-a + 1 <= b*n). math. rewrite <-Hn. ring_simplify.
-      cut (1 <= a). math. procrastinate. procrastinate.
+      cut (1 <= a). math. defer. defer.
     - rewrite <-Hm. rewrite <-Hn. ring_simplify.
-      procrastinate. procrastinate. procrastinate. }
+      defer. defer. defer. }
   cleanup_cost.
   admit.
   { apply_nary dominated_sum_nary.
@@ -426,7 +426,7 @@ Proof.
       { dominated. } }
     { dominated. } }
 
-  end procrastination.
+  end defer.
   exists 1 2 1. math.
 Qed.
 
