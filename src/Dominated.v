@@ -228,7 +228,8 @@ Qed.
 Hint Rewrite Z.add_0_r : myhints.
 
 Goal dominated Z_filterType (fun x => (x+0)+0) (fun x => x).
-  setoid_rewrite Z.add_0_r. Undo.
+  dup.
+  { setoid_rewrite Z.add_0_r. admit. }
   rewrite_strat (topdown (hints myhints)).
   apply dominated_reflexive.
 Qed.
@@ -803,21 +804,20 @@ Proof.
     (xs := interval N n)
     (g := (fun i => c * g a i))
     (R := Z.le);
-  try typeclass.
-  Focus 2. eauto using in_interval_lo.
+  try typeclass; cycle 1.
+  { eauto using in_interval_lo. }
 
   rewrite <-big_map_distributive; try typeclass.
   rewrite <-cumulP with (f := g a).
   rewrite cumulP with (f := f a) (lo := lo).
   rewrite big_covariant with
     (xs := interval lo N)
-    (g := (fun _ => f a N)); try typeclass.
-  Focus 2.
+    (g := (fun _ => f a N)); try typeclass; cycle 1.
   { introv inI.
     forwards x_lt_N: in_interval_hi inI.
     forwards lo_le_x: in_interval_lo inI.
     forwards x_le_N: Z.lt_le_incl x_lt_N.
-    apply f_mon. unfold le_after. lia. } Unfocus.
+    apply f_mon. unfold le_after. lia. }
 
   rewrite big_const_Z.
   rewrite Hfg by omega.
@@ -941,11 +941,9 @@ Proof.
     rewrite cumulP.
     rewrite big_covariant with
       (g := (fun p => f a (n-1)));
-    try typeclass.
-    Focus 2.
+    try typeclass; cycle 1.
     { intros x I. apply f_mon. unfold le_after.
       forwards~: in_interval_lo I. forwards~: in_interval_hi I. lia. }
-    Unfocus.
 
     rewrite big_const_Z.
     assert (f_le: f a (n - 1) <= f a n)
@@ -1096,12 +1094,10 @@ Proof.
     subst f'; simpl; rewrite ZP; exists N; intros.
     { cases_if; [omega | tauto]. }
     { cases_if; [omega | applys~ HN]. } }
-  apply dominated_transitive with (fun n => cumul lo n g').
-  Focus 2.
+  apply dominated_transitive with (fun n => cumul lo n g'); cycle 1.
   { apply dominated_cumul_ultimately_eq;
     subst g'; simpl; rewrite ZP; exists N; intros.
     cases_if; [omega | tauto]. applys~ HN. }
-  Unfocus.
 
   (* Instantiate the big-O constant, and do some cleanup. *)
 
@@ -1134,27 +1130,25 @@ Proof.
 
   rewrite (cumul_split N) with (f := f') by omega.
   rewrite cumulP with (f := f') (lo := lo).
-  rewrite big_covariant with (g := fun _ => 0) (R := eq); try typeclass.
-  Focus 2.
+  rewrite big_covariant with (g := fun _ => 0) (R := eq);
+    try typeclass; cycle 1.
   { introv I. forwards: in_interval_lo I. forwards: in_interval_hi I.
     subst f'; simpl. cases_if~. omega. }
-  Unfocus.
   rewrite big_const_Z. ring_simplify.
 
   rewrite (cumul_split N) with (f := g') by omega.
   rewrite Z.mul_add_distr_l.
   rewrite cumulP with (f := g') (lo := lo).
-  rewrite big_covariant with (g := fun _ => 0) (R := eq); try typeclass.
-  Focus 2.
+  rewrite big_covariant with (g := fun _ => 0) (R := eq);
+    try typeclass; cycle 1.
   { introv I. forwards: in_interval_lo I. forwards: in_interval_hi I.
     subst g'; simpl. cases_if~. omega. }
-  Unfocus.
   rewrite big_const_Z. ring_simplify.
 
   rewrite cumulP with (f := f').
   rewrite big_covariant with (R := Z.le) (g := (fun i => c * g' i));
-  try typeclass.
-  Focus 2. { intros. apply Hf'g'. applys* in_interval_lo. } Unfocus.
+    try typeclass; cycle 1.
+  { intros. apply Hf'g'. applys* in_interval_lo. }
   rewrite <-big_map_distributive; try typeclass.
   rewrite <-cumulP.
   omega.
@@ -1215,11 +1209,9 @@ Proof.
     cases_if~; omega.
     cases_if~; applys~ HN. auto with zarith. }
 
-  eapply dominated_transitive with (fun n => n * f' n).
-  Focus 2.
+  eapply dominated_transitive with (fun n => n * f' n); cycle 1.
   { apply dominated_ultimately_eq; exists N; intros; subst f'; simpl.
     cases_if~; omega. }
-  Unfocus.
 
   (* Use the version of this lemma on product filters. *)
 

@@ -93,9 +93,9 @@ Proof.
   destruct U as (n0 & H).
   exists_big n1 Z. intros n N.
   assert (n1_ge_n0: n0 <= n1) by big.
-  rewrite (cumul_split n0).
-  Focus 2. apply H. auto with zarith.
-  Focus 2. rewrite <-N. auto.
+  rewrite (cumul_split n0); cycle 1.
+  { apply H. auto with zarith. }
+  { rewrite <-N. auto. }
 
   assert (cumul_part_2: n - n0 <= cumul n0 n f).
   { admit. (* cf dominated.v *) }

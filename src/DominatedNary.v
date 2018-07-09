@@ -33,8 +33,7 @@ Lemma dominated_cst_limit_nary (domain : list Type) M c g :
   limit (nFilterType domain M) Z_filterType g ->
   dominated (nFilterType domain M) (Const' c) g.
 Proof.
-  prove_nary dominated_cst_limit.
-  Restart.
+  Fail Fail now prove_nary dominated_cst_limit. (* it works. *)
   intros;
   eapply dominated_eq_l;
   [| intro; autounfold with generic; autorewrite with generic; reflexivity ].
@@ -200,11 +199,11 @@ Goal
     (product_filterType Z_filterType Z_filterType)
     (fun '(x, y) => (2*x) * (3*y)) (fun '(x, y) => x*y).
 
+  Fail Fail now dominated. (* it works. *)
+  (* by hand: *)
   apply_nary dominated_mul_nary.
   - apply_nary dominated_mul_cst_l_1_nary.
     apply dominated_reflexive.
   - apply_nary dominated_mul_cst_l_1_nary.
     apply dominated_reflexive.
-  Restart.
-  dominated.
 Qed.
