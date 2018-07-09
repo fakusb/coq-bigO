@@ -47,7 +47,6 @@ Qed.
 
 Hint Extern 1 (RegisterSpec rand) => Provide rand_spec.
 
-
 (* [tick3 ()]: calls [tick ()] three times.
 
    First, prove a big-O specification by providing the exact cost function
