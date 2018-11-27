@@ -1,6 +1,5 @@
 Require Import Coq.Logic.Classical_Pred_Type.
 Require Import TLC.LibTactics.
-Require Import TLC.LibAxioms.
 Require Import TLC.LibLogic.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -428,12 +427,12 @@ Proof. eapply everywhere_filterMixin. typeclass. Defined.
 Definition unit_filterType := FilterType unit unit_filterMixin.
 
 Lemma unitP :
-  forall (P : unit -> Prop), ultimately unit_filterType P = P tt.
+  forall (P : unit -> Prop), ultimately unit_filterType P <-> P tt.
 Proof.
   intro P.
   assert (H: ultimately unit_filterType P = (forall tt, P tt)) by reflexivity.
   rewrite H.
-  apply prop_ext. splits; auto. intros ? x. dependent inversion x. assumption.
+  splits; auto. intros ? x. dependent inversion x. assumption.
 Qed.
 
 (* ---------------------------------------------------------------------------- *)
@@ -494,12 +493,12 @@ Qed.
 Lemma natP_ultimately (cond : nat -> Prop) :
   forall (P : nat -> Prop),
   ultimately nat_filterType cond ->
-  ultimately nat_filterType P =
+  ultimately nat_filterType P <->
   exists x0, cond x0 /\ forall x, le x0 x -> P x.
 Proof.
   intros P Ucond. rewrite natP. rewrite natP in Ucond.
   destruct Ucond as (ncond & Hcond).
-  apply prop_ext. split.
+  split.
   { intros [n0 H]. exists (max ncond n0). splits.
     - apply Hcond. lia.
     - intros. apply H. lia. }
@@ -541,12 +540,12 @@ Qed.
 Lemma ZP_ultimately (cond : Z -> Prop) :
   forall (P : Z -> Prop),
   ultimately Z_filterType cond ->
-  ultimately Z_filterType P =
+  ultimately Z_filterType P <->
   exists x0, cond x0 /\ forall x, Z.le x0 x -> P x.
 Proof.
   intros P Ucond. rewrite ZP. rewrite ZP in Ucond.
   destruct Ucond as (ncond & Hcond).
-  apply prop_ext. split.
+  split.
   { intros [n0 H]. exists (Z.max ncond n0). splits.
     - apply Hcond. lia.
     - intros. apply H. lia. }
@@ -566,10 +565,10 @@ Qed.
 
 Lemma ZshiftP (x0 : Z) :
   forall P,
-  ultimately Z_filterType (fun x => P (Zshift x0 x)) =
+  ultimately Z_filterType (fun x => P (Zshift x0 x)) <->
   ultimately Z_filterType P.
 Proof.
-  intros. apply prop_ext.
+  intros.
   split; do 2 rewrite ZP; intros (x1 & H1); unfold Zshift in *.
   { exists (x1 + x0)%Z. intros.
     assert (HH: n = (x0 + (n - x0))%Z) by lia. rewrite HH.

@@ -14,7 +14,6 @@ Require Export LibFunOrd.
 Require Import LibRewrite.
 Require Import BigEnough.
 Require Import Monotonic.
-Require Import TLC.LibAxioms.
 Require Import TLC.LibLogic.
 
 (* -------------------------------------------------------------------------- *)

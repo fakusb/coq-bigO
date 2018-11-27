@@ -90,7 +90,7 @@ Lemma limit_comp_eq :
   (forall a, h a = g (f a)) ->
   limit A C h.
 Proof.
-  introv LF LG E.
+  introv LF LG E. 
   forwards E': fun_ext_dep E.
   rewrite E'. applys~ limit_comp.
 Qed.
@@ -100,11 +100,11 @@ Section LimitToZ.
 Variable A : filterType.
 
 Lemma limitPZ (f : A -> Z) :
-  limit A Z_filterType f =
+  limit A Z_filterType f <->
   (forall y, ultimately A (fun x => y <= f x)).
 Proof.
   rewrite limitP.
-  extens. split.
+   split.
   - introv H. intro y. specializes H (ultimately_ge_Z y). auto.
   - introv H. intros P HP. rewrite ZP in HP. destruct HP as (n0 & Hn0).
     generalize (H n0). filter_closed_under_intersection. auto.
@@ -112,11 +112,11 @@ Qed.
 
 Lemma limitPZ_ultimately (cond : Z -> Prop) (f : A -> Z) :
   ultimately Z_filterType cond ->
-  limit A Z_filterType f =
+  limit A Z_filterType f <->
   (forall y, cond y -> ultimately A (fun x => y <= f x)).
 Proof.
   intro Hcond.
-  rewrite limitP. extens. split.
+  rewrite limitP. split.
   - introv H. intros y Cy. specializes H (ultimately_ge_Z y). auto.
   - introv H. intros P HP.
     rewrite~ (@ZP_ultimately cond) in HP. destruct HP as (n0 & Cn0 & Hn0).
@@ -124,10 +124,10 @@ Proof.
 Qed.
 
 Lemma limitPZ_ge_0 (f : A -> Z) :
-  limit A Z_filterType f =
+  limit A Z_filterType f <->
   (forall y, 0 <= y -> ultimately A (fun x => y <= f x)).
 Proof.
-  rewrite~ (@limitPZ_ultimately (fun x => 0 <= x)).
+  rewrite~ (@limitPZ_ultimately (fun x => 0 <= x)). reflexivity.
   apply ultimately_ge_Z.
 Qed.
 

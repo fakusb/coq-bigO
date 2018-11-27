@@ -117,22 +117,20 @@ Proof.
   intros; auto with zarith.
 Qed.
 
-Lemma ultimately_lift1 (A B : filterType) :
-  forall f lo,
-  ultimately A (fun x => lo <= f x) ->
-  ultimately (product_filterType A B) (fun '(x, _) => lo <= f x).
+Lemma ultimately_lift1 (A B : filterType) P:
+  ultimately A (fun x => P x) ->
+  ultimately (product_filterType A B) (fun '(x, _) => P x).
 Proof.
-  intros f lo U.
+  intros U.
   rewrite productP. do 2 eexists. splits; try apply U. apply filter_universe.
   tauto.
 Qed.
 
-Lemma ultimately_lift2 (A B : filterType) :
-  forall f lo,
-  ultimately B (fun y => lo <= f y) ->
-  ultimately (product_filterType A B) (fun '(_, y) => lo <= f y).
+Lemma ultimately_lift2 (A B : filterType) P:
+  ultimately B (fun y => P y) ->
+  ultimately (product_filterType A B) (fun '(_, y) => P y).
 Proof.
-  intros f lo U.
+  intros U.
   rewrite productP. do 2 eexists. splits; try apply U. apply filter_universe.
   tauto.
 Qed.
